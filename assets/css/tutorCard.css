@@ -1,0 +1,410 @@
+/* ===========================
+   TUTORS GRID LAYOUT
+=========================== */
+
+.tutors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    align-items: stretch;
+}
+
+/* ===========================
+   TUTOR CARD
+=========================== */
+
+.tutors-grid .tutor-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    cursor: pointer;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
+    border-radius: 28px;
+    padding: 1.5rem;
+    box-shadow:
+        0 12px 32px rgba(0, 0, 0, 0.08),
+        0 6px 16px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+/* .tutors-grid .tutor-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 50%, #8b5cf6 100%);
+    border-radius: 28px 28px 0 0;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tutors-grid .tutor-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background:
+        radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.02) 0%, transparent 50%);
+    pointer-events: none;
+    animation: float 6s ease-in-out infinite;
+} */
+
+.tutors-grid .tutor-card:hover {
+    transform: translateY(-5px) scale(1.01);
+    box-shadow:
+        0 25px 50px rgba(0, 0, 0, 0.15),
+        0 12px 24px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.tutors-grid .tutor-card:hover::before {
+    opacity: 1;
+    transform: scaleX(1.05);
+}
+
+/* ===========================
+   WRAPPER & HEADER
+=========================== */
+
+.tutor-card-wrapper { width: 100%; }
+
+.tutor-header-wrapper {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.tutor-image {
+    width: 100%;
+    height: 320px;
+    object-fit: cover;
+    border-radius: 20px;
+    margin-bottom: 1.25rem;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.tutor-image::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.3) 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    border-radius: 20px;
+}
+
+.tutors-grid .tutor-card:hover .tutor-image {
+    transform: scale(1.05);
+}
+
+.tutors-grid .tutor-card:hover .tutor-image::after {
+    opacity: 1;
+}
+
+.tutor-header_detail {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 1.5rem;
+    color: white;
+    text-shadow:
+        0 0 8px rgba(0, 0, 0, 0.4),
+        0 0 16px rgba(0, 0, 0, 0.3),
+        0 0 24px rgba(0, 0, 0, 0.2);
+    line-height: 1.4;
+    z-index: 2;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tutors-grid .tutor-card:hover .tutor-header_detail {
+    transform: translateY(-4px);
+}
+
+.tutor-name {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: var(--font-size-heading-4);
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.location-name {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    opacity: 0.95;
+}
+
+/* ===========================
+   LIKE BUTTONS
+=========================== */
+
+.btn-like {
+    position: absolute;
+    backdrop-filter: blur(10px);
+    top: 1.5rem;
+    right: 1.5rem;
+    color: white;
+    width: 37px;
+    height: 37px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 3;
+    background: linear-gradient(135deg, rgb(255 255 255 / 0%) 0%, rgba(255, 255, 255, 0.2) 100%);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.btn-like:hover {
+    transform: scale(1.1);
+}
+
+.remove-btn {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 37px;
+    height: 37px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 3;
+    color: white;
+}
+
+.remove-btn svg {
+    color: white;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.remove-btn:hover {
+    transform: scale(1.15);
+}
+.remove-btn:hover svg {
+    transform: scale(1.1);
+}
+
+/* ===========================
+   TUTOR INFO
+=========================== */
+
+.tutors-grid .tutor-info {
+    display: grid;
+    gap: 1rem;
+}
+
+.tutors-grid .tutor-info .about-you {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* ===========================
+   SUBJECTS & LEVELS
+=========================== */
+
+.subject-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.subject-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.subject-tag {
+    padding: 0.25rem 0.75rem;
+    background: var(--gray-100);
+    border-radius: 1rem;
+    font-size: var(--font-size-mini);
+    color: #374151;
+    font-weight: 600;
+}
+
+.subject-levels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.level-tag {
+    padding: 0.25rem 0.75rem;
+    background: #F3F4F6;
+    border-radius: 1rem;
+    font-size: var(--font-size-mini);
+    color: #374151;
+    font-weight: 500;
+}
+
+/* ===========================
+   INFO LIST
+=========================== */
+
+.info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.info-item {
+    display: flex;
+    gap: 0.75rem;
+    color: #6B7280;
+}
+
+.info-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.37rem;
+    line-height: 1;
+}
+
+.info-title {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    color: black;
+}
+
+.info-subtitle {
+    font-size: var(--font-size-small);
+    color: #6B7280;
+}
+
+/* ===========================
+   CARD BOTTOM SECTION
+=========================== */
+
+.tutor-card-bottom {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.price-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.price-range {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: #111827;
+    position: relative;
+}
+
+.icon-arrow-down {
+    margin-left: 0.5rem;
+}
+
+.rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: var(--font-size-small);
+}
+
+.rating i {
+    color: #FBBF24;
+}
+
+/* ===========================
+   PRICE DETAIL POPUP
+=========================== */
+
+.price-detail-popup {
+    position: fixed;
+    /* top: 1rem; */
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    padding: 1rem 1.2rem;
+    z-index: 999;
+    min-width: 260px;
+    max-width: 320px;
+}
+
+.popup-title {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    margin-bottom: 0.7em;
+    color: #555;
+}
+
+.subject-title {
+    font-size: var(--font-size-small);
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    color: #222;
+}
+
+.price-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-weight: 400;
+    font-size: var(--font-size-mini);
+}
+
+.price-table td {
+    color: var(--gray-500);
+}
+
+.level-name {
+    width: 60%;
+}
+
+.level-price {
+    text-align: right;
+    font-weight: 500;
+    color: #18181B;
+}
+
+/* ===========================
+   TUTOR ACTIONS
+=========================== */
+
+.tutor-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+@media screen and (max-width: 1024px) {
+    .tutor-image {
+        height: 270px;
+    }
+
+    .tutor-card {
+        border-radius: 15px !important;
+    }
+}
