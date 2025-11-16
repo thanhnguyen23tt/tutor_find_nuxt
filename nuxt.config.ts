@@ -27,13 +27,13 @@ export default defineNuxtConfig({
 		// Private keys (only available on server-side)
 		// Public keys (exposed to client-side)
 		public: {
-			apiUrl: process.env.NUXT_PUBLIC_API_URL || process.env.VITE_API_URL || 'http://127.0.0.1:8000',
-			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || process.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
+			apiUrl: process.env.NUXT_PUBLIC_API_URL || process.env.VITE_API_URL,
+			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || process.env.VITE_API_BASE_URL,
 			pusherAppKey: process.env.NUXT_PUBLIC_PUSHER_APP_KEY || process.env.VITE_PUSHER_APP_KEY || '',
 			pusherAppCluster: process.env.NUXT_PUBLIC_PUSHER_APP_CLUSTER || process.env.VITE_PUSHER_APP_CLUSTER || '',
 			pusherHost: process.env.NUXT_PUBLIC_PUSHER_HOST || process.env.VITE_PUSHER_HOST,
 			pusherPort: process.env.NUXT_PUBLIC_PUSHER_PORT || process.env.VITE_PUSHER_PORT,
-			baseUrl: 'http://localhost:3000'
+			baseUrl: process.env.VITE_BASE_URL
 		},
 	},
 
