@@ -28,7 +28,7 @@ export const useApi = () => {
 			'Accept': 'application/json'
 		},
 		timeout: TIMEOUT,
-		withCredentials: true,
+		withCredentials: false,
 	});
 
 	// Request interceptor - always add fresh token before request
