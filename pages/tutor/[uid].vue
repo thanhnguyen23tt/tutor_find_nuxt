@@ -151,8 +151,6 @@ onUnmounted(() => {
             </svg>
         </h1>
 
-        <span class="user-address_mobile">{{ userData.address_preview }}</span>
-
         <!-- Description section for mobile -->
         <div class="description-section_mobile" v-if="userData.about_you">
             <p class="description-text">{{ userData.about_you }}</p>
@@ -208,13 +206,10 @@ onUnmounted(() => {
                 </div>
                 <div class="information-item">
                     <span>
-                        <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M12 6v6l4 2"></path>
-                        </svg>
-                        5h
+						<svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        {{ userData.address_preview }}
                     </span>
-                    <span>Thời gian trả lời</span>
+                    <span>Vị trí</span>
                 </div>
             </div>
         </div>

@@ -393,15 +393,6 @@ const selectedDaySlots = computed(() => {
                             }"
                         >
                             <span class="time-text">{{ slot.name }}</span>
-                            <span 
-                                class="mobile-status-badge"
-                                :class="{
-                                    'badge-available': slot.isAvailable,
-                                    'badge-busy': !slot.isAvailable
-                                }"
-                            >
-                                {{ slot.isAvailable ? 'Trống' : 'Bận' }}
-                            </span>
                         </button>
                     </div>
 

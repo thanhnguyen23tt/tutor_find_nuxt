@@ -204,7 +204,7 @@
 }
 .user-name_mobile {
     text-align: center;
-    margin: 1rem 0 0;
+    margin: 1rem 0 0.1rem;
     font-size: 1.75rem;
     font-weight: 800;
     color: white;
@@ -223,7 +223,7 @@
 }
 .user-address_mobile {
     display: block;
-    margin-bottom: 1rem;
+    margin-bottom: 0.3rem;
     font-size: var(--font-size-small);
     color: rgba(255, 255, 255, 0.9);
     font-weight: 500;
@@ -231,6 +231,18 @@
     position: relative;
     z-index: 2;
 }
+
+.description-section_mobile {
+	display: block;
+    margin-bottom: 0.5rem;
+    font-size: var(--font-size-small);
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 2;
+}
+
 .user-detail-header_mobile .subject-tags {
     margin: auto;
     position: relative;
@@ -392,7 +404,7 @@
 }
 
 .user-contact_avatar img {
-    width: 3.75rem;
+    min-width: 3.75rem;
     height: 3.5rem;
     border-radius: 50%;
     border: 3px solid white;
@@ -1367,6 +1379,10 @@
     .header-actions_mobile {
         display: none;
     }
+
+	.mobile-day-tabs {
+		padding: 0.5rem 0rem;
+	}
 }
 
 

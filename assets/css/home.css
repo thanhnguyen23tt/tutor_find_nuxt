@@ -102,7 +102,6 @@ section {
 
 .hero-buttons {
     display: flex;
-	flex-wrap: wrap;
     gap: 1rem;
 }
 
@@ -133,7 +132,7 @@ section {
 .hero-description {
     font-size: var(--font-size-medium);
     color: #6b7280;
-    margin-bottom: 32px;
+    margin-bottom: 1.5rem;
     line-height: 1.6;
 }
 
@@ -1284,6 +1283,7 @@ section {
 /* Tablets and small devices */
 @media (max-width: 768px) {
     .hero-buttons {
+		flex-direction: column;
         margin: 0;
     }
 

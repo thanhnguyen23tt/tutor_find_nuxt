@@ -231,7 +231,7 @@ onUnmounted(() => {
 
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <button class="btn-md btn-secondary" @click="resetForm" :disabled="isSaving">
+                    <button class="btn-lg btn-secondary" @click="resetForm" :disabled="isSaving">
                         <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
                             <path d="M21 3v5h-5"></path>
@@ -240,7 +240,7 @@ onUnmounted(() => {
                         </svg>
                         Khôi phục
                     </button>
-                    <button class="btn-md btn-primary" @click="updateProfile" :disabled="isSaving">
+                    <button class="btn-lg btn-primary" @click="updateProfile" :disabled="isSaving">
                         <svg v-if="isSaving" class="icon-sm animate-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                             <path d="M3 3v5h5"></path>

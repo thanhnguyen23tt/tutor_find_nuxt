@@ -19,13 +19,13 @@
                         Kết nối với những gia sư xuất sắc nhất để nâng cao kiến thức và đạt được mục tiêu học tập của bạn.
                     </p>
                     <div class="hero-buttons">
-                        <button class="btn-lg btn-primary" @click="goToSearch">
+                        <button class="btn-md btn-primary" @click="goToSearch">
                             Tìm gia sư ngay
                             <svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
                         </button>
-                        <button class="btn-lg btn-secondary" @click="goToBecomeTutor">
+                        <button class="btn-md btn-secondary" @click="goToBecomeTutor">
                             Tìm hiểu thêm
                         </button>
                     </div>

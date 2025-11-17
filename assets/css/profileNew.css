@@ -345,11 +345,6 @@
     line-height: 1.6;
 }
 
-.header-right button {
-    border: 1px dashed var(--color-primary);
-    /* color: ; */
-}
-
 /* avatar */
 .avatar-main {
     display: flex;

@@ -304,7 +304,7 @@ onMounted(() => {
                 </div>
             </div>
             <div class="header-right">
-                <button class="btn-lg btn-primary" @click="openModal('withdraw')">
+                <button class="btn-md btn-primary" @click="openModal('withdraw')">
                     <span>Chuyển tiền qua MoMo</span>
                 </button>
             </div>
@@ -381,7 +381,7 @@ onMounted(() => {
                 </div>
             </div>
             <div class="header-right">
-                <button class="btn-lg btn-secondary" @click="openModal('paymentInfo')">
+                <button class="btn-md btn-secondary" @click="openModal('paymentInfo')">
                     <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -439,7 +439,7 @@ onMounted(() => {
             </div>
             <div class="header-right">
                 <div class="period-selector">
-                    <base-select v-model="filterPeriod" :options="periodOptions" placeholder="Khoảng thời gian" :widthFull="false" />
+                    <base-select size="medium" v-model="filterPeriod" :options="periodOptions" placeholder="Khoảng thời gian" :widthFull="false" />
                 </div>
             </div>
         </div>
@@ -484,14 +484,14 @@ onMounted(() => {
             </div>
             <div class="header-right">
                 <div class="section-actions">
-                    <base-input v-model="search" placeholder="Tìm kiếm giao dịch..." class="search-input">
+                    <base-input size="md" v-model="search" placeholder="Tìm kiếm giao dịch..." class="search-input">
                         <template #icon>
                             <svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </template>
                     </base-input>
-                    <base-select v-model="filterType" :options="filterOptions" placeholder="Lọc theo loại" :widthFull="false" />
+                    <base-select size="medium" v-model="filterType" :options="filterOptions" placeholder="Lọc theo loại" :widthFull="false" />
                 </div>
             </div>
         </div>
@@ -593,7 +593,7 @@ onMounted(() => {
                 <div class="form-group">
                     <label class="form-label"><span>Số tiền chuyển</span><span class="required">*</span></label>
                     <div class="input-with-suffix">
-                        <base-input v-model="forms.withdraw.amount" type="number" placeholder="Tối thiểu 10,000" :min="10000" :max="walletStats.balance">
+                        <base-input size="md" v-model="forms.withdraw.amount" type="number" placeholder="Tối thiểu 10,000" :min="10000" :max="walletStats.balance">
                             <template #icon>
                                 <svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -607,7 +607,7 @@ onMounted(() => {
 
                 <div class="form-group">
                     <label class="form-label">Ghi chú</label>
-                    <base-input v-model="forms.withdraw.note" type="textarea" placeholder="Ghi chú thêm (tùy chọn)" :rows="3"></base-input>
+                    <base-input size="md" v-model="forms.withdraw.note" type="textarea" placeholder="Ghi chú thêm (tùy chọn)" :rows="3"></base-input>
                 </div>
 
                 <div v-if="!paymentInfo.phone" class="withdraw-notice error">
@@ -645,7 +645,7 @@ onMounted(() => {
                 <div class="form-section">
                     <div class="form-group">
                         <label class="form-label">Số điện thoại MoMo</label>
-                        <base-input v-model="forms.paymentInfo.phone" placeholder="VD: 0325752074 hoặc +84325752074" type="tel">
+                        <base-input size="md" v-model="forms.paymentInfo.phone" placeholder="VD: 0325752074 hoặc +84325752074" type="tel">
                             <template #icon>
                                 <svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -669,7 +669,7 @@ onMounted(() => {
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Tên ngân hàng</label>
-                            <base-input v-model="forms.paymentInfo.bank_name" placeholder="VD: Vietcombank">
+                            <base-input size="md" v-model="forms.paymentInfo.bank_name" placeholder="VD: Vietcombank">
                                 <template #icon>
                                     <svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -680,7 +680,7 @@ onMounted(() => {
 
                         <div class="form-group">
                             <label class="form-label">Số tài khoản</label>
-                            <base-input v-model="forms.paymentInfo.bank_account" placeholder="Nhập số tài khoản">
+                            <base-input size="md" v-model="forms.paymentInfo.bank_account" placeholder="Nhập số tài khoản">
                                 <template #icon>
                                     <svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -692,7 +692,7 @@ onMounted(() => {
 
                     <div class="form-group">
                         <label class="form-label">Tên chủ tài khoản</label>
-                        <base-input v-model="forms.paymentInfo.account_holder" placeholder="Nhập tên chủ tài khoản">
+                        <base-input size="md" v-model="forms.paymentInfo.account_holder" placeholder="Nhập tên chủ tài khoản">
                             <template #icon>
                                 <svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
