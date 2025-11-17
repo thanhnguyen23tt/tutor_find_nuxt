@@ -662,7 +662,7 @@ defineExpose({
                             </div>
 
                             <!-- Layout Controls -->
-                            <div class="layout-controls" v-if="!uiState.isMobile">
+                            <div class="layout-controls">
                                 <button 
                                     class="layout-btn" 
                                     :class="{ active: uiState.layoutMode === 'split' }" 
@@ -725,7 +725,7 @@ defineExpose({
                             </div>
 
                             <!-- Layout Controls for remote -->
-                            <div class="layout-controls" v-if="!uiState.isMobile">
+                            <div class="layout-controls">
                                 <button 
                                     class="layout-btn" 
                                     :class="{ active: uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote' }" 
