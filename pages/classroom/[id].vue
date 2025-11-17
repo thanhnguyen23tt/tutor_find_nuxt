@@ -287,6 +287,27 @@ function playJoinSound() {
 }
 
 // ===== Media Methods =====
+async function ensureVideoPlayback(videoRef, stream, {
+    muted = false
+} = {}) {
+    if (!process.client || !stream) return
+
+    await nextTick()
+
+    const element = videoRef?.value
+    if (!element) return
+
+    element.srcObject = stream
+    element.playsInline = true
+    element.muted = muted
+
+    try {
+        await element.play()
+    } catch (error) {
+        console.warn('Autoplay prevented:', error)
+    }
+}
+
 async function startMedia() {
     if (!process.client || !navigator?.mediaDevices) return
 
@@ -294,10 +315,9 @@ async function startMedia() {
         const stream = await navigator.mediaDevices.getUserMedia(MEDIA_CONSTRAINTS)
         mediaState.localStream = stream
 
-        await nextTick()
-        if (localVideo.value) {
-            localVideo.value.srcObject = stream
-        }
+        await ensureVideoPlayback(localVideo, stream, {
+            muted: true
+        })
 
         if (classroomState.participantsCount >= 2) {
             createPeer(true)
@@ -328,9 +348,9 @@ async function startScreenShare() {
 
         if (sender) {
             await sender.replaceTrack(screenTrack)
-            if (localVideo.value) {
-                localVideo.value.srcObject = mediaState.screenStream
-            }
+            await ensureVideoPlayback(localVideo, mediaState.screenStream, {
+                muted: true
+            })
             mediaState.isScreenSharing = true
             screenTrack.onended = () => toggleScreenShare()
         }
@@ -351,9 +371,9 @@ async function stopScreenShare() {
 
     mediaState.screenStream?.getTracks().forEach(t => t.stop())
 
-    if (localVideo.value) {
-        localVideo.value.srcObject = mediaState.localStream
-    }
+    await ensureVideoPlayback(localVideo, mediaState.localStream, {
+        muted: true
+    })
 
     mediaState.isScreenSharing = false
 }
@@ -427,9 +447,7 @@ function handlePeerConnect() {
 }
 
 function handlePeerStream(remote) {
-    if (remoteVideo.value) {
-        remoteVideo.value.srcObject = remote
-    }
+    ensureVideoPlayback(remoteVideo, remote)
     webrtcState.remoteStreamPresent = true
 }
 
