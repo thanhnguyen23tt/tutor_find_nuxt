@@ -29,6 +29,7 @@ export const useApi = () => {
 		},
 		timeout: TIMEOUT,
 		withCredentials: true,
+		withXSRFToken: true,
 	});
 
 	// Request interceptor - always add fresh token before request
