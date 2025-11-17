@@ -7,14 +7,6 @@ export const useApi = () => {
 	const TIMEOUT = 10000;
 	const authCookie = useAuthCookie();
 
-	// Get CSRF token
-	const getCsrfToken = () => {
-		if (process.client) {
-			return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-		}
-		return null;
-	};
-
 	// Get auth token from storage
 	const getAuthToken = () => {
 		return authCookie.getToken();
@@ -29,18 +21,11 @@ export const useApi = () => {
 		},
 		timeout: TIMEOUT,
 		withCredentials: true,
-		withXSRFToken: true,
 	});
 
 	// Request interceptor - always add fresh token before request
 	axiosInstance.interceptors.request.use(
 		(config) => {
-			// Add CSRF token
-			const csrfToken = getCsrfToken();
-			if (csrfToken) {
-				config.headers['X-CSRF-TOKEN'] = csrfToken;
-			}
-
 			// Add Authorization token
 			const token = getAuthToken();
 			if (token) {
