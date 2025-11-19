@@ -4,9 +4,10 @@
  */
 
 const DEFAULT_COOKIE_OPTIONS = {
-	sameSite: 'lax',
-	secure: process.env.NODE_ENV === 'production',
-	path: '/',
+	sameSite: "lax",
+	secure: true,
+	httpOnly: false, // FE needs to read
+	path: "/"
 };
 
 /**

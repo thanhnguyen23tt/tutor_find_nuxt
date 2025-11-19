@@ -1,56 +1,54 @@
 import axios from 'axios';
-import { useAuthCookie } from '~/composables/useAuthCookie'
-
+import { useCookie } from 'nuxt/app';
 export const useApi = () => {
 	const config = useRuntimeConfig();
 	const BASE_URL = config.public.apiUrl;
 	const TIMEOUT = 10000;
-	const authCookie = useAuthCookie();
 
-	// Get auth token from storage
-	const getAuthToken = () => {
-		return authCookie.getToken();
-	};
-
-	// Create axios instance
 	const axiosInstance = axios.create({
 		baseURL: BASE_URL,
 		headers: {
 			'Content-Type': 'application/json',
-			'Accept': 'application/json'
+			'Accept': 'application/json',
+			'X-Requested-With': 'XMLHttpRequest',
 		},
-		timeout: TIMEOUT,
+		timeout: 10000,
 		withCredentials: true,
-	});
+	})
 
-	// Request interceptor - always add fresh token before request
-	axiosInstance.interceptors.request.use(
-		(config) => {
-			// Add Authorization token
-			const token = getAuthToken();
-			if (token) {
-				config.headers['Authorization'] = `Bearer ${token}`;
+	axiosInstance.defaults.xsrfCookieName = 'XSRF-TOKEN'
+	axiosInstance.defaults.xsrfHeaderName = 'X-XSRF-TOKEN'
+	axios.defaults.withCredentials = true;
+
+	//  THÊM INTERCEPTOR ĐỌC XSRF-TOKEN (đây là chìa khóa!)
+	axiosInstance.interceptors.request.use((config) => {
+		// Chỉ xử lý cookie ở client-side
+		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+			// Lấy token từ cookie thủ công
+			const cookies = document.cookie.split('; ')
+			const xsrfCookie = cookies.find(row => row.startsWith('XSRF-TOKEN='))
+
+			if (xsrfCookie) {
+				const token = xsrfCookie.split('=')[1]
+				if (token) {
+					config.headers['X-XSRF-TOKEN'] = decodeURIComponent(token)
+					console.log('✅ XSRF-TOKEN được gắn vào request:', token.substring(0, 20) + '...')
+				}
 			} else {
-				// Remove Authorization header if no token
-				delete config.headers['Authorization'];
+				console.warn('⚠️ Không tìm thấy XSRF-TOKEN trong cookies')
+				console.log('Available cookies:', document.cookie)
 			}
-
-			return config;
-		},
-		(error) => {
-			return Promise.reject(error);
 		}
-	);
+		return config
+	})
+
 
 	// Response interceptor
 	axiosInstance.interceptors.response.use(
-		(response) => response,
+		(response) => {
+			return response;
+		},
 		(error) => {
-			// Handle 401 Unauthorized
-			if (error.response?.status === 401) {
-				removeToken();
-			}
-
 			return Promise.reject(handleError(error));
 		}
 	);
@@ -178,28 +176,6 @@ export const useApi = () => {
 		},
 	};
 
-	/**
-	 * Set or remove authentication token
-	 * This manually updates the token in cookie
-	 */
-	const setAuthToken = (token) => {
-		authCookie.setToken(token || null);
-	};
-
-	/**
-	 * Clear authentication
-	 */
-	const clearAuth = () => {
-		authCookie.removeToken();
-	};
-
-	/**
-	 * Get current token
-	 */
-	const getToken = () => {
-		return getAuthToken();
-	};
-
-	return { api, setAuthToken, clearAuth, getToken };
+	return { api };
 };
 

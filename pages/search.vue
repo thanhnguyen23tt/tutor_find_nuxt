@@ -322,7 +322,7 @@ const { data: searchData, pending: isLoading, refresh: refreshSearch } = await u
         }
     },
     {
-        server: true,
+        server: false,
         lazy: false,
         watch: [() => route.fullPath]
     }

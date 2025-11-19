@@ -1,9 +1,7 @@
 <script setup async>
 const userStore = useUserStore();
 const notificationStore = useNotificationStore();
-const {
-    api
-} = useApi();
+const {api} = useApi();
 
 const isLoading = ref(false);
 const showNotificationPreview = ref(false);

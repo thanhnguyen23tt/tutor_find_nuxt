@@ -339,7 +339,7 @@ definePageMeta({
 
 const { formErrors, handleValidationError, clearError, clearAllErrors, getError, setError } = useFormValidation();
 
-const { login } = useAuth();
+const { login, ensureCsrfCookie } = useAuth();
 const { api } = useApi();
 const { success, error: notifyError } = useNotification();
 
@@ -390,7 +390,9 @@ const handleSubmit = async () => {
     try {
         isLoading.value = true;
         clearAllErrors();
-        const response = await login(formData);
+		
+        await login(formData);
+
         navigateTo('/');
     } catch (error) {
         handleValidationError(error, 'Đăng nhập thất bại');

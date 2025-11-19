@@ -11,7 +11,7 @@ import {
 
 const userStore = useUserStore();
 const { api } = useApi();
-const { isAuthenticated: checkAuth } = useAuth();
+const { isAuthenticated: checkAuth, logout: performLogout } = useAuth();
 const { formatDateTime, getFirstCharacterOfLastName, normalizeIcon } = useHelper();
 
 const showDropdown = ref(false);
@@ -19,7 +19,6 @@ const showNotifications = ref(false);
 const notifications = ref([]);
 
 const userData = computed(() => userStore.getUserData);
-
 
 const isAuthenticated = computed(() => {
     return userStore.isAuthenticated || checkAuth();
@@ -192,9 +191,14 @@ const toggleNotifications = async () => {
     }
 };
 
-const handleLogout = () => {
-    userStore.clearAuth();
-    navigateTo('/auth/login');
+const handleLogout = async () => {
+    try {
+        await performLogout();
+    } catch (error) {
+        console.error('Logout failed:', error);
+    } finally {
+        navigateTo('/auth/login');
+    }
 };
 
 const markAllAsRead = async () => {

@@ -4,13 +4,12 @@ import Pusher from 'pusher-js';
 export default defineNuxtPlugin(() => {
 	if (process.client && typeof window !== 'undefined') {
 		const config = useRuntimeConfig();
-		const authCookie = useAuthCookie();
 
 		// Set up Pusher
 		(window as any).Pusher = Pusher;
 
-		// Get token from auth cookie
-		const token = authCookie.getToken() || '';
+		const xsrfCookie = useCookie('XSRF-TOKEN');
+		const csrfToken = xsrfCookie.value ? decodeURIComponent(xsrfCookie.value) : '';
 
 		// Set up Echo
 		(window as any).Echo = new Echo({
@@ -24,7 +23,7 @@ export default defineNuxtPlugin(() => {
 			authEndpoint: `${config.public.apiUrl}/broadcasting/auth`,
 			auth: {
 				headers: {
-					'Authorization': `Bearer ${token}`,
+					'X-XSRF-TOKEN': csrfToken,
 				},
 			},
 		});

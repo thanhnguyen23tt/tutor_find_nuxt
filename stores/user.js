@@ -3,8 +3,8 @@ import { defineStore } from 'pinia';
 export const useUserStore = defineStore('user', {
 	state: () => {
 		return {
-			token: '',
 			userData: {},
+			authReady: false,
 			unreadData: {
 				messages: 0,
 				pending_booking: 0,
@@ -12,7 +12,6 @@ export const useUserStore = defineStore('user', {
 				schedule: 0,
 				recheduled_bookings: 0,
 			},
-			notifications: [],
 		};
 	},
 
@@ -20,25 +19,10 @@ export const useUserStore = defineStore('user', {
 		// Lấy userData trực tiếp từ state
 		getUserData: (state) => state.userData,
 
-		// Lấy token từ state (cookie được sync vào state qua actions)
-		getToken: (state) => state.token,
-
-		getNnotifications: (state) => state.notifications,
-
 		getUnreadData: (state) => state.unreadData,
 
 		isAuthenticated(state) {
-			if (state.token) return true;
-			
-			if (process.client) {
-				try {
-					const { hasToken } = useAuthCookie();
-					return hasToken();
-				} catch {
-					return false;
-				}
-			}
-			return false;
+			return !!state.userData && Object.keys(state.userData).length > 0;
 		},
 	},
 
@@ -47,26 +31,18 @@ export const useUserStore = defineStore('user', {
 			this.userData = payload || {};
 		},
 
-		setToken(payload) {
-			this.token = payload || '';
-			const { setToken } = useAuthCookie();
-			setToken(payload || null);
+		setAuthReady(status) {
+			this.authReady = typeof status === 'boolean' ? status : true;
 		},
 
 		setAuth(payload) {
-			this.setToken(payload.token || ''); 
 			this.setUserData(payload.user || {});
+			this.setAuthReady(true);
 		},
 
 		clearAuth() {
-			this.setToken('');
 			this.setUserData({});
-			const { removeToken } = useAuthCookie();
-			removeToken();
-		},
-
-		setNotifications(payload) {
-			this.notifications = payload || [];
+			this.setAuthReady(false);
 		},
 
 		setUnreadData(payload) {

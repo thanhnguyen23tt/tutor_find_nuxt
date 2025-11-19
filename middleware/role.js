@@ -8,19 +8,9 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 	const userStore = useUserStore();
 	const { verifyToken } = useAuth();
 
-	// Check if user has token
-	const token = process.client ? sessionStorage.getItem('token') : null;
+	if (!userStore.isAuthenticated) {
+		const userData = await verifyToken().catch(() => null);
 
-	if (!token) {
-		return navigateTo({
-			path: '/auth/login',
-			query: { redirect: to.fullPath }
-		});
-	}
-
-	// Verify token and get user data
-	if (!userStore.getUserData || Object.keys(userStore.getUserData).length === 0) {
-		const userData = await verifyToken();
 		if (!userData) {
 			userStore.clearAuth();
 			return navigateTo({

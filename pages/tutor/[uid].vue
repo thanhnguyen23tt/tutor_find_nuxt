@@ -14,7 +14,6 @@ const { api } = useApi();
 const { getPriceRange } = useHelper();
 const { success, error: notifyError, info: notifyInfo, warning: notifyWarning } = useNotification();
 const notificationStore = useNotificationStore();
-const config = useRuntimeConfig()
 
 const activeTab = ref('overview');
 const showSendMessageModal = ref(false);
@@ -42,10 +41,11 @@ const { data: userData, pending: isLoading } = await useAsyncData(
     },
     {
         // Chỉ fetch trên server, client sẽ dùng data đã có
-        server: true,
+        server: false,
         lazy: false,
     }
 );
+
 
 const redirectToBooking = () => {
     return navigateTo(`/booking/${route.params.uid}`);
@@ -86,7 +86,8 @@ const toggleSave = async () => {
 };
 
 const metas = computed(() => {
-	const baseUrl = config.public.baseUrl || (process.client ? window.location.origin : '')
+	const baseUrl = process.env.VITE_BASE_URL;
+
     return {
         title: userData.value?.title_meta || 'Chi tiết gia sư - TutorFind',
         description: userData.value?.about_you || userData.value?.description_meta || '',
