@@ -546,27 +546,47 @@ function onFullscreenChange() {
 async function toggleElementFullscreen(element) {
     if (!process.client || !element) return
 
+    // On mobile, we might want to fullscreen the video element itself if the container doesn't work well
+    // But usually container is better for custom controls.
+    // Let's try to support standard APIs more robustly.
+
     const isFullscreen = document.fullscreenElement === element || 
                          document.webkitFullscreenElement === element || 
                          document.mozFullScreenElement === element || 
                          document.msFullscreenElement === element
 
-    if (isFullscreen) {
-        if (document.exitFullscreen) {
-            await document.exitFullscreen()
-        } else if (document.webkitExitFullscreen) {
-            await document.webkitExitFullscreen()
-        } else if (document.msExitFullscreen) {
-            await document.msExitFullscreen()
+    try {
+        if (isFullscreen) {
+            if (document.exitFullscreen) {
+                await document.exitFullscreen()
+            } else if (document.webkitExitFullscreen) {
+                await document.webkitExitFullscreen()
+            } else if (document.msExitFullscreen) {
+                await document.msExitFullscreen()
+            }
+        } else {
+            // Mobile Safari often requires the video element itself to be fullscreened for native player
+            // But here we have custom controls, so we want the container.
+            // If requestFullscreen fails on container in iOS, it might be because it only supports it on <video>.
+            // However, modern iOS Safari supports API on elements.
+            
+            if (element.requestFullscreen) {
+                await element.requestFullscreen()
+            } else if (element.webkitRequestFullscreen) {
+                await element.webkitRequestFullscreen()
+            } else if (element.msRequestFullscreen) {
+                await element.msRequestFullscreen()
+            } else if (element.querySelector('video') && uiState.isMobile) {
+                 // Fallback for some mobile browsers: fullscreen the video tag directly if container fails
+                 // Note: This might lose custom controls overlay.
+                 const videoTag = element.querySelector('video')
+                 if (videoTag.webkitEnterFullscreen) {
+                     videoTag.webkitEnterFullscreen()
+                 }
+            }
         }
-    } else {
-        if (element.requestFullscreen) {
-            await element.requestFullscreen()
-        } else if (element.webkitRequestFullscreen) {
-            await element.webkitRequestFullscreen()
-        } else if (element.msRequestFullscreen) {
-            await element.msRequestFullscreen()
-        }
+    } catch (err) {
+        console.error('Fullscreen error:', err)
     }
 }
 
@@ -834,7 +854,7 @@ defineExpose({
                                         <rect x="2" y="6" width="14" height="12" rx="2" />
                                     </svg>
                                     <p class="overlay-text" v-if="!webrtcState.hasStarted">Đang chờ kết nối...</p>
-                                    <p class="overlay-text" v-else>Camera đối phương đã tắt</p>
+                                    <p class="overlay-text" v-else>Camera đã tắt</p>
                                 </div>
                             </div>
 
@@ -1606,12 +1626,7 @@ defineExpose({
 }
 
 .video-container.is-minimized .video-controls {
-    background: none;
-    padding: 0 1rem;
-    top: 50%;
-    bottom: auto;
-    width: auto;
-    transform: translateY(-50%);
+    display: none;
 }
 
 .video-container.is-minimized .video-label {
