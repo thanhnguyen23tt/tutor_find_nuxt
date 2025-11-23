@@ -1800,8 +1800,8 @@ defineExpose({
     }
 
     .video-grid.layout-pinned .is-secondary {
-        width: 180px;
-        height: 180px;
+        width: 160px;
+        height: 160px;
     }
 
 	.video-grid.layout-pinned .is-secondary .layout-btn span {
