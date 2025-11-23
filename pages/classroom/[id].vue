@@ -20,7 +20,7 @@ if (process.client) {
     Peer = module.default
 }
 
-// ===== Composables & Instances =====
+// ===== Composables & Instances ====
 const route = useRoute()
 const {
     api
