@@ -2,33 +2,78 @@
 	<base-modal title="Bộ lọc nâng cao" description="Tùy chỉnh tìm kiếm của bạn để có kết quả tốt nhất" :is-open="isOpen" @close="$emit('close')">
 		<div class="modern-modal-content">
 			<!-- Mobile Only Filters (Location, Subject, Level) -->
-			<div class="filter-section mobile-only-block">
-				<div class="section-header">
-					<h3 class="section-title">Thông tin tìm kiếm</h3>
+			<div class="mobile-only-block">
+				<div class="filter-section">
+					<div class="section-header">
+						<h3 class="section-title">Thông tin tìm kiếm</h3>
+					</div>
+					<div class="mobile-filter-grid">
+						<div class="filter-group">
+							<base-select v-model="localFilters.provinces_id" :options="cityOptions" label="Thành phố" placeholder="Tất cả" widthFull="true" type="search"></base-select>
+						</div>
+						<div class="filter-group">
+							<base-select v-model="localFilters.subject_id" :options="subjectOptions" label="Môn học" placeholder="Tất cả" widthFull="true" type="search"></base-select>
+						</div>
+					</div>
+					<div class="modal-divider"></div>
 				</div>
-				<div class="mobile-filter-grid">
-					<div class="filter-group">
-						<base-select v-model="localFilters.provinces_id" :options="cityOptions" label="Thành phố" placeholder="Tất cả" widthFull="true" type="search"></base-select>
-					</div>
-					<div class="filter-group">
-						<base-select v-model="localFilters.subject" :options="subjectOptions" label="Môn học" placeholder="Tất cả" widthFull="true" type="search"></base-select>
-					</div>
-					<div class="filter-group">
-						<base-select v-model="localFilters.educationLevel" :options="educationLevelOptions" label="Cấp độ" placeholder="Tất cả" widthFull="true"></base-select>
-					</div>
-				</div>
-				<div class="modal-divider"></div>
-			</div>
 
-			<!-- Experience Section (Visible to all) -->
-			<div class="filter-section">
-				<div class="section-header">
-					<h3 class="section-title">Kinh nghiệm</h3>
+				<div class="filter-section">
+					<div class="section-header">
+						<h3 class="section-title">Cấp độ</h3>
+						<span class="section-subtitle">Lọc theo cấp độ môn học bạn chọn</span>
+					</div>
+					<div class="chip-list">
+						<div 
+							class="chip-item" 
+							:class="{ active: !localFilters.educationLevel }"
+							@click="localFilters.educationLevel = ''"
+						>
+							Tất cả
+						</div>
+						<div 
+							v-for="level in educationLevelOptions" 
+							:key="level.id"
+							class="chip-item"
+							:class="{ active: localFilters.educationLevel === level.id }"
+							@click="localFilters.educationLevel = level.id"
+						>
+							{{ level.name }}
+						</div>
+					</div>
 				</div>
-				<div class="filter-group">
-					<base-select v-model="localFilters.experience" :options="experienceOptions" label="Kinh nghiệm" placeholder="Tất cả" widthFull="true"></base-select>
-				</div>
+
 				<div class="modal-divider"></div>
+
+				<!-- Experience Section (Visible to all) -->
+				<div class="filter-section">
+					<div class="section-header">
+						<h3 class="section-title">Kinh nghiệm</h3>
+						<span class="section-subtitle">Lọc theo kinh nghiệm của gia sư</span>
+					</div>
+					<div class="filter-group">
+						<div class="chip-list">
+							<div 
+								class="chip-item" 
+								:class="{ active: !localFilters.experience }"
+								@click="localFilters.experience = ''"
+							>
+								Tất cả
+							</div>
+							<div 
+								v-for="exp in experienceOptions" 
+								:key="exp.id"
+								class="chip-item"
+								:class="{ active: localFilters.experience === exp.id }"
+								@click="localFilters.experience = exp.id"
+							>
+								{{ exp.name }}
+							</div>
+						</div>
+					</div>
+					<div class="modal-divider"></div>
+				</div>
+
 			</div>
 
 			<!-- Price Range Section -->
@@ -308,13 +353,11 @@ const handleApply = () => {
 }
 
 .rating-option:hover {
-    border-color: #000;
+    border-color: var(--color-primary);
 }
 
 .rating-option.active {
-    background-color: #000;
-    color: white;
-    border-color: #000;
+    border-color: var(--color-primary);
 }
 
 .star-icon {
@@ -396,6 +439,41 @@ const handleApply = () => {
 
 .btn-no-bg:hover {
     color: #000;
+}
+
+/* Chip List Styles */
+.chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.chip-item {
+    padding: 0.5rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+    background: #fff;
+}
+
+.chip-item:hover {
+    border-color: var(--color-primary);
+}
+
+.chip-item.active {
+    border-color: var(--color-primary);
+}
+
+.group-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.75rem;
 }
 
 @media (min-width: 768px) {

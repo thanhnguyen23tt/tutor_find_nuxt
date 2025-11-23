@@ -76,6 +76,10 @@ const uiState = reactive({
     joinSoundEnabled: true,
     isFullscreen: false,
     areControlsVisible: true,
+    minimized: {
+        local: false,
+        remote: false
+    }
 })
 
 // ===== Audio Context =====
@@ -109,7 +113,7 @@ const userDataUid = computed(() => userData.value?.uid)
 
 const labels = computed(() => ({
     self: 'Bạn',
-    peer: webrtcState.peerName || 'Đang chờ...'
+    peer: webrtcState.peerName || '...'
 }))
 
 const isLocalVideoOn = computed(() => {
@@ -513,32 +517,62 @@ function checkAndAdjustLayoutForMobile() {
 async function toggleFullscreen() {
     if (!process.client) return
 
-    if (!document.fullscreenElement) {
-        if (videoSectionRef.value?.requestFullscreen) {
-            await videoSectionRef.value.requestFullscreen()
+    const elem = videoSectionRef.value
+    if (!elem) return
+
+    if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
+        if (elem.requestFullscreen) {
+            await elem.requestFullscreen()
+        } else if (elem.webkitRequestFullscreen) { /* Safari */
+            await elem.webkitRequestFullscreen()
+        } else if (elem.msRequestFullscreen) { /* IE11 */
+            await elem.msRequestFullscreen()
         }
     } else {
         if (document.exitFullscreen) {
             await document.exitFullscreen()
+        } else if (document.webkitExitFullscreen) { /* Safari */
+            await document.webkitExitFullscreen()
+        } else if (document.msExitFullscreen) { /* IE11 */
+            await document.msExitFullscreen()
         }
     }
 }
 
 function onFullscreenChange() {
-    uiState.isFullscreen = !!document.fullscreenElement
+    uiState.isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement)
 }
 
 async function toggleElementFullscreen(element) {
     if (!process.client || !element) return
 
-    if (document.fullscreenElement === element) {
+    const isFullscreen = document.fullscreenElement === element || 
+                         document.webkitFullscreenElement === element || 
+                         document.mozFullScreenElement === element || 
+                         document.msFullscreenElement === element
+
+    if (isFullscreen) {
         if (document.exitFullscreen) {
             await document.exitFullscreen()
+        } else if (document.webkitExitFullscreen) {
+            await document.webkitExitFullscreen()
+        } else if (document.msExitFullscreen) {
+            await document.msExitFullscreen()
         }
     } else {
         if (element.requestFullscreen) {
             await element.requestFullscreen()
+        } else if (element.webkitRequestFullscreen) {
+            await element.webkitRequestFullscreen()
+        } else if (element.msRequestFullscreen) {
+            await element.msRequestFullscreen()
         }
+    }
+}
+
+function toggleMinimize(target) {
+    if (uiState.minimized[target] !== undefined) {
+        uiState.minimized[target] = !uiState.minimized[target]
     }
 }
 
@@ -689,7 +723,8 @@ defineExpose({
                     <!-- Local Video -->
                     <div class="video-container local-video" ref="localVideoContainer" :class="{ 
                         'is-primary': uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local', 
-                        'is-secondary': uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote' 
+                        'is-secondary': uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote',
+                        'is-minimized': uiState.minimized.local && uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote'
                     }">
                         <div class="video-wrapper">
                             <video ref="localVideo" autoplay playsinline muted class="video-element"></video>
@@ -710,6 +745,7 @@ defineExpose({
                                     :class="{ active: uiState.layoutMode === 'split' }" 
                                     @click="setLayout('split')" 
                                     title="Chế độ 50/50"
+                                    v-if="!uiState.isMobile"
                                 >
                                     <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect x="3" y="5" width="8" height="14" rx="2"></rect>
@@ -728,6 +764,27 @@ defineExpose({
                                         <rect x="14" y="12" width="8" height="6" rx="2"></rect>
                                     </svg>
                                     <span>Ghim</span>
+                                </button>
+                                <button 
+                                    class="layout-btn" 
+                                    @click="toggleMinimize('local')" 
+                                    :title="uiState.minimized.local ? 'Mở rộng' : 'Thu nhỏ'"
+                                    v-if="uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote'"
+                                >
+                                    <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <template v-if="uiState.minimized.local">
+                                            <polyline points="15 3 21 3 21 9"></polyline>
+                                            <polyline points="9 21 3 21 3 15"></polyline>
+                                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                                        </template>
+                                        <template v-else>
+                                            <polyline points="4 14 10 14 10 20"></polyline>
+                                            <polyline points="20 10 14 10 14 4"></polyline>
+                                            <line x1="14" y1="10" x2="21" y2="3"></line>
+                                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                                        </template>
+                                    </svg>
                                 </button>
                                 <button 
                                     class="layout-btn" 
@@ -765,7 +822,8 @@ defineExpose({
                     <!-- Remote Video -->
                     <div class="video-container remote-video" ref="remoteVideoContainer" :class="{ 
                         'is-primary': uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote', 
-                        'is-secondary': uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local' 
+                        'is-secondary': uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local',
+                        'is-minimized': uiState.minimized.remote && uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local'
                     }">
                         <div class="video-wrapper">
                             <video ref="remoteVideo" autoplay playsinline class="video-element"></video>
@@ -793,6 +851,39 @@ defineExpose({
                                         <rect x="14" y="12" width="8" height="6" rx="2"></rect>
                                     </svg>
                                     <span>Ghim</span>
+                                </button>
+                                <button 
+                                    class="layout-btn" 
+                                    @click="toggleMinimize('remote')" 
+                                    :title="uiState.minimized.remote ? 'Mở rộng' : 'Thu nhỏ'"
+                                    v-if="uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local'"
+                                >
+                                    <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <template v-if="uiState.minimized.remote">
+                                            <polyline points="15 3 21 3 21 9"></polyline>
+                                            <polyline points="9 21 3 21 3 15"></polyline>
+                                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                                        </template>
+                                        <template v-else>
+                                            <polyline points="4 14 10 14 10 20"></polyline>
+                                            <polyline points="20 10 14 10 14 4"></polyline>
+                                            <line x1="14" y1="10" x2="21" y2="3"></line>
+                                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                                        </template>
+                                    </svg>
+                                </button>
+                                <button 
+                                    class="layout-btn" 
+                                    @click="toggleElementFullscreen(remoteVideoContainer)" 
+                                    title="Toàn màn hình"
+                                >
+                                    <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+                                        <path d="M16 3h3a2 2 0 0 1 2 2v3"></path>
+                                        <path d="M8 21H5a2 2 0 0 1-2-2v-3"></path>
+                                        <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+                                    </svg>
                                 </button>
                             </div>
 
@@ -1487,6 +1578,48 @@ defineExpose({
     opacity: 1;
 }
 
+/* Minimized State */
+.video-container.is-minimized {
+    height: auto !important;
+    aspect-ratio: unset !important;
+    min-height: 60px;
+    flex: 0 0 auto;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.video-container.is-minimized .video-wrapper {
+    height: 60px;
+    background: transparent;
+}
+
+.video-container.is-minimized .video-element,
+.video-container.is-minimized .video-overlay {
+    display: none;
+}
+
+.video-container.is-minimized .layout-controls {
+    opacity: 1;
+    transform: translateY(-50%);
+    top: 50%;
+    right: 1rem;
+}
+
+.video-container.is-minimized .video-controls {
+    background: none;
+    padding: 0 1rem;
+    top: 50%;
+    bottom: auto;
+    width: auto;
+    transform: translateY(-50%);
+}
+
+.video-container.is-minimized .video-label {
+    background: transparent;
+    padding: 0;
+    backdrop-filter: none;
+}
+
 /* Transitions */
 .slide-up-enter-active,
 .slide-up-leave-active {
@@ -1572,9 +1705,25 @@ defineExpose({
     }
     
     .video-grid.layout-pinned .is-secondary {
-        width: 100px;
-        height: 140px;
-        bottom: 5rem;
+        width: 140px;
+        height: 190px;
+        bottom: 6zrem;
+        right: 0.5rem;
+    }
+
+    .video-grid.layout-pinned .is-secondary .layout-controls {
+        top: 0.5rem;
+        right: 0.5rem;
+        transform: none;
+        opacity: 1; /* Always show controls on mobile for secondary */
+    }
+
+    .video-grid.layout-pinned .is-secondary .layout-btn span {
+        display: none; /* Hide text on small secondary video */
+    }
+    
+    .video-grid.layout-pinned .is-secondary .layout-btn {
+        padding: 0.3rem;
     }
 }
 </style>
