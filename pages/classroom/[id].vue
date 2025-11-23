@@ -1440,7 +1440,7 @@ defineExpose({
 
 .video-grid.layout-pinned .is-secondary {
     position: absolute;
-    right: 2.5rem;
+    right: 1rem;
     bottom: 2rem; /* Space for controls */
     width: 280px;
     height: 158px;
@@ -1845,7 +1845,6 @@ defineExpose({
         height: 120px;
         aspect-ratio: 3/4;
         bottom: 1.5rem;
-        right: 1rem;
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         border: 1px solid rgba(255,255,255,0.1);
