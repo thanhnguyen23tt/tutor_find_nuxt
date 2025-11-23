@@ -113,7 +113,7 @@ const userDataUid = computed(() => userData.value?.uid)
 
 const labels = computed(() => ({
     self: 'Bạn',
-    peer: webrtcState.peerName || '...'
+    peer: webrtcState.peerName || 'Chờ...'
 }))
 
 const isLocalVideoOn = computed(() => {
@@ -314,6 +314,13 @@ async function ensureVideoPlayback(videoRef, stream, {
         await element.play()
     } catch (error) {
         console.warn('Autoplay prevented:', error)
+    }
+}
+
+function onVideoPause(event) {
+    const video = event.target
+    if (video && !video.ended && video.paused) {
+        video.play().catch(() => {})
     }
 }
 
@@ -541,6 +548,16 @@ async function toggleFullscreen() {
 
 function onFullscreenChange() {
     uiState.isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement)
+
+    // Force play videos when exiting fullscreen to prevent pausing
+    if (!uiState.isFullscreen) {
+        if (localVideo.value && localVideo.value.paused && !localVideo.value.ended) {
+            localVideo.value.play().catch(() => {})
+        }
+        if (remoteVideo.value && remoteVideo.value.paused && !remoteVideo.value.ended) {
+            remoteVideo.value.play().catch(() => {})
+        }
+    }
 }
 
 async function toggleElementFullscreen(element) {
@@ -747,7 +764,7 @@ defineExpose({
                         'is-minimized': uiState.minimized.local && uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote'
                     }">
                         <div class="video-wrapper">
-                            <video ref="localVideo" autoplay playsinline muted class="video-element"></video>
+                            <video ref="localVideo" autoplay playsinline webkit-playsinline muted class="video-element" @pause="onVideoPause" oncontextmenu="return false;"></video>
                             <div v-if="!isLocalVideoOn" class="video-overlay">
                                 <div class="overlay-content">
                                     <svg class="overlay-icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -846,8 +863,8 @@ defineExpose({
                         'is-minimized': uiState.minimized.remote && uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local'
                     }">
                         <div class="video-wrapper">
-                            <video ref="remoteVideo" autoplay playsinline class="video-element"></video>
-                            <div v-if="!webrtcState.remoteStreamPresent" class="video-overlay">
+                            <video ref="remoteVideo" autoplay playsinline webkit-playsinline class="video-element" @pause="onVideoPause" oncontextmenu="return false;"></video>
+                            <!-- <div v-if="!webrtcState.remoteStreamPresent" class="video-overlay">
                                 <div class="overlay-content">
                                     <svg class="overlay-icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                         <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path>
@@ -856,7 +873,7 @@ defineExpose({
                                     <p class="overlay-text" v-if="!webrtcState.hasStarted">Đang chờ kết nối...</p>
                                     <p class="overlay-text" v-else>Camera đã tắt</p>
                                 </div>
-                            </div>
+                            </div> -->
 
                             <!-- Layout Controls for remote -->
                             <div class="layout-controls">
@@ -1345,6 +1362,7 @@ defineExpose({
     height: 100%;
     object-fit: contain; /* Ensure video isn't cut off */
     background: #000;
+    pointer-events: none; /* Prevent user interaction (pausing) on mobile */
 }
 
 /* Video Overlays */
@@ -1373,7 +1391,7 @@ defineExpose({
 }
 
 .overlay-text {
-    font-size: 0.9rem;
+    font-size: var(--font-size-mini);
     font-weight: 500;
 }
 
@@ -1720,10 +1738,14 @@ defineExpose({
     }
     
     .video-grid.layout-pinned .is-secondary {
-        width: 140px;
-        height: 190px;
-        bottom: 6zrem;
-        right: 0.5rem;
+        width: 120px;
+        height: 120px;
+        aspect-ratio: 3/4;
+        bottom: 5.5rem;
+        right: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        border: 1px solid rgba(255,255,255,0.1);
     }
 
     .video-grid.layout-pinned .is-secondary .layout-controls {
