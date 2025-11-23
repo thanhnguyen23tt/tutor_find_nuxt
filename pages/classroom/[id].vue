@@ -1440,7 +1440,7 @@ defineExpose({
 
 .video-grid.layout-pinned .is-secondary {
     position: absolute;
-    right: 2rem;
+    right: 2.5rem;
     bottom: 2rem; /* Space for controls */
     width: 280px;
     height: 158px;
@@ -1549,10 +1549,8 @@ defineExpose({
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: rgba(0, 0, 0, 0.5);
     padding: 0.25rem 0.75rem;
     border-radius: 6px;
-    backdrop-filter: blur(4px);
 }
 
 .label-text {
@@ -1802,9 +1800,12 @@ defineExpose({
     }
 
     .video-grid.layout-pinned .is-secondary {
-        width: 120px;
-        height: 160px;
-        right: 1rem;
+        width: 180px;
+        height: 180px;
+    }
+
+	.video-grid.layout-pinned .is-secondary .layout-btn span {
+        display: none; /* Hide text on small secondary video */
     }
     
     .floating-controls-wrapper {
@@ -1856,17 +1857,13 @@ defineExpose({
         transform: none;
         opacity: 1; /* Always show controls on mobile for secondary */
     }
-
-    .video-grid.layout-pinned .is-secondary .layout-btn span {
-        display: none; /* Hide text on small secondary video */
-    }
     
     .video-grid.layout-pinned .is-secondary .layout-btn {
         padding: 0.3rem;
     }
 
 	.floating-controls {
-		bottom: 1rem;
+		bottom: 1.5rem;
 	}
 
 	.label-text {
