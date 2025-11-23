@@ -551,9 +551,9 @@ async function toggleElementFullscreen(element) {
     // Let's try to support standard APIs more robustly.
 
     const isFullscreen = document.fullscreenElement === element || 
-                         document.webkitFullscreenElement === element || 
-                         document.mozFullScreenElement === element || 
-                         document.msFullscreenElement === element
+    document.webkitFullscreenElement === element || 
+    document.mozFullScreenElement === element || 
+    document.msFullscreenElement === element
 
     try {
         if (isFullscreen) {
