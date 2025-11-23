@@ -485,17 +485,37 @@ function handlePeerConnect() {
     }
 }
 
-function handlePeerStream(remote) {
-    ensureVideoPlayback(remoteVideo, remote)
+async function handlePeerStream(remote) {
+    console.log('Remote stream received:', remote)
+    
+    // Wait for next tick to ensure video element is mounted
+    await nextTick()
+    
+    if (!remoteVideo.value) {
+        console.error('Remote video element not ready')
+        // Retry after a short delay
+        setTimeout(() => {
+            if (remoteVideo.value && remote) {
+                ensureVideoPlayback(remoteVideo, remote)
+                webrtcState.remoteStreamPresent = true
+            }
+        }, 100)
+        return
+    }
+    
     webrtcState.remoteStreamPresent = true
+    await ensureVideoPlayback(remoteVideo, remote)
 }
 
 function handlePeerClose() {
+    console.log('Peer connection closed')
+    webrtcState.remoteStreamPresent = false
     destroyPeer()
 }
 
 function handlePeerError(error) {
     console.error('Peer error:', error)
+    webrtcState.remoteStreamPresent = false
     destroyPeer()
 }
 
@@ -897,16 +917,16 @@ defineExpose({
                                     <path d="M8 5v14l11-7z"/>
                                 </svg>
                             </div>
-                            <!-- <div v-if="!webrtcState.remoteStreamPresent" class="video-overlay">
+                            <div v-if="!webrtcState.remoteStreamPresent" class="video-overlay">
                                 <div class="overlay-content">
-                                    <svg class="overlay-icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <svg class="overlay-icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                         <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path>
                                         <rect x="2" y="6" width="14" height="12" rx="2" />
                                     </svg>
-                                    <p class="overlay-text" v-if="!webrtcState.hasStarted">Đang chờ kết nối...</p>
-                                    <p class="overlay-text" v-else>Camera đã tắt</p>
+                                    <p class="overlay-text" v-if="!webrtcState.hasStarted">Chờ kết nối...</p>
+                                    <p class="overlay-text" v-else>Đang chờ video...</p>
                                 </div>
-                            </div> -->
+                            </div>
 
                             <!-- Layout Controls for remote -->
                             <div class="layout-controls">
@@ -1400,7 +1420,7 @@ defineExpose({
 .video-grid.layout-pinned .is-secondary {
     position: absolute;
     right: 2rem;
-    bottom: 6rem; /* Space for controls */
+    bottom: 2rem; /* Space for controls */
     width: 280px;
     height: 158px;
     z-index: 20;
@@ -1440,12 +1460,6 @@ defineExpose({
     align-items: center;
     gap: 1rem;
     color: #64748b;
-}
-
-.overlay-icon {
-    width: 48px;
-    height: 48px;
-    opacity: 0.5;
 }
 
 .overlay-text {
@@ -1502,11 +1516,11 @@ defineExpose({
     bottom: 0;
     left: 0;
     width: 100%;
-    padding: 1rem;
+    padding: 0.5rem;
     background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
     display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
+    /* justify-content: space-between; */
+    align-items: flex-start;
     z-index: 5;
 }
 
@@ -1528,6 +1542,7 @@ defineExpose({
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	text-align: left;
 }
 
 .label-indicator {
@@ -1765,9 +1780,8 @@ defineExpose({
 
     .video-grid.layout-pinned .is-secondary {
         width: 120px;
-        height: 160px; /* Portrait on mobile usually */
+        height: 160px;
         right: 1rem;
-        bottom: 6rem;
     }
     
     .floating-controls-wrapper {
