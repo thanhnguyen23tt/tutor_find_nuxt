@@ -83,7 +83,8 @@ const uiState = reactive({
     videoPaused: {
         local: true,
         remote: true
-    }
+    },
+    controlsVisible: false
 })
 
 // ===== Audio Context =====
@@ -711,6 +712,26 @@ onBeforeUnmount(() => {
     cleanup()
 })
 
+// Auto-hide controls timer
+let controlsTimer = null
+
+function showControls() {
+    uiState.controlsVisible = true
+    
+    // Clear existing timer
+    if (controlsTimer) clearTimeout(controlsTimer)
+    
+    // Auto-hide after 3 seconds of no interaction
+    controlsTimer = setTimeout(() => {
+        uiState.controlsVisible = false
+    }, 3000)
+}
+
+function hideControls() {
+    if (controlsTimer) clearTimeout(controlsTimer)
+    uiState.controlsVisible = false
+}
+
 // ===== Export for template usage =====
 defineExpose({
     // State
@@ -990,9 +1011,9 @@ defineExpose({
                 </div>
 
                 <!-- Floating control bar -->
-                <div class="floating-controls">
+                <div class="floating-controls" @mouseenter="showControls" @mousemove="showControls" @mouseleave="hideControls" @touchstart="showControls">
                     <Transition name="slide-up">
-                        <div class="floating-controls-wrapper" v-if="uiState.areControlsVisible">
+                        <div class="floating-controls-wrapper" v-if="uiState.controlsVisible">
                             <!-- Camera -->
                             <button
                                 class="control-btn"
@@ -1140,7 +1161,7 @@ defineExpose({
                             <div class="separator"></div>
 
                             <!-- Hide Controls -->
-                            <button class="control-btn secondary" @click="uiState.areControlsVisible = false" title="Ẩn thanh công cụ">
+                            <button class="control-btn secondary" @click="hideControls" title="Ẩn thanh công cụ">
                                 <svg class="icon-md" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
@@ -1149,8 +1170,8 @@ defineExpose({
                     </Transition>
 
                     <Transition name="fade">
-                        <div class="floating-controls-wrapper mini" v-if="!uiState.areControlsVisible">
-                             <button class="control-btn" @click="uiState.areControlsVisible = true" title="Hiện thanh công cụ">
+                        <div class="floating-controls-wrapper mini" v-if="!uiState.controlsVisible">
+                             <button class="control-btn" @click="showControls" title="Hiện thanh công cụ">
                                 <svg class="icon-md" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="18 15 12 9 6 15"></polyline>
                                 </svg>
@@ -1570,6 +1591,7 @@ defineExpose({
     transform: translateX(-50%);
     z-index: 50;
     width: auto;
+    pointer-events: none; /* Allow hover to pass through to video section */
 }
 
 .floating-controls-wrapper {
@@ -1583,6 +1605,7 @@ defineExpose({
     border-radius: 24px;
     box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.4);
     transition: all 0.3s ease;
+    pointer-events: auto; /* Re-enable pointer events for the wrapper */
 }
 
 .floating-controls-wrapper:hover {
@@ -1820,7 +1843,7 @@ defineExpose({
         width: 120px;
         height: 120px;
         aspect-ratio: 3/4;
-        bottom: 5.5rem;
+        bottom: 1.5rem;
         right: 1rem;
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
