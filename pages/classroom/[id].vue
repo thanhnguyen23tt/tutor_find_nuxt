@@ -79,6 +79,10 @@ const uiState = reactive({
     minimized: {
         local: false,
         remote: false
+    },
+    videoPaused: {
+        local: true,
+        remote: true
     }
 })
 
@@ -315,12 +319,31 @@ async function ensureVideoPlayback(videoRef, stream, {
     } catch (error) {
         console.warn('Autoplay prevented:', error)
     }
+
+    // Update state
+    if (videoRef === localVideo) uiState.videoPaused.local = element.paused
+    if (videoRef === remoteVideo) uiState.videoPaused.remote = element.paused
 }
 
-function onVideoPause(event) {
+function handleVideoPause(event, target) {
+    uiState.videoPaused[target] = true
+    
     const video = event.target
     if (video && !video.ended && video.paused) {
-        video.play().catch(() => {})
+        video.play().catch(() => {
+            // Autoplay failed, state remains paused, overlay will show
+        })
+    }
+}
+
+function handleVideoPlay(event, target) {
+    uiState.videoPaused[target] = false
+}
+
+function retryPlay(target) {
+    const video = target === 'local' ? localVideo.value : remoteVideo.value
+    if (video) {
+        video.play().catch(e => console.error('Retry play failed:', e))
     }
 }
 
@@ -764,7 +787,12 @@ defineExpose({
                         'is-minimized': uiState.minimized.local && uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote'
                     }">
                         <div class="video-wrapper">
-                            <video ref="localVideo" autoplay playsinline webkit-playsinline muted class="video-element" @pause="onVideoPause" oncontextmenu="return false;"></video>
+                            <video ref="localVideo" autoplay playsinline webkit-playsinline muted class="video-element" @pause="e => handleVideoPause(e, 'local')" @play="e => handleVideoPlay(e, 'local')" oncontextmenu="return false;"></video>
+                            <div v-if="uiState.videoPaused.local" class="play-overlay" @click.stop="retryPlay('local')">
+                                <svg class="icon-xl" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
                             <div v-if="!isLocalVideoOn" class="video-overlay">
                                 <div class="overlay-content">
                                     <svg class="overlay-icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -863,7 +891,12 @@ defineExpose({
                         'is-minimized': uiState.minimized.remote && uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local'
                     }">
                         <div class="video-wrapper">
-                            <video ref="remoteVideo" autoplay playsinline webkit-playsinline class="video-element" @pause="onVideoPause" oncontextmenu="return false;"></video>
+                            <video ref="remoteVideo" autoplay playsinline webkit-playsinline class="video-element" @pause="e => handleVideoPause(e, 'remote')" @play="e => handleVideoPlay(e, 'remote')" oncontextmenu="return false;"></video>
+                            <div v-if="uiState.videoPaused.remote && webrtcState.remoteStreamPresent" class="play-overlay" @click.stop="retryPlay('remote')">
+                                <svg class="icon-xl" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
                             <!-- <div v-if="!webrtcState.remoteStreamPresent" class="video-overlay">
                                 <div class="overlay-content">
                                     <svg class="overlay-icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -1264,8 +1297,33 @@ defineExpose({
     background: rgba(15, 23, 42, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #cbd5e1;
-    font-size: 0.875rem;
+    font-size: 0.9rem;
     font-weight: 500;
+}
+
+.play-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 10;
+    cursor: pointer;
+    backdrop-filter: blur(2px);
+}
+
+.play-overlay .icon-xl {
+    width: 64px;
+    height: 64px;
+    color: rgba(255, 255, 255, 0.9);
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+    transition: transform 0.2s;
+}
+
+.play-overlay:hover .icon-xl {
+    transform: scale(1.1);
+    color: #fff;
 }
 
 .participants-icon {
@@ -1463,10 +1521,13 @@ defineExpose({
 }
 
 .label-text {
-    font-size: 0.875rem;
+    font-size: var(--font-size-small);
     font-weight: 500;
     color: #fff;
     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .label-indicator {
@@ -1722,6 +1783,10 @@ defineExpose({
     .control-btn.danger {
         width: 50px;
     }
+
+	.label-text {
+		width: 70px;
+	}
 }
 
 @media (max-width: 640px) {
@@ -1762,5 +1827,13 @@ defineExpose({
     .video-grid.layout-pinned .is-secondary .layout-btn {
         padding: 0.3rem;
     }
+
+	.floating-controls {
+		bottom: 1rem;
+	}
+
+	.label-text {
+		width: 50px;
+	}
 }
 </style>
