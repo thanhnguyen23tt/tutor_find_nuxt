@@ -624,22 +624,26 @@ defineExpose({
      @mouseleave="handleMobileUserInfoLeave"
      @focusin="handleMobileUserInfoHover"
      @focusout="handleMobileUserInfoLeave">
-    <div class="tutor-card" :class="{ 'show': mobileUserInfoState.showUserInfo }">
-        <div class="tutor-content-horizontal">
-            <div class="tutor-avatar">
-                <img :src="tutorInfo.avatar || '/images/default-avatar.png'" />
-            </div>
-            <div class="tutor-info-block">
-                <div class="tutor-name">{{ tutorInfo.full_name || tutorInfo.user_full_name }}</div>
-                <div class="tutor-rating">
-                    <span class="star"><svg class="icon-md" viewBox="0 0 24 24" fill="#facc15">
-                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></svg> {{ tutorInfo.rating || tutorInfo.user_rating || '4.9' }}</span>
-                    <span class="review-count">({{ tutorInfo.review_count || tutorInfo.user_review_count || '127' }} đánh giá)</span>
-                </div>
-                <div class="tutor-location"><svg class="icon-md" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0Z" />
-                        <circle cx="12" cy="10" r="3" /></svg> {{ tutorInfo.provinces_name || tutorInfo.address_preview }}</div>
-            </div>
+    <div class="user-detail-content" :class="{ 'show': mobileUserInfoState.showUserInfo }">
+        <div class="avatar-wrapper_mobile">
+            <img :src="tutorInfo.avatar || '/images/default-avatar.png'" :alt="tutorInfo.full_name" />
+        </div>
+        <h1 class="user-name_mobile">
+            <span>{{ tutorInfo.full_name || tutorInfo.user_full_name }}</span>
+            <svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <g id="Stars 3">
+                    <path id="Vector" fill-rule="evenodd" clip-rule="evenodd" d="M14.1027 3.76073C13.3007 3.50073 12.6673 2.86873 12.408 2.06806C12.3193 1.79339 11.8627 1.79339 11.774 2.06806C11.5147 2.86873 10.8813 3.50073 10.0793 3.76073C9.942 3.80539 9.84866 3.93339 9.84866 4.07806C9.84866 4.22206 9.942 4.35006 10.0793 4.39473C10.88 4.65406 11.5133 5.28939 11.774 6.09406C11.818 6.23139 11.9467 6.32473 12.0907 6.32473C12.2353 6.32473 12.364 6.23139 12.408 6.09406C12.6687 5.28939 13.302 4.65406 14.1027 4.39473C14.24 4.35006 14.3333 4.22206 14.3333 4.07806C14.3333 3.93339 14.24 3.80539 14.1027 3.76073Z" fill="#5D5DEC" />
+                    <path id="Vector_2" fill-rule="evenodd" clip-rule="evenodd" d="M11.716 8.26755L8.56066 7.24288L7.53666 4.08818C7.44866 3.81485 7.20466 3.63818 6.91666 3.63818C6.62799 3.63818 6.38466 3.81485 6.29599 4.08818L5.28066 7.24088L2.11932 8.26688C1.84866 8.35288 1.66666 8.60222 1.66666 8.88822C1.66666 9.17355 1.84866 9.42288 2.11799 9.50822L5.27066 10.5275L6.29599 13.6876C6.38466 13.9609 6.62799 14.1382 6.91666 14.1382C7.20466 14.1382 7.44866 13.9609 7.53666 13.6876L8.55332 10.5349L11.714 9.50888C11.9847 9.42288 12.1673 9.17355 12.1673 8.88822C12.1673 8.60222 11.9847 8.35288 11.716 8.26755Z" fill="#5D5DEC" />
+                </g>
+            </svg>
+        </h1>
+        
+        <div class="description-section_mobile" v-if="tutorInfo.about_you">
+            <p class="description-text">{{ tutorInfo.about_you }}</p>
+        </div>
+
+        <div class="subject-tags" v-if="tutorInfo.user_subjects">
+            <span class="subject-tag" v-for="item in tutorInfo.user_subjects" :key="item.id">{{ item.subject_name }}</span>
         </div>
     </div>
 
@@ -708,7 +712,7 @@ defineExpose({
             </div>
         </div>
         <div class="modal-footer">
-            <button type="submit" class="btn-md btn-primary btn-primary">Lưu thay đổi</button>
+            <button type="submit" class="btn-md btn-primary">Lưu thay đổi</button>
         </div>
     </form>
 </base-modal>

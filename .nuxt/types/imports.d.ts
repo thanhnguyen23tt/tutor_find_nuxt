@@ -104,6 +104,7 @@ declare global {
   const useAuth: typeof import('../../composables/useAuth').useAuth
   const useAuthCookie: typeof import('../../composables/useAuthCookie').useAuthCookie
   const useBookingSession: typeof import('../../composables/useBookingSession').useBookingSession
+  const useBrowserDetection: typeof import('../../composables/useBrowserDetection').useBrowserDetection
   const useConfig: typeof import('../../composables/useConfig').useConfig
   const useConfigStore: typeof import('../../stores/config').useConfigStore
   const useCookie: typeof import('../../node_modules/nuxt/dist/app/composables/cookie').useCookie
@@ -184,6 +185,10 @@ declare global {
   const useTemplateRef: typeof import('vue').useTemplateRef
   const useTransitionState: typeof import('vue').useTransitionState
   const useUserStore: typeof import('../../stores/user').useUserStore
+  const useWebRTCAdapter: typeof import('../../composables/useWebRTCAdapter').useWebRTCAdapter
+  const useWebRTCChrome: typeof import('../../composables/useWebRTCChrome').useWebRTCChrome
+  const useWebRTCEdge: typeof import('../../composables/useWebRTCEdge').useWebRTCEdge
+  const useWebRTCSafari: typeof import('../../composables/useWebRTCSafari').useWebRTCSafari
   const watch: typeof import('vue').watch
   const watchEffect: typeof import('vue').watchEffect
   const watchPostEffect: typeof import('vue').watchPostEffect
@@ -308,6 +313,7 @@ declare module 'vue' {
     readonly useAuth: UnwrapRef<typeof import('../../composables/useAuth')['useAuth']>
     readonly useAuthCookie: UnwrapRef<typeof import('../../composables/useAuthCookie')['useAuthCookie']>
     readonly useBookingSession: UnwrapRef<typeof import('../../composables/useBookingSession')['useBookingSession']>
+    readonly useBrowserDetection: UnwrapRef<typeof import('../../composables/useBrowserDetection')['useBrowserDetection']>
     readonly useConfig: UnwrapRef<typeof import('../../composables/useConfig')['useConfig']>
     readonly useConfigStore: UnwrapRef<typeof import('../../stores/config')['useConfigStore']>
     readonly useCookie: UnwrapRef<typeof import('../../node_modules/nuxt/dist/app/composables/cookie')['useCookie']>
@@ -388,6 +394,10 @@ declare module 'vue' {
     readonly useTemplateRef: UnwrapRef<typeof import('vue')['useTemplateRef']>
     readonly useTransitionState: UnwrapRef<typeof import('vue')['useTransitionState']>
     readonly useUserStore: UnwrapRef<typeof import('../../stores/user')['useUserStore']>
+    readonly useWebRTCAdapter: UnwrapRef<typeof import('../../composables/useWebRTCAdapter')['useWebRTCAdapter']>
+    readonly useWebRTCChrome: UnwrapRef<typeof import('../../composables/useWebRTCChrome')['useWebRTCChrome']>
+    readonly useWebRTCEdge: UnwrapRef<typeof import('../../composables/useWebRTCEdge')['useWebRTCEdge']>
+    readonly useWebRTCSafari: UnwrapRef<typeof import('../../composables/useWebRTCSafari')['useWebRTCSafari']>
     readonly watch: UnwrapRef<typeof import('vue')['watch']>
     readonly watchEffect: UnwrapRef<typeof import('vue')['watchEffect']>
     readonly watchPostEffect: UnwrapRef<typeof import('vue')['watchPostEffect']>

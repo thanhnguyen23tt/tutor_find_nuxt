@@ -225,7 +225,6 @@
                         v-for="tutor in featuredTutors"
                         :key="tutor.uid"
                         :tutor="tutor"
-                        @toggle-save="handleToggleSave"
                         @navigate-to-tutor="handleNavigateToTutor"
                         @redirect-to-booking="handleRedirectToBooking"
                     />
@@ -250,7 +249,6 @@
                         v-for="tutor in regularTutors"
                         :key="tutor.uid"
                         :tutor="tutor"
-                        @toggle-save="handleToggleSave"
                         @navigate-to-tutor="handleNavigateToTutor"
                         @redirect-to-booking="handleRedirectToBooking"
                     />
@@ -262,7 +260,7 @@
         <div class="no-results" v-else>
             <div class="no-results-content">
                 <div class="no-results-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         <line x1="8" y1="11" x2="14" y2="11"></line>
@@ -290,22 +288,26 @@
     :subject-options="subjectOptions"
     :education-level-options="educationLevelOptions"
     :experience-options="experienceOptions"
-    @close="showFilter = false"
-    @reset="filters = { provinces_id: '', subject: '', educationLevel: '', experience: '', rating: 0, price: 500000 }"
-    @apply="showFilter = false; refreshSearch()"
+    @close="showFilter = false; applyFilters()"
+    @reset="resetFilters()"
+    @apply="showFilter = false; applyFilters()"
 />
 
 </template>
 
 <script setup>
+definePageMeta({
+	middleware: [
+		() => {
+		useLayoutStore().setHiddenFooter(true)
+		}
+	]
+})
 import { onMounted } from 'vue';
 
-const router = useRouter();
 const route = useRoute();
 const configStore = useConfigStore();
-const layoutStore = useLayoutStore();
 const { api } = useApi();
-const { formatCurrency } = useHelper();
 
 // Filter data
 const filters = ref({
@@ -313,8 +315,10 @@ const filters = ref({
     subject: route.query.subject ?? "",
     educationLevel: route.query.level ?? "",
     experience: route.query.experience ?? "",
+    minPrice: route.query.minPrice ? parseInt(route.query.minPrice) : 50000,
+    maxPrice: route.query.maxPrice ? parseInt(route.query.maxPrice) : 1000000,
     rating: 0,
-    price: 500000,
+    sort: route.query.sort ?? ""
 });
 
 // Search state
@@ -334,6 +338,9 @@ const { data: searchData, pending: isLoading, refresh: refreshSearch } = await u
         if (route.query.subject) params.subject_id = route.query.subject;
         if (route.query.level) params.education_level_id = route.query.level;
         if (route.query.experience) params.experience = route.query.experience;
+        if (route.query.minPrice) params.min_price = route.query.minPrice;
+        if (route.query.maxPrice) params.max_price = route.query.maxPrice;
+        if (route.query.sort) params.sort = route.query.sort;
 
         try {
             const response = await api.apiGet('tutors', params);
@@ -449,32 +456,36 @@ const handleRedirectToBooking = (uid) => {
     navigateTo(`/booking/${uid}`);
 };
 
-const handleToggleSave = (uid) => {
-    // Handle toggle save
-};
-
 const handleNavigateToTutor = (uid) => {
     navigateTo(`/tutor/${uid}`);
 };
 
-// Update filters from query params
+
+const isUpdatingFromRoute = ref(false);
+
 watch(() => route.query, (newQuery) => {
-    if (newQuery.city) filters.value.provinces_id = newQuery.city;
-    if (newQuery.subject) filters.value.subject = newQuery.subject;
-    if (newQuery.level) filters.value.educationLevel = newQuery.level;
-    if (newQuery.experience) filters.value.experience = newQuery.experience;
+    isUpdatingFromRoute.value = true;
+
+    if (newQuery.city != filters.value.provinces_id) filters.value.provinces_id = newQuery.city || "";
+    if (newQuery.subject != filters.value.subject) filters.value.subject = newQuery.subject || "";
+    if (newQuery.level != filters.value.educationLevel) filters.value.educationLevel = newQuery.level || "";
+    if (newQuery.experience != filters.value.experience) filters.value.experience = newQuery.experience || "";
     if (newQuery.page) currentPage.value = parseInt(newQuery.page) || 1;
+    
+    const newMinPrice = newQuery.minPrice ? parseInt(newQuery.minPrice) : 50000;
+    const newMaxPrice = newQuery.maxPrice ? parseInt(newQuery.maxPrice) : 1000000;
+    
+    if (newMinPrice != filters.value.minPrice) filters.value.minPrice = newMinPrice;
+    if (newMaxPrice != filters.value.maxPrice) filters.value.maxPrice = newMaxPrice;
+    
+    if (newQuery.sort != filters.value.sort) filters.value.sort = newQuery.sort || "";
+
+    nextTick(() => {
+        isUpdatingFromRoute.value = false;
+    });
 });
 
-// Watch filters and update query params (only on user interaction)
-let isInitializing = true;
-
-watch(filters, async () => {
-    if (isInitializing) {
-        isInitializing = false;
-        return;
-    }
-    
+const applyFilters = async () => {
     const query = { ...route.query };
     delete query.page; // Reset to page 1 when filters change
     
@@ -490,8 +501,42 @@ watch(filters, async () => {
     if (filters.value.experience) query.experience = filters.value.experience;
     else delete query.experience;
     
+    if (filters.value.minPrice !== undefined && filters.value.minPrice !== 50000) query.minPrice = filters.value.minPrice;
+    else delete query.minPrice;
+
+    if (filters.value.maxPrice !== undefined && filters.value.maxPrice !== 1000000) query.maxPrice = filters.value.maxPrice;
+    else delete query.maxPrice;
+
+    if (filters.value.sort) query.sort = filters.value.sort;
+    else delete query.sort;
+    
+    if (JSON.stringify(query) === JSON.stringify(route.query)) {
+        return;
+    }
+    
     await navigateTo({ path: route.path, query });
-    await refreshSearch();
+}
+
+const resetFilters = () => {
+    filters.value = {
+        provinces_id: "",
+        subject: "",
+        educationLevel: "",
+        experience: "",
+        minPrice: 50000,
+        maxPrice: 1000000,
+        rating: 0,
+        sort: ""
+    };
+}
+
+watch(filters, async () => {
+    if (isUpdatingFromRoute.value) return;
+
+    // Don't trigger search if filter modal is open
+    if (showFilter.value) return;
+    
+    await applyFilters();
 }, { deep: true });
 
 // Initialize filters from query params
@@ -500,8 +545,9 @@ if (route.query.subject) filters.value.subject = route.query.subject;
 if (route.query.level) filters.value.educationLevel = route.query.level;
 if (route.query.experience) filters.value.experience = route.query.experience;
 if (route.query.page) currentPage.value = parseInt(route.query.page) || 1;
-
-
+if (route.query.minPrice) filters.value.minPrice = parseInt(route.query.minPrice);
+if (route.query.maxPrice) filters.value.maxPrice = parseInt(route.query.maxPrice);
+if (route.query.sort) filters.value.sort = route.query.sort;
 
 // Dropdown Logic
 const activeDropdown = ref(null);
@@ -555,7 +601,6 @@ const selectExperience = (id) => {
 };
 // Mark initialization as complete after a tick
 nextTick(() => {
-    isInitializing = false;
     // Close dropdowns when clicking outside
     window.addEventListener('click', () => {
         activeDropdown.value = null;
@@ -573,6 +618,7 @@ const setItemRef = (el, key) => {
 
 const updateHighlight = () => {
     if (!activeDropdown.value || !itemRefs.value[activeDropdown.value] || !searchBarRef.value) {
+		console.log('thành')
         highlightStyle.value = { opacity: 0 };
         return;
     }
@@ -591,14 +637,6 @@ const updateHighlight = () => {
 watch(activeDropdown, () => {
     nextTick(() => updateHighlight());
 });
-
-onMounted(() => {
-	layoutStore.setHiddenFooter(true);
-})
-
-onUnmounted(() => {
-	layoutStore.setHiddenFooter(false);
-})
 </script>
 
 <style scoped>

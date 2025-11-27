@@ -127,7 +127,44 @@ const selectedDaySlots = computed(() => {
 const isScheduleExpanded = ref(false);
 const toggleSchedule = () => {
 	isScheduleExpanded.value = !isScheduleExpanded.value;
+	isMobileScheduleExpanded.value = !isMobileScheduleExpanded.value;
 };
+
+// Mobile Schedule expansion
+const isMobileScheduleExpanded = ref(false);
+const displayedMobileSlots = computed(() => {
+    if (isMobileScheduleExpanded.value) {
+        return selectedDaySlots.value;
+    }
+    return selectedDaySlots.value.slice(0, 8);
+});
+
+// Reset mobile expansion when day changes
+watch(selectedMobileDayId, () => {
+    isMobileScheduleExpanded.value = false;
+});
+
+// Price card carousel for mobile
+const currentPriceIndex = ref(0);
+
+const nextPrice = () => {
+	if (currentLevels.value.length > 0) {
+		currentPriceIndex.value = (currentPriceIndex.value + 1) % currentLevels.value.length;
+	}
+};
+
+const prevPrice = () => {
+	if (currentLevels.value.length > 0) {
+		currentPriceIndex.value = currentPriceIndex.value === 0 
+			? currentLevels.value.length - 1 
+			: currentPriceIndex.value - 1;
+	}
+};
+
+// Reset price index when subject changes
+watch(currentSubject, () => {
+	currentPriceIndex.value = 0;
+});
 </script>
 
 <template>
@@ -135,14 +172,6 @@ const toggleSchedule = () => {
 		<!-- About Section -->
 		<div class="content-card about-card">
 			<div class="card-header">
-				<div class="header-icon">
-					<svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-						stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M20 21v-2a4 4 0 0 0-3-3.87"></path>
-						<path d="M4 21v-2a4 4 0 0 1 3-3.87"></path>
-						<circle cx="12" cy="7" r="4"></circle>
-					</svg>
-				</div>
 				<div class="section-title-container">
 					<h3 class="section-title">Về {{ user.full_name }}</h3>
 					<span class="section-title-desc">giới thiệu bản thân</span>
@@ -156,13 +185,6 @@ const toggleSchedule = () => {
 		<!-- Education Section -->
 		<div class="content-card education-card" v-if="hasEducations">
 			<div class="card-header">
-				<div class="header-icon education-icon">
-					<svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-						stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-						<path d="M6 12v5c3 3 9 3 12 0v-5" />
-					</svg>
-				</div>
 				<div class="section-title-container">
 					<h3 class="section-title">Học vấn</h3>
 					<span class="section-title-desc">học vấn của {{ user.full_name }}</span>
@@ -190,13 +212,6 @@ const toggleSchedule = () => {
 		<!-- Experience Section -->
 		<div class="content-card experience-card" v-if="hasExperiences">
 			<div class="card-header">
-				<div class="header-icon experience-icon">
-					<svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-						stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<rect width="20" height="14" x="2" y="7" rx="2" ry="2" />
-						<path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-					</svg>
-				</div>
 				<div class="section-title-container">
 					<h3 class="section-title">Kinh nghiệm làm việc</h3>
 					<span class="section-title-desc">kinh nghiệm làm việc của {{ user.full_name }}</span>
@@ -224,14 +239,6 @@ const toggleSchedule = () => {
 		<!-- Pricing Section -->
 		<div class="content-card pricing-main-card" v-if="hasSubjects">
 			<div class="card-header">
-				<div class="header-icon pricing-icon">
-					<svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-						stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<circle cx="12" cy="12" r="10"></circle>
-						<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-						<path d="M12 17h.01"></path>
-					</svg>
-				</div>
 				<div class="section-title-container">
 					<h3 class="section-title">Bảng giá theo cấp độ</h3>
 					<span class="section-title-desc">bảng giá sẽ theo từng cấp độ học</span>
@@ -239,10 +246,65 @@ const toggleSchedule = () => {
 			</div>
 
 			<!-- Subject tabs -->
-			<base-status-tabs v-if="subjectTabs.length > 1" v-model="currentSubject" :tabs="subjectTabs" />
+		<base-status-tabs v-if="subjectTabs.length > 1" v-model="currentSubject" :tabs="subjectTabs" />
 
-			<!-- Price cards -->
-			<div class="price-cards" v-if="currentLevels.length > 0">
+		<!-- Price cards - Show carousel if tabs exist, otherwise show grid -->
+		<template v-if="currentLevels.length > 0">
+			<!-- Single card with carousel (when tabs exist) -->
+			<div class="price-carousel-container">
+				<div class="price-card-modern" :class="{ 'highlight': currentLevels[currentPriceIndex].highlight }">
+					<div class="price-card-header">
+						<div class="level-icon-wrapper">
+							<img class="icon-lg" :src="currentLevels[currentPriceIndex].education_level_image" 
+								:alt="currentLevels[currentPriceIndex].education_level" loading="lazy">
+						</div>
+						<div class="level-info">
+							<h4 class="level-title">{{ currentLevels[currentPriceIndex].education_level }}</h4>
+							<p class="level-description" v-if="currentLevels[currentPriceIndex].education_level_description">
+								{{ currentLevels[currentPriceIndex].education_level_description }}
+							</p>
+						</div>
+					</div>
+					<div class="price-section">
+						<div class="price-amount">
+							{{ formatPrice(currentLevels[currentPriceIndex].price) }} <span class="price-unit">VNĐ/giờ</span>
+						</div>
+					</div>
+					<div class="price-card-action">
+						<button class="btn-lg w-100" :class="currentLevels[currentPriceIndex].highlight ? 'btn-primary' : 'btn-secondary'">
+							<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+								stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M9 12l2 2 4-4"></path>
+								<path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
+								<path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
+							</svg>
+							<span class="btn-text">Chọn {{ currentLevels[currentPriceIndex].education_level }}</span>
+						</button>
+					</div>
+				</div>
+
+				<!-- Carousel controls -->
+				<div class="carousel-controls" v-if="currentLevels.length > 1">
+					<button class="carousel-btn prev-btn" @click="prevPrice">
+						<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+						</svg>
+					</button>
+					<div class="carousel-dots">
+						<span v-for="(level, index) in currentLevels" :key="index" 
+							class="dot" :class="{ active: index === currentPriceIndex }"
+							@click="currentPriceIndex = index"></span>
+					</div>
+					<button class="carousel-btn next-btn" @click="nextPrice">
+						<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+						</svg>
+					</button>
+				</div>
+			</div>
+
+			<!-- Grid view (when no tabs) -->
+			<div class="price-cards">
 				<div class="price-card-modern" :class="{ 'highlight': level.highlight }" v-for="level in currentLevels"
 					:key="level.id">
 					<div class="price-card-header">
@@ -275,24 +337,16 @@ const toggleSchedule = () => {
 					</div>
 				</div>
 			</div>
+		</template>
 
-			<p class="price-note">
-				Tất cả các buổi học đều bao gồm tài liệu học tập cá nhân hóa, bài tập thực hành và theo dõi tiến độ.
-			</p>
+		<p class="price-note">
+			Tất cả các buổi học đều bao gồm tài liệu học tập cá nhân hóa, bài tập thực hành và theo dõi tiến độ.
+		</p>
 		</div>
 
 		<!-- Schedule Section -->
 		<div class="content-card schedule-card" v-if="hasSchedule">
 			<div class="card-header">
-				<div class="header-icon schedule-icon">
-					<svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-						stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-						<line x1="16" y1="2" x2="16" y2="6"></line>
-						<line x1="8" y1="2" x2="8" y2="6"></line>
-						<line x1="3" y1="10" x2="21" y2="10"></line>
-					</svg>
-				</div>
 				<div class="section-title-container">
 					<h3 class="section-title">Lịch hàng tuần</h3>
 					<span class="section-title-desc">lịch hàng tuần của {{ user.full_name }}</span>
@@ -386,13 +440,22 @@ const toggleSchedule = () => {
 					</div>
 
 					<div class="mobile-time-list" v-if="selectedDaySlots.length > 0">
-						<button v-for="slot in selectedDaySlots" :key="`mobile-slot-${selectedMobileDayId}-${slot.id}`"
+						<button v-for="slot in displayedMobileSlots" :key="`mobile-slot-${selectedMobileDayId}-${slot.id}`"
 							class="mobile-time-chip" :class="{
 								'chip-available': slot.isAvailable,
 								'chip-busy': !slot.isAvailable
 							}">
 							<span class="time-text">{{ slot.name }}</span>
 						</button>
+
+						<div class="mobile-schedule_actions">
+							<button class="btn-toggle-schedule" @click="toggleSchedule">
+								<span>{{ isScheduleExpanded ? 'Thu gọn' : 'Xem thêm' }}</span>
+								<svg class="icon-sm" :class="{ 'rotate-180': isScheduleExpanded }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<polyline points="6 9 12 15 18 9"></polyline>
+								</svg>
+							</button>
+						</div>
 					</div>
 
 					<div v-else class="mobile-empty">
@@ -434,7 +497,7 @@ const toggleSchedule = () => {
 .about-content {
 	background: #f8fafc;
 	border-radius: 12px;
-	padding: 1.5rem;
+	padding: 1rem;
 	border-left: 4px solid var(--color-primary);
 }
 
@@ -714,7 +777,8 @@ const toggleSchedule = () => {
     z-index: 10;
 }
 
-.schedule-actions {
+.schedule-actions,
+.mobile-schedule_actions {
     display: flex;
     justify-content: center;
     margin-top: 1rem;
@@ -982,13 +1046,6 @@ const toggleSchedule = () => {
 	color: #18181b;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
-
-/* .price-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 3fr));
-    gap: 1.5rem;
-    margin: 2rem 0;
-} */
 
 .price-cards {
 	display: grid;
@@ -1305,6 +1362,10 @@ const toggleSchedule = () => {
 @media screen and (max-width: 768px) {
 	.price-cards {
 		grid-template-columns: repeat(1, 1fr);
+	}
+
+	.schedule-actions {
+		display: none;
 	}
 }
 </style>

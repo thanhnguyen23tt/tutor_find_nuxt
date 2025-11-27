@@ -3,6 +3,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 
 const { api } = useApi();
 const { success, error: notifyError } = useNotification();
+const configStore = useConfigStore();
 
 // Form data
 const userProfile = ref({});
@@ -16,7 +17,8 @@ const basicInfoForm = reactive({
     email: '',
     cccd: '',
     sex: null,
-    about_you: ''
+    about_you: '',
+    provinces_id: null
 });
 
 // Modal & Editing Logic
@@ -25,7 +27,8 @@ const editingForm = reactive({
     first_name: '',
     last_name: '',
     email: '',
-    phone: ''
+    phone: '',
+    provinces_id: null
 });
 const isSaving = ref(false);
 const errors = ref({});
@@ -40,12 +43,26 @@ const maskedEmail = computed(() => {
     return `${maskedName}@${domain}`;
 });
 
+const provinceOptions = computed(() => {
+    return configStore.configuration?.provinces?.map(p => ({
+        value: p.id,
+        label: p.name
+    })) || [];
+});
+
+const provinceName = computed(() => {
+    if (!basicInfoForm.provinces_id) return 'Chưa cung cấp';
+    const province = provinceOptions.value.find(p => p.value === basicInfoForm.provinces_id);
+    return province ? province.label : 'Chưa cung cấp';
+});
+
 const modalTitle = computed(() => {
     switch (activeModal.value) {
         case 'first_name': return 'Họ';
         case 'last_name': return 'Tên';
         case 'email': return 'Địa chỉ email';
         case 'phone': return 'Số điện thoại';
+        case 'provinces_id': return 'Tỉnh/Thành phố';
         default: return '';
     }
 });
@@ -56,6 +73,7 @@ const modalDescription = computed(() => {
         case 'last_name': return 'Nhập tên của bạn như trên giấy tờ tùy thân.';
         case 'email': return 'Sử dụng địa chỉ email để đăng nhập và nhận thông báo.';
         case 'phone': return 'Thêm số điện thoại để khách đã xác nhận có thể liên hệ với bạn.';
+        case 'provinces_id': return 'Chọn tỉnh/thành phố nơi bạn đang sinh sống.';
         default: return '';
     }
 });
@@ -76,7 +94,8 @@ const loadUserProfile = async () => {
                 email: response.data.email || '',
                 cccd: response.data.cccd || '',
                 sex: response.data.sex || null,
-                about_you: response.data.about_you || ''
+                about_you: response.data.about_you || '',
+                provinces_id: response.data.provinces_id || null
             });
         }
     } catch (error) {
@@ -197,6 +216,17 @@ onMounted(() => {
                 </div>
             </div>
 
+            <!-- Province/City -->
+            <div class="info-item">
+                <div class="info-main">
+                    <div class="info-label">Tỉnh/Thành phố</div>
+                    <div class="info-value">{{ provinceName }}</div>
+                </div>
+                <div class="info-action">
+                    <button class="btn-link" @click="openModal('provinces_id')">{{ basicInfoForm.provinces_id ? 'Chỉnh sửa' : 'Thêm' }}</button>
+                </div>
+            </div>
+
             <!-- Identity Verification -->
             <div class="info-item">
                 <div class="info-main">
@@ -230,6 +260,16 @@ onMounted(() => {
                 <div v-if="activeModal === 'phone'">
                     <base-input v-model="editingForm.phone" label="Số điện thoại" placeholder="Nhập số điện thoại"
                         :error="errors.phone" />
+                </div>
+
+                <div v-if="activeModal === 'provinces_id'">
+                    <base-select
+                        v-model="editingForm.provinces_id"
+                        label="Tỉnh/Thành phố"
+                        :options="provinceOptions"
+                        placeholder="Chọn tỉnh/thành phố"
+                        :error="errors.provinces_id"
+                    />
                 </div>
 
                 <div class="modal-footer">

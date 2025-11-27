@@ -92,7 +92,7 @@
             </div>
         </div>
         <div class="tutor-card-bottom">
-            <div class="price-section" @mouseenter="showPriceDetail = tutor.id" @mouseleave="showPriceDetail = null">
+            <div class="price-section" @mouseenter="showPriceDetail = tutor.id" @mouseleave="showPriceDetail = null" @click.stop>
                 <div class="price-range" style="position: relative;">
                     <span>{{ getPriceRange(tutor.user_subjects || []) }}</span>
                     <div v-if="showPriceDetail === tutor.id" class="price-detail-popup">

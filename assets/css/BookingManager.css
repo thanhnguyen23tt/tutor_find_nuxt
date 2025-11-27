@@ -630,10 +630,10 @@
     margin-bottom: 0;
 }
 
-.timeline-item.is-latest .timeline-content {
+/* .timeline-item.is-latest .timeline-content {
     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
     border-color: #f59e0b;
-}
+} */
 
 .timeline-marker {
     display: flex;

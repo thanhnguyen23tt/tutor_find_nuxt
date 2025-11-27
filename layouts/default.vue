@@ -244,8 +244,8 @@ onMounted(async () => {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 0.75rem;
-	font-weight: 600;
+	font-size: var(--font-size-mini);
+	font-weight: 500;
 	border: 2px solid white;
 }
 
@@ -257,6 +257,9 @@ onMounted(async () => {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+	.layout-main {
+		padding-bottom: 4.5rem;
+	}
 	.notification-bell {
 		width: 48px;
 		height: 48px;

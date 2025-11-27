@@ -3,7 +3,9 @@
     <!-- Loading overlay -->
     <base-loading v-if="loading" />
 
-    <RealBooking v-if="!loading" :tutor-info="tutorInfo" />
+    <BasePageError v-else-if="tutorInfoError || !tutorInfo" message="Không tìm thấy gia sư" />
+
+    <RealBooking v-else :tutor-info="tutorInfo" />
 </div>
 </template>
 

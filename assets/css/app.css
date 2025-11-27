@@ -14,7 +14,7 @@ body {
 
 :root {
 	--max-width: 1400px;
-	--height-header: 88px;
+	--height-header: 75px;
 	/* --color-primary: #000; */
 	--secondary-color: #fff;
 	--font-size-mini: 0.75rem;
@@ -1301,12 +1301,12 @@ input[type="number"] {
 
 .form-group-container {
 	display: grid;
-	gap: 0.5rem;
+	gap: 1rem;
 }
 
 .form-group {
 	display: grid;
-	gap: 0.5rem;
+	gap: 1rem;
 }
 
 .modal-content {

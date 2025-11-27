@@ -1,7 +1,9 @@
 <script setup>
 definePageMeta({
-	middleware: 'auth',
-});
+	middleware() {
+		useLayoutStore().setHiddenFooter(true);
+	}
+})
 
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 
@@ -13,8 +15,6 @@ const route = useRoute();
 const { api } = useApi();
 const { getPriceRange } = useHelper();
 const { success, error: notifyError, info: notifyInfo, warning: notifyWarning } = useNotification();
-const notificationStore = useNotificationStore();
-const layoutStore = useLayoutStore();
 
 const activeTab = ref('overview');
 const showSendMessageModal = ref(false);
@@ -83,6 +83,28 @@ const toggleSave = async () => {
 	}
 };
 
+const handleShare = async () => {
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: userData.value.full_name,
+                text: `Check out ${userData.value.full_name} on TutorFind!`,
+                url: window.location.href,
+            });
+        } catch (error) {
+            console.log('Error sharing:', error);
+        }
+    } else {
+        // Fallback: Copy to clipboard
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            success('Đã sao chép liên kết vào bộ nhớ tạm!');
+        } catch (err) {
+            notifyError('Không thể chia sẻ');
+        }
+    }
+};
+
 const metas = computed(() => {
 	const baseUrl = process.env.VITE_BASE_URL;
 
@@ -123,75 +145,41 @@ useHead({
 });
 
 onMounted(async () => {
-	layoutStore.setHiddenFooter(true);
 	await checkSavedStatus();
-});
-
-onUnmounted(() => {
-	layoutStore.setHiddenFooter(false);
 });
 </script>
 
 <template>
 	<base-loading v-if="isLoading" />
 
-	<div class="user-detail-header_mobile" v-if="userData && !isLoading">
+	<BasePageError v-else-if="!userData || !userData.uid" message="Không tìm thấy gia sư" />
+
+	<div class="user-detail-header_mobile" v-else-if="userData && !isLoading">
 		<div class="container">
-			<div class="avatar-wrapper_mobile">
-				<img :src="userData.avatar" :alt="userData.full_name" />
-			</div>
-			<h1 class="user-name_mobile">
-				<span>{{ userData.full_name }}</span>
-				<svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"
-					fill="none">
-					<g id="Stars 3">
-						<path id="Vector" fill-rule="evenodd" clip-rule="evenodd"
-							d="M14.1027 3.76073C13.3007 3.50073 12.6673 2.86873 12.408 2.06806C12.3193 1.79339 11.8627 1.79339 11.774 2.06806C11.5147 2.86873 10.8813 3.50073 10.0793 3.76073C9.942 3.80539 9.84866 3.93339 9.84866 4.07806C9.84866 4.22206 9.942 4.35006 10.0793 4.39473C10.88 4.65406 11.5133 5.28939 11.774 6.09406C11.818 6.23139 11.9467 6.32473 12.0907 6.32473C12.2353 6.32473 12.364 6.23139 12.408 6.09406C12.6687 5.28939 13.302 4.65406 14.1027 4.39473C14.24 4.35006 14.3333 4.22206 14.3333 4.07806C14.3333 3.93339 14.24 3.80539 14.1027 3.76073Z"
-							fill="#5D5DEC" />
-						<path id="Vector_2" fill-rule="evenodd" clip-rule="evenodd"
-							d="M11.716 8.26755L8.56066 7.24288L7.53666 4.08818C7.44866 3.81485 7.20466 3.63818 6.91666 3.63818C6.62799 3.63818 6.38466 3.81485 6.29599 4.08818L5.28066 7.24088L2.11932 8.26688C1.84866 8.35288 1.66666 8.60222 1.66666 8.88822C1.66666 9.17355 1.84866 9.42288 2.11799 9.50822L5.27066 10.5275L6.29599 13.6876C6.38466 13.9609 6.62799 14.1382 6.91666 14.1382C7.20466 14.1382 7.44866 13.9609 7.53666 13.6876L8.55332 10.5349L11.714 9.50888C11.9847 9.42288 12.1673 9.17355 12.1673 8.88822C12.1673 8.60222 11.9847 8.35288 11.716 8.26755Z"
-							fill="#5D5DEC" />
-					</g>
-				</svg>
-			</h1>
-
-			<!-- Description section for mobile -->
-			<div class="description-section_mobile" v-if="userData.about_you">
-				<p class="description-text">{{ userData.about_you }}</p>
-			</div>
-
-			<div class="action-group header-actions_mobile">
-				<button class="action-btn" :class="isSaved ? 'btn-favorite-active' : 'btn-secondary'"
-					@click="toggleSave" :disabled="isSaving">
-					<svg v-if="isSaving" class="btn-icon animate-spin" xmlns="http://www.w3.org/2000/svg"
-						viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-						</circle>
-						<path class="opacity-75" fill="currentColor"
-							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-						</path>
-					</svg>
-					<svg v-else class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-						:fill="isSaved ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-						<path
-							d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
-					</svg>
-					<span class="btn-text">{{ isSaved ? 'Đã lưu' : 'Yêu thích' }}</span>
-				</button>
-				<button class="action-btn btn-secondary">
-					<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-						stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<circle cx="18" cy="5" r="3"></circle>
-						<circle cx="6" cy="12" r="3"></circle>
-						<circle cx="18" cy="19" r="3"></circle>
-						<line x1="8.59" x2="15.42" y1="13.51" y2="17.49"></line>
-						<line x1="15.41" x2="8.59" y1="6.51" y2="10.49"></line>
-					</svg>
-					<span class="btn-text">Chia sẻ</span>
-				</button>
-			</div>
-
 			<div class="user-detail-content">
+				<div class="avatar-wrapper_mobile">
+					<img :src="userData.avatar" :alt="userData.full_name" />
+				</div>
+				<h1 class="user-name_mobile">
+					<span>{{ userData.full_name }}</span>
+					<svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"
+						fill="none">
+						<g id="Stars 3">
+							<path id="Vector" fill-rule="evenodd" clip-rule="evenodd"
+								d="M14.1027 3.76073C13.3007 3.50073 12.6673 2.86873 12.408 2.06806C12.3193 1.79339 11.8627 1.79339 11.774 2.06806C11.5147 2.86873 10.8813 3.50073 10.0793 3.76073C9.942 3.80539 9.84866 3.93339 9.84866 4.07806C9.84866 4.22206 9.942 4.35006 10.0793 4.39473C10.88 4.65406 11.5133 5.28939 11.774 6.09406C11.818 6.23139 11.9467 6.32473 12.0907 6.32473C12.2353 6.32473 12.364 6.23139 12.408 6.09406C12.6687 5.28939 13.302 4.65406 14.1027 4.39473C14.24 4.35006 14.3333 4.22206 14.3333 4.07806C14.3333 3.93339 14.24 3.80539 14.1027 3.76073Z"
+								fill="#5D5DEC" />
+							<path id="Vector_2" fill-rule="evenodd" clip-rule="evenodd"
+								d="M11.716 8.26755L8.56066 7.24288L7.53666 4.08818C7.44866 3.81485 7.20466 3.63818 6.91666 3.63818C6.62799 3.63818 6.38466 3.81485 6.29599 4.08818L5.28066 7.24088L2.11932 8.26688C1.84866 8.35288 1.66666 8.60222 1.66666 8.88822C1.66666 9.17355 1.84866 9.42288 2.11799 9.50822L5.27066 10.5275L6.29599 13.6876C6.38466 13.9609 6.62799 14.1382 6.91666 14.1382C7.20466 14.1382 7.44866 13.9609 7.53666 13.6876L8.55332 10.5349L11.714 9.50888C11.9847 9.42288 12.1673 9.17355 12.1673 8.88822C12.1673 8.60222 11.9847 8.35288 11.716 8.26755Z"
+								fill="#5D5DEC" />
+						</g>
+					</svg>
+				</h1>
+
+				<!-- Description section for mobile -->
+				<div class="description-section_mobile" v-if="userData.about_you">
+					<p class="description-text">{{ userData.about_you }}</p>
+				</div>
+
 				<div class="language-tags">
 					<span class="language-tag">
 						<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
@@ -274,21 +262,33 @@ onUnmounted(() => {
 							<span>{{ getPriceRange(userData.user_subjects) }}</span>
 						</div>
 					</div>
-					<button class="user-contact_heart" @click="toggleSave" :disabled="isSaving">
-						<svg v-if="isSaving" class="icon-md animate-spin" xmlns="http://www.w3.org/2000/svg"
-							viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-							</circle>
-							<path class="opacity-75" fill="currentColor"
-								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-							</path>
-						</svg>
-						<svg v-else class="icon-md" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-							:fill="isSaved ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-							<path
-								d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
-						</svg>
-					</button>
+                    <div class="user-contact_actions">
+                        <button class="user-contact_share" @click="handleShare">
+                            <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="18" cy="5" r="3"></circle>
+                                <circle cx="6" cy="12" r="3"></circle>
+                                <circle cx="18" cy="19" r="3"></circle>
+                                <line x1="8.59" x2="15.42" y1="13.51" y2="17.49"></line>
+                                <line x1="15.41" x2="8.59" y1="6.51" y2="10.49"></line>
+                            </svg>
+                        </button>
+                        <button class="user-contact_heart" @click="toggleSave" :disabled="isSaving">
+                            <svg v-if="isSaving" class="icon-md animate-spin" xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                                </circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                </path>
+                            </svg>
+                            <svg v-else class="icon-md" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                :fill="isSaved ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+                                <path
+                                    d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
+                            </svg>
+                        </button>
+                    </div>
 				</div>
 			</div>
 			<div class="action-group mobile-contact-actions">
@@ -310,7 +310,7 @@ onUnmounted(() => {
 		</div>
 	</div>
 
-	<div class="user-detail-page" v-if="userData && !isLoading">
+	<div class="user-detail-page" v-if="userData && !isLoading && userData.uid">
 		<div class="container">
 			<div class="user-detail-header_desktop">
 				<div class="user-detail-header">
@@ -514,5 +514,27 @@ onUnmounted(() => {
 .user-contact_heart:disabled {
 	opacity: 0.6;
 	cursor: not-allowed;
+}
+
+.user-contact_actions {
+	display: grid;
+    gap: 0.5rem;
+}
+
+.user-contact_share {
+	background: none;
+	border: none;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	padding: 0.5rem;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.user-contact_share:hover {
+	background: rgba(59, 130, 246, 0.1);
+	transform: scale(1.1);
 }
 </style>

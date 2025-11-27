@@ -2,7 +2,7 @@
 	<!-- Loading overlay -->
 	<base-loading v-if="isLoading" />
 
-	<div class="home-container container" v-if="!isLoading">
+	<div class="home-container" v-if="!isLoading">
 		<!-- Hero Section -->
 		<section class="hero-section">
 			<div class="container">
@@ -279,7 +279,8 @@
 					Những đánh giá chân thực từ phụ huynh và học sinh đã sử dụng dịch vụ của chúng tôi
 				</p>
 
-				<div class="reviews-grid">
+				<!-- Desktop Reviews -->
+				<div class="reviews-grid desktop-reviews">
 					<div v-for="review in reviews" :key="review.id" class="review-card">
 						<div class="rating">
 							<span v-for="star in review.rating" :key="star" class="star">★</span>
@@ -289,14 +290,43 @@
 						</p>
 						<div class="reviewer-info">
 							<div class="reviewer-avatar">
-								<div class="avatar-text">{{ getFirstCharacterOfLastName(review.reviewer.full_name) }}
-								</div>
+								<img :src="review.reviewer.avatar" alt=""></img>
 							</div>
 							<div class="reviewer-details">
 								<h4 class="reviewer-name">{{ review.reviewer.full_name }}</h4>
 								<p class="reviewer-title">Học viên TutorFind</p>
 							</div>
 						</div>
+					</div>
+				</div>
+
+				<!-- Mobile Reviews -->
+				<div class="mobile-reviews" v-if="reviews.length > 0">
+					<div class="review-card">
+						<div class="rating">
+							<span v-for="star in reviews[currentReviewIndex].rating" :key="star" class="star">★</span>
+						</div>
+						<p class="review-text">
+							"{{ reviews[currentReviewIndex].comment }}"
+						</p>
+						<div class="reviewer-info">
+							<div class="reviewer-avatar">
+								<img :src="reviews[currentReviewIndex].reviewer.avatar" alt=""></img>
+							</div>
+							<div class="reviewer-details">
+								<h4 class="reviewer-name">{{ reviews[currentReviewIndex].reviewer.full_name }}</h4>
+								<p class="reviewer-title">Học viên TutorFind</p>
+							</div>
+						</div>
+					</div>
+					
+					<div class="mobile-review-controls">
+						<button class="btn-next-review" @click="nextReview">
+							<span>Xem đánh giá tiếp theo</span>
+							<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+							</svg>
+						</button>
 					</div>
 				</div>
 			</div>
@@ -367,7 +397,7 @@
 		<section class="become-teacher-section">
 			<div class="become-teacher-container container">
 				<div class="become-teacher-image">
-					<img src="/images/banner/become-teacher-3.jpg" alt="Become a teacher">
+					<img :src="'/images/banner/become-teacher-3.jpg'" alt="Become a teacher">
 				</div>
 
 				<div class="become-teacher-content">
@@ -383,46 +413,6 @@
 					<p class="become-teacher-description">
 						Chia sẻ kiến thức của bạn, sống với đam mê và trở thành chủ của chính mình
 					</p>
-
-					<!-- Features List -->
-					<div class="teacher-features">
-						<div class="feature-point">
-							<div class="feature-icon">
-								<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-										d="M5 13l4 4L19 7" />
-								</svg>
-							</div>
-							<span>Thu nhập hấp dẫn</span>
-						</div>
-						<div class="feature-point">
-							<div class="feature-icon">
-								<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-										d="M5 13l4 4L19 7" />
-								</svg>
-							</div>
-							<span>Lịch dạy linh động</span>
-						</div>
-						<div class="feature-point">
-							<div class="feature-icon">
-								<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-										d="M5 13l4 4L19 7" />
-								</svg>
-							</div>
-							<span>Hỗ trợ chuyên nghiệp</span>
-						</div>
-						<div class="feature-point">
-							<div class="feature-icon">
-								<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-										d="M5 13l4 4L19 7" />
-								</svg>
-							</div>
-							<span>Phát triển sự nghiệp</span>
-						</div>
-					</div>
 
 					<button class="btn-lg btn-black w-100 border-r-2" @click="goToBecomeTutor">
 						<span>Tìm hiểu thêm</span>
@@ -449,11 +439,15 @@
 </template>
 
 <script setup>
+definePageMeta({
+	middleware() {
+		useLayoutStore().setHiddenFooter(false)
+	}
+})
+
 const configStore = useConfigStore();
 const { api } = useApi();
-const { getFirstCharacterOfLastName } = useHelper();
 const config = useRuntimeConfig();
-const { formatCurrency } = useHelper();
 
 const filters = ref({
     provinces_id: '',
@@ -624,6 +618,14 @@ const form = reactive({
 const handleSubmit = () => {
     // Handle form submission
     console.log('Form submitted:', form);
+};
+
+const currentReviewIndex = ref(0);
+
+const nextReview = () => {
+	if (reviews.value.length > 0) {
+		currentReviewIndex.value = (currentReviewIndex.value + 1) % reviews.value.length;
+	}
 };
 
 // SEO Meta

@@ -5,19 +5,22 @@ export const navigationLinks = [
 		id: 1,
 		name: 'Trang chủ',
 		path: '/',
-		href: '#'
+		href: '#',
+		priority: 10
 	},
 	{
 		id: 2,
 		name: 'Tìm gia sư',
 		path: '/search',
-		href: '#'
+		href: '#',
+		priority: 11
 	},
 	{
 		id: 3,
 		name: 'Trở thành gia sư',
 		path: '/become-tutor',
-		href: '#'
+		href: '#',
+		priority: 12
 	},
 ];
 
@@ -33,6 +36,7 @@ export const userMenuItems = [
 		iconViewBox: '0 0 24 24',
 		is_tutor: true,
 		requiresAuth: true,
+		priority: 5
 	},
 	{
 		id: 2,
@@ -52,6 +56,7 @@ export const userMenuItems = [
 		strokeLinejoin: 'round',
 		fill: 'none',
 		requiresAuth: true,
+		priority: 21
 	},
 	{
 		id: 4,
@@ -68,6 +73,7 @@ export const userMenuItems = [
 		],
 		iconViewBox: '0 0 24 24',
 		requiresAuth: true,
+		priority: 22
 	},
 	{
 		id: 5,
@@ -79,6 +85,7 @@ export const userMenuItems = [
 		iconViewBox: '0 0 24 24',
 		strokeWidth: '1.656',
 		requiresAuth: true,
+		priority: 20
 	},
 	{
 		id: 7,
@@ -90,6 +97,7 @@ export const userMenuItems = [
 		],
 		iconViewBox: '0 0 24 24',
 		requiresAuth: true,
+		priority: 95
 	},
 	{
 		id: 8,
@@ -102,6 +110,7 @@ export const userMenuItems = [
 		iconViewBox: '0 0 24 24',
 		action: 'logout',
 		requiresAuth: true,
+		priority: 100
 	}
 ];
 
@@ -124,6 +133,7 @@ export const headerActionButtons = [
 		fill: 'none',
 		path: '/help',
 		requiresAuth: undefined,
+		priority: 90
 	},
 	{
 		id: 'saved',
@@ -134,6 +144,7 @@ export const headerActionButtons = [
 		className: 'user-liked-card user-info',
 		tooltip: 'Đã lưu',
 		requiresAuth: true,
+		priority: 23
 	},
 	{
 		id: 'notification',
@@ -149,36 +160,23 @@ export const headerActionButtons = [
 		badgeKey: 'notifications',
 		action: 'toggleNotifications',
 		requiresAuth: true,
+		priority: 15
 	},
 	{
 		id: 'login',
 		type: 'action',
 		label: 'Đăng nhập',
-		className: 'btn-sm btn-no-bg card-item border-r-2 header-cta',
+		className: 'btn-sm btn-primary card-item border-r-2 header-cta',
 		action: 'openLoginModal',
 		requiresAuth: false,
+		priority: 1
 	},
-	{
-		id: 'register',
-		type: 'action',
-		label: 'Đăng ký',
-		className: 'btn-sm btn-primary card-item border-r-2 header-cta',
-		action: 'openRegisterModal',
-		requiresAuth: false,
-	},
-];
-
-export const authButtons = [
 	// {
-	//     id: 'login',
-	//     name: 'Đăng nhập',
-	//     className: 'btn-sm btn-no-bg card-item border-r-2',
-	//     action: 'openLoginModal'
+	// 	id: 'register',
+	// 	type: 'action',
+	// 	label: 'Đăng ký',
+	// 	className: 'btn-sm btn-primary card-item border-r-2 header-cta',
+	// 	action: 'openRegisterModal',
+	// 	requiresAuth: false,
 	// },
-	// {
-	//     id: 'register',
-	//     name: 'Đăng ký',
-	//     className: 'btn-sm btn-primary card-item border-r-2',
-	//     action: 'openRegisterModal'
-	// }
 ];

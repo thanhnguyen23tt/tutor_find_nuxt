@@ -66,6 +66,7 @@
         0 25px 50px rgba(0, 0, 0, 0.15),
         0 12px 24px rgba(0, 0, 0, 0.08),
         inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    z-index: 50;
 }
 
 .tutors-grid .tutor-card:hover::before {
@@ -138,8 +139,8 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    font-size: var(--font-size-heading-4);
-    font-weight: 700;
+    font-size: var(--font-size-heading-5);
+    font-weight: 600;
     color: white;
     margin-bottom: 0.5rem;
 }
@@ -403,10 +404,6 @@
 @media screen and (max-width: 1024px) {
     .tutor-image {
         height: 270px;
-    }
-
-    .tutor-card {
-        border-radius: 15px !important;
     }
 }
 

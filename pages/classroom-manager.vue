@@ -1,13 +1,17 @@
 <script setup>
 definePageMeta({
-  middleware: 'auth',
-});
+	middleware: [
+		'auth', 
+		() => {
+		useLayoutStore().setHiddenFooter(true)
+		}
+	]
+})
 
 import { ref, computed, onMounted, watch, watchEffect } from 'vue';
 
 const router = useRouter();
 const route = useRoute();
-const layoutStore = useLayoutStore();
 const { api } = useApi();
 const { success, error: notifyError, warning: notifyWarning, info: notifyInfo } = useNotification();
 const userStore = useUserStore();
@@ -325,19 +329,16 @@ const openProfileModal = (user) => {
 onMounted(async () => {
     await initEcho();
     await handleBookingIdFromQuery();
-	layoutStore.setHiddenFooter(true);
 });
-
-onUnmounted(() => {
-	layoutStore.setHiddenFooter(false);
-})
 </script>
 
 <template>
 <!-- Loading overlay -->
 <base-loading v-if="isPageLoading" />
 
-<div class="classroom-manager-page" v-if="!isPageLoading">
+<BasePageError v-else-if="initialClassroomsError" :message="initialClassroomsError.message || 'Không thể tải danh sách lớp học'" />
+
+<div class="classroom-manager-page" v-else>
     <div class="container">
         <div class="page-header">
             <div class="header-content">

@@ -1,0 +1,2 @@
+1. sửa manager tách thành 2 component cho user và tutor
+2. ví dụ các component: component cho user sẽ hiển thị thông tin booking và thông tin của gia sư, còn gia sư thì hiển thị ngược lại thông tin của user

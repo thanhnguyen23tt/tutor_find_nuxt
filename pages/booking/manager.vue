@@ -1,19 +1,24 @@
 <script setup>
 definePageMeta({
-  middleware: 'auth',
+  middleware: [
+	'auth', 
+		() => {
+		useLayoutStore().setHiddenFooter(true)
+		}
+	]
 });
 
 import { ref, computed, watch, watchEffect } from 'vue'
 import SendMessage from '~/components/common/SendMessage.vue'
 import ReviewModal from '~/components/booking/ReviewModal.vue'
 import ComplaintModal from '~/components/booking/ComplaintModal.vue'
-import BookingCardList from '~/components/booking/BookingCardList.vue'
+import BookingListTutor from '~/components/booking/BookingListTutor.vue'
+import BookingListStudent from '~/components/booking/BookingListStudent.vue'
 
 const router = useRouter()
 const { api } = useApi()
-const layoutStore = useLayoutStore()
 const { success, error: notifyError } = useNotification()
-const { status_booking: statusBooking, complaint_types } = useConfig()
+const { status_booking: statusBooking } = useConfig()
 const configStore = useConfigStore()
 const userStore = useUserStore()
 const {
@@ -45,7 +50,7 @@ const bookings = ref([])
 const dataPaginate = ref({})
 const statusMap = computed(() => configStore.configuration.booking_status || {})
 const listStatusComplaint = computed(() => configStore.configuration.booking_complaint_status || {})
-const listComplaintTypes = computed(() => complaint_types || [])
+const listComplaintTypes = computed(() => configStore.configuration.complaint_types || [])
 
 const modals = ref({
     reject: false,
@@ -421,6 +426,7 @@ const openRefundModal = (booking) => {
 }
 
 const openProfileModal = (user) => {
+	console.log(user)
     selected.value.profileUser = user
     modals.value.profile = true
 }
@@ -575,20 +581,14 @@ watch(search, () => changePage(1))
 watch(() => forms.value.reschedule.new_date, (newDate) => {
     if (newDate) forms.value.reschedule.new_time_slot_id = ''
 })
-
-onMounted(() => {
-    layoutStore.setHiddenFooter(true);
-})
-
-onUnmounted(() => {
-    layoutStore.setHiddenFooter(false);
-})
 </script>
 
 <template>
 <base-loading v-if="isPageLoading" />
 
-<div class="booking-manager-page" v-if="!isPageLoading">
+<BasePageError v-else-if="initialError" :message="initialError.message || 'Không thể tải danh sách đặt lịch'" />
+
+<div class="booking-manager-page" v-else>
     <div class="container">
         <h1 class="title-header">Danh sách đặt lịch học</h1>
         <p class="desc">Quản lý và theo dõi tất cả các buổi học của bạn</p>
@@ -611,8 +611,35 @@ onUnmounted(() => {
             <p class="empty-desc">Không có lịch học nào.</p>
         </div>
 
-        <!-- BookingCardList Component -->
-        <booking-card-list v-else :bookings="bookings" :statusBooking="statusBooking" :isTutor="isTutor" :actionConfig="ACTION_CONFIG" :userData="userData" @openLogsModal="openLogsModal" @openRejectConfirmation="openRejectConfirmation" @openCancelConfirmation="openCancelConfirmation" @openRescheduleModal="openRescheduleModal" @openSendMessageModal="openSendMessageModal" @openProfileModal="openProfileModal" />
+        <!-- Booking List Components -->
+        <BookingListTutor 
+            v-if="isTutor" 
+            :bookings="bookings" 
+            :statusBooking="statusBooking" 
+            :isTutor="isTutor" 
+            :actionConfig="ACTION_CONFIG" 
+            :userData="userData" 
+            @openLogsModal="openLogsModal" 
+            @openRejectConfirmation="openRejectConfirmation" 
+            @openCancelConfirmation="openCancelConfirmation" 
+            @openRescheduleModal="openRescheduleModal" 
+            @openSendMessageModal="openSendMessageModal" 
+            @openProfileModal="openProfileModal" 
+        />
+        <BookingListStudent 
+            v-else 
+            :bookings="bookings" 
+            :statusBooking="statusBooking" 
+            :isTutor="isTutor" 
+            :actionConfig="ACTION_CONFIG" 
+            :userData="userData" 
+            @openLogsModal="openLogsModal" 
+            @openRejectConfirmation="openRejectConfirmation" 
+            @openCancelConfirmation="openCancelConfirmation" 
+            @openRescheduleModal="openRescheduleModal" 
+            @openSendMessageModal="openSendMessageModal" 
+            @openProfileModal="openProfileModal" 
+        />
 
         <base-pagination v-if="!isPageLoading" :meta="dataPaginate" :current-page="currentPage" @changePage="changePage" />
     </div>
@@ -1079,9 +1106,8 @@ onUnmounted(() => {
                 </div>
                 <div class="profile-info">
                     <h2 class="profile-name">{{ selected.profileUser.full_name }}</h2>
-                    <span class="profile-role">{{ selected.profileUser.role_name }}</span>
                     <div v-if="selected.profileUser.info_reviews?.average_rating" class="profile-rating">
-                        <svg class="icon-md" fill="#f9ce69" stroke="#f9ce69" viewBox="0 0 24 24">
+                        <svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                         </svg>
                         <span class="rating-value">{{ selected.profileUser.info_reviews.average_rating }}</span>
@@ -1112,7 +1138,7 @@ onUnmounted(() => {
                             </div>
                             <div class="detail-value">{{ selected.profileUser.phone || '-' }}</div>
                         </div>
-                        <div class="detail-item" v-if="selected.profileUser.address">
+                        <div class="detail-item" v-if="selected.profileUser.province">
                             <div class="detail-label">
                                 <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -1120,14 +1146,14 @@ onUnmounted(() => {
                                 </svg>
                                 Địa chỉ
                             </div>
-                            <div class="detail-value">{{ selected.profileUser.address }}</div>
+                            <div class="detail-value">{{ selected.profileUser.province?.name }}</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="detail-section" v-if="selected.profileUser.bio">
+                <div class="detail-section" v-if="selected.profileUser.about_you">
                     <h3 class="section-title">Giới thiệu</h3>
-                    <p class="bio-text">{{ selected.profileUser.bio }}</p>
+                    <p class="bio-text">{{ selected.profileUser.about_you }}</p>
                 </div>
 
                 <div class="detail-section" v-if="selected.profileUser.role === 1 && selected.profileUser.user_subjects?.length">
@@ -1168,215 +1194,5 @@ onUnmounted(() => {
 @import '~/assets/css/BookingCommon.css';
 @import '~/assets/css/lessonInformation.css';
 @import '~/assets/css/BookingManager.css';
-
-/* Profile Modal Styles */
-.profile-modal-content {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-}
-
-.profile-header {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 2px solid #e5e7eb;
-}
-
-.profile-avatar-large {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    border: 4px solid white;
-    overflow: hidden;
-}
-
-.profile-avatar-large img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.avatar-text-large {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: white;
-}
-
-.profile-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.profile-name {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0;
-}
-
-.profile-role {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-    color: #1e40af;
-    border-radius: 1rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    width: fit-content;
-}
-
-.profile-rating {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-}
-
-.rating-value {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #f59e0b;
-}
-
-.rating-count {
-    font-size: 0.875rem;
-    color: #6b7280;
-}
-
-.profile-details {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.detail-section {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1.5rem;
-}
-
-.section-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #1f2937;
-    margin: 0 0 1rem 0;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.detail-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-}
-
-.detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.detail-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.detail-value {
-    font-size: var(--font-size-base);
-    color: #1f2937;
-    font-weight: 500;
-    padding-left: 1.75rem;
-}
-
-.bio-text {
-    color: #374151;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    margin: 0;
-}
-
-.subjects-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 0.75rem;
-}
-
-.subject-chip {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
-    transition: all 0.2s ease;
-}
-
-.subject-chip:hover {
-    border-color: var(--color-primary);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-}
-
-.subject-exp {
-    margin-left: auto;
-    padding: 0.25rem 0.5rem;
-    background: #dbeafe;
-    color: #1e40af;
-    border-radius: 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-@media (max-width: 768px) {
-    .profile-header {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .profile-avatar-large {
-        width: 80px;
-        height: 80px;
-    }
-
-    .avatar-text-large {
-        font-size: 2rem;
-    }
-
-    .profile-name {
-        font-size: 1.5rem;
-    }
-
-    .profile-rating {
-        justify-content: center;
-    }
-
-    .detail-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .subjects-grid {
-        grid-template-columns: 1fr;
-    }
-}
+@import '~/assets/css/ProfileModal.css';
 </style>

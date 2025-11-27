@@ -21,6 +21,7 @@ interface _GlobalComponents {
   'BaseMenu': typeof import("../../components/common/BaseMenu.vue")['default']
   'BaseModal': typeof import("../../components/common/BaseModal.vue")['default']
   'BaseMoreMenu': typeof import("../../components/common/BaseMoreMenu.vue")['default']
+  'BasePageError': typeof import("../../components/common/BasePageError.vue")['default']
   'BasePagination': typeof import("../../components/common/BasePagination.vue")['default']
   'BaseSelect': typeof import("../../components/common/BaseSelect.vue")['default']
   'BaseStatusTabs': typeof import("../../components/common/BaseStatusTabs.vue")['default']
@@ -31,6 +32,8 @@ interface _GlobalComponents {
   'SendMessage': typeof import("../../components/common/SendMessage.vue")['default']
   'TutorCard': typeof import("../../components/common/TutorCard.vue")['default']
   'BookingCardList': typeof import("../../components/booking/BookingCardList.vue")['default']
+  'BookingListStudent': typeof import("../../components/booking/BookingListStudent.vue")['default']
+  'BookingListTutor': typeof import("../../components/booking/BookingListTutor.vue")['default']
   'BookingSuccess': typeof import("../../components/booking/BookingSuccess.vue")['default']
   'BookingComplaintModal': typeof import("../../components/booking/ComplaintModal.vue")['default']
   'BookingConfirmBookingNew': typeof import("../../components/booking/ConfirmBookingNew.vue")['default']
@@ -42,7 +45,6 @@ interface _GlobalComponents {
   'LayoutHeader': typeof import("../../components/layout/Header.vue")['default']
   'LayoutMain': typeof import("../../components/layout/Main.vue")['default']
   'ProfileOverviewNew': typeof import("../../components/profile/OverviewNew.vue")['default']
-  'ProfileInfoNew': typeof import("../../components/profile/ProfileInfoNew.vue")['default']
   'ProfileScheduleNew': typeof import("../../components/profile/ScheduleNew.vue")['default']
   'ProfileWalletBalance': typeof import("../../components/profile/WalletBalance.vue")['default']
   'SettingsGlobalPreferences': typeof import("../../components/settings/GlobalPreferences.vue")['default']
@@ -84,6 +86,7 @@ interface _GlobalComponents {
   'LazyBaseMenu': LazyComponent<typeof import("../../components/common/BaseMenu.vue")['default']>
   'LazyBaseModal': LazyComponent<typeof import("../../components/common/BaseModal.vue")['default']>
   'LazyBaseMoreMenu': LazyComponent<typeof import("../../components/common/BaseMoreMenu.vue")['default']>
+  'LazyBasePageError': LazyComponent<typeof import("../../components/common/BasePageError.vue")['default']>
   'LazyBasePagination': LazyComponent<typeof import("../../components/common/BasePagination.vue")['default']>
   'LazyBaseSelect': LazyComponent<typeof import("../../components/common/BaseSelect.vue")['default']>
   'LazyBaseStatusTabs': LazyComponent<typeof import("../../components/common/BaseStatusTabs.vue")['default']>
@@ -94,6 +97,8 @@ interface _GlobalComponents {
   'LazySendMessage': LazyComponent<typeof import("../../components/common/SendMessage.vue")['default']>
   'LazyTutorCard': LazyComponent<typeof import("../../components/common/TutorCard.vue")['default']>
   'LazyBookingCardList': LazyComponent<typeof import("../../components/booking/BookingCardList.vue")['default']>
+  'LazyBookingListStudent': LazyComponent<typeof import("../../components/booking/BookingListStudent.vue")['default']>
+  'LazyBookingListTutor': LazyComponent<typeof import("../../components/booking/BookingListTutor.vue")['default']>
   'LazyBookingSuccess': LazyComponent<typeof import("../../components/booking/BookingSuccess.vue")['default']>
   'LazyBookingComplaintModal': LazyComponent<typeof import("../../components/booking/ComplaintModal.vue")['default']>
   'LazyBookingConfirmBookingNew': LazyComponent<typeof import("../../components/booking/ConfirmBookingNew.vue")['default']>
@@ -105,7 +110,6 @@ interface _GlobalComponents {
   'LazyLayoutHeader': LazyComponent<typeof import("../../components/layout/Header.vue")['default']>
   'LazyLayoutMain': LazyComponent<typeof import("../../components/layout/Main.vue")['default']>
   'LazyProfileOverviewNew': LazyComponent<typeof import("../../components/profile/OverviewNew.vue")['default']>
-  'LazyProfileInfoNew': LazyComponent<typeof import("../../components/profile/ProfileInfoNew.vue")['default']>
   'LazyProfileScheduleNew': LazyComponent<typeof import("../../components/profile/ScheduleNew.vue")['default']>
   'LazyProfileWalletBalance': LazyComponent<typeof import("../../components/profile/WalletBalance.vue")['default']>
   'LazySettingsGlobalPreferences': LazyComponent<typeof import("../../components/settings/GlobalPreferences.vue")['default']>

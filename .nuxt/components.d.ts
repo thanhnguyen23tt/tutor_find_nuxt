@@ -21,6 +21,7 @@ export const BaseLoading: typeof import("../components/common/BaseLoading.vue")[
 export const BaseMenu: typeof import("../components/common/BaseMenu.vue")['default']
 export const BaseModal: typeof import("../components/common/BaseModal.vue")['default']
 export const BaseMoreMenu: typeof import("../components/common/BaseMoreMenu.vue")['default']
+export const BasePageError: typeof import("../components/common/BasePageError.vue")['default']
 export const BasePagination: typeof import("../components/common/BasePagination.vue")['default']
 export const BaseSelect: typeof import("../components/common/BaseSelect.vue")['default']
 export const BaseStatusTabs: typeof import("../components/common/BaseStatusTabs.vue")['default']
@@ -31,6 +32,8 @@ export const NotificationPreview: typeof import("../components/common/Notificati
 export const SendMessage: typeof import("../components/common/SendMessage.vue")['default']
 export const TutorCard: typeof import("../components/common/TutorCard.vue")['default']
 export const BookingCardList: typeof import("../components/booking/BookingCardList.vue")['default']
+export const BookingListStudent: typeof import("../components/booking/BookingListStudent.vue")['default']
+export const BookingListTutor: typeof import("../components/booking/BookingListTutor.vue")['default']
 export const BookingSuccess: typeof import("../components/booking/BookingSuccess.vue")['default']
 export const BookingComplaintModal: typeof import("../components/booking/ComplaintModal.vue")['default']
 export const BookingConfirmBookingNew: typeof import("../components/booking/ConfirmBookingNew.vue")['default']
@@ -42,7 +45,6 @@ export const LayoutFooter: typeof import("../components/layout/Footer.vue")['def
 export const LayoutHeader: typeof import("../components/layout/Header.vue")['default']
 export const LayoutMain: typeof import("../components/layout/Main.vue")['default']
 export const ProfileOverviewNew: typeof import("../components/profile/OverviewNew.vue")['default']
-export const ProfileInfoNew: typeof import("../components/profile/ProfileInfoNew.vue")['default']
 export const ProfileScheduleNew: typeof import("../components/profile/ScheduleNew.vue")['default']
 export const ProfileWalletBalance: typeof import("../components/profile/WalletBalance.vue")['default']
 export const SettingsGlobalPreferences: typeof import("../components/settings/GlobalPreferences.vue")['default']
@@ -84,6 +86,7 @@ export const LazyBaseLoading: LazyComponent<typeof import("../components/common/
 export const LazyBaseMenu: LazyComponent<typeof import("../components/common/BaseMenu.vue")['default']>
 export const LazyBaseModal: LazyComponent<typeof import("../components/common/BaseModal.vue")['default']>
 export const LazyBaseMoreMenu: LazyComponent<typeof import("../components/common/BaseMoreMenu.vue")['default']>
+export const LazyBasePageError: LazyComponent<typeof import("../components/common/BasePageError.vue")['default']>
 export const LazyBasePagination: LazyComponent<typeof import("../components/common/BasePagination.vue")['default']>
 export const LazyBaseSelect: LazyComponent<typeof import("../components/common/BaseSelect.vue")['default']>
 export const LazyBaseStatusTabs: LazyComponent<typeof import("../components/common/BaseStatusTabs.vue")['default']>
@@ -94,6 +97,8 @@ export const LazyNotificationPreview: LazyComponent<typeof import("../components
 export const LazySendMessage: LazyComponent<typeof import("../components/common/SendMessage.vue")['default']>
 export const LazyTutorCard: LazyComponent<typeof import("../components/common/TutorCard.vue")['default']>
 export const LazyBookingCardList: LazyComponent<typeof import("../components/booking/BookingCardList.vue")['default']>
+export const LazyBookingListStudent: LazyComponent<typeof import("../components/booking/BookingListStudent.vue")['default']>
+export const LazyBookingListTutor: LazyComponent<typeof import("../components/booking/BookingListTutor.vue")['default']>
 export const LazyBookingSuccess: LazyComponent<typeof import("../components/booking/BookingSuccess.vue")['default']>
 export const LazyBookingComplaintModal: LazyComponent<typeof import("../components/booking/ComplaintModal.vue")['default']>
 export const LazyBookingConfirmBookingNew: LazyComponent<typeof import("../components/booking/ConfirmBookingNew.vue")['default']>
@@ -105,7 +110,6 @@ export const LazyLayoutFooter: LazyComponent<typeof import("../components/layout
 export const LazyLayoutHeader: LazyComponent<typeof import("../components/layout/Header.vue")['default']>
 export const LazyLayoutMain: LazyComponent<typeof import("../components/layout/Main.vue")['default']>
 export const LazyProfileOverviewNew: LazyComponent<typeof import("../components/profile/OverviewNew.vue")['default']>
-export const LazyProfileInfoNew: LazyComponent<typeof import("../components/profile/ProfileInfoNew.vue")['default']>
 export const LazyProfileScheduleNew: LazyComponent<typeof import("../components/profile/ScheduleNew.vue")['default']>
 export const LazyProfileWalletBalance: LazyComponent<typeof import("../components/profile/WalletBalance.vue")['default']>
 export const LazySettingsGlobalPreferences: LazyComponent<typeof import("../components/settings/GlobalPreferences.vue")['default']>

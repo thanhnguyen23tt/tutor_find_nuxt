@@ -57,7 +57,7 @@
     width: 100%;
     height: 100%;
     /* background-color: #e8e8e8; */
-    background: #e8e8e8f5;
+    background: #e8e8e8;
     display: flex;
     justify-content: center;
     align-items: center;

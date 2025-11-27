@@ -25,6 +25,8 @@ const { data: configuration } = await useAsyncData(
 	}
 )
 
+console.log(configuration.value)
+
 onMounted(async () => {
 	isLoading.value = true
 	await verifyToken();

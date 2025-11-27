@@ -114,8 +114,7 @@ const showEndEllipsis = computed(() => {
     flex-direction: column;
     align-items: center;
     gap: 1rem;
-    margin-top: 3rem;
-    padding: 1rem;
+    margin-top: 1rem;
 }
 
 .pagination-container {

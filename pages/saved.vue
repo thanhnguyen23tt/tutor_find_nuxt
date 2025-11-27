@@ -173,8 +173,7 @@ onMounted(() => {
 <style scoped>
 .saved-page {
     padding: 2rem 0;
-    min-height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+	background: white;
 }
 
 .container {

@@ -80,7 +80,9 @@
 			<div class="filter-section">
 				<div class="section-header">
 					<h3 class="section-title">Khoảng giá (mỗi giờ)</h3>
-					<span class="section-subtitle">Giá trung bình: {{ formatCurrency(localFilters.price) }}</span>
+					<span class="section-subtitle">
+                        {{ formatCurrency(localFilters.minPrice || 50000) }} - {{ formatCurrency(localFilters.maxPrice || 1000000) }}
+                    </span>
 				</div>
 				<div class="price-chart-wrapper">
 					<!-- Simple bar chart visualization (decorative) -->
@@ -99,12 +101,31 @@
 						<div class="bar" style="height: 30%"></div>
 					</div>
 				</div>
-				<div class="custom-slider-wrapper">
-					<input type="range" min="100000" max="1000000" step="50000" v-model.number="localFilters.price" class="custom-slider" />
+				<div class="custom-slider-wrapper dual-slider">
+                    <div class="slider-track-bg"></div>
+                    <div class="slider-track-fill" :style="trackStyle"></div>
+					<input 
+                        type="range" 
+                        min="50000" 
+                        max="1000000" 
+                        step="50000" 
+                        v-model.number="localFilters.minPrice" 
+                        class="range-input range-min" 
+                        @input="validateMinPrice"
+                    />
+					<input 
+                        type="range" 
+                        min="50000" 
+                        max="1000000" 
+                        step="50000" 
+                        v-model.number="localFilters.maxPrice" 
+                        class="range-input range-max" 
+                        @input="validateMaxPrice"
+                    />
 					<div class="slider-labels">
-						<span>100k</span>
+						<span>50k</span>
 						<span>500k</span>
-						<span>1tr+</span>
+						<span>1tr</span>
 					</div>
 				</div>
 			</div>
@@ -209,12 +230,16 @@ const localFilters = ref({ ...props.filters });
 
 // Watch for changes in props.filters to update localFilters
 watch(() => props.filters, (newFilters) => {
-	localFilters.value = { ...newFilters };
+    if (JSON.stringify(newFilters) !== JSON.stringify(localFilters.value)) {
+        localFilters.value = { ...newFilters };
+    }
 }, { deep: true });
 
 // Watch for changes in localFilters to emit update
 watch(localFilters, (newFilters) => {
-	emit('update:filters', newFilters);
+    if (JSON.stringify(newFilters) !== JSON.stringify(props.filters)) {
+        emit('update:filters', newFilters);
+    }
 }, { deep: true });
 
 const handleReset = () => {
@@ -224,6 +249,48 @@ const handleReset = () => {
 const handleApply = () => {
 	emit('apply');
 };
+
+// Dual Slider Logic
+const min = 50000;
+const max = 1000000;
+const minGap = 50000;
+
+const validateMinPrice = () => {
+    if (!localFilters.value.minPrice || localFilters.value.minPrice < min) localFilters.value.minPrice = min;
+    if (localFilters.value.minPrice > localFilters.value.maxPrice - minGap) {
+        localFilters.value.minPrice = localFilters.value.maxPrice - minGap;
+    }
+};
+
+const validateMaxPrice = () => {
+    if (!localFilters.value.maxPrice) localFilters.value.maxPrice = max;
+    if (localFilters.value.maxPrice < localFilters.value.minPrice + minGap) {
+        localFilters.value.maxPrice = localFilters.value.minPrice + minGap;
+    }
+};
+
+const trackStyle = computed(() => {
+    const minVal = localFilters.value.minPrice || 0;
+    const maxVal = localFilters.value.maxPrice || max;
+    const minPercent = ((minVal - min) / (max - min)) * 100;
+    const maxPercent = ((maxVal - min) / (max - min)) * 100;
+    
+    return {
+        left: `${minPercent}%`,
+        width: `${maxPercent - minPercent}%`
+    };
+});
+
+// Initialize min/max if not present
+watch(() => props.filters, (newFilters) => {
+    if (JSON.stringify(newFilters) !== JSON.stringify(localFilters.value)) {
+        localFilters.value = { 
+            ...newFilters,
+            minPrice: newFilters.minPrice !== undefined ? newFilters.minPrice : 50000,
+            maxPrice: newFilters.maxPrice !== undefined ? newFilters.maxPrice : 1000000
+        };
+    }
+}, { deep: true, immediate: true });
 </script>
 
 <style scoped>
@@ -295,41 +362,92 @@ const handleApply = () => {
 /* Custom Slider */
 .custom-slider-wrapper {
     padding: 0 0.5rem;
+    position: relative;
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
 }
 
-.custom-slider {
-    -webkit-appearance: none;
-    appearance: none;
+.dual-slider {
+    width: 100%;
+    /* margin-top is handled by wrapper padding/layout */
+}
+
+.slider-track-bg {
+    position: absolute;
     width: 100%;
     height: 6px;
-    background: #e5e7eb;
+    background-color: #e5e7eb;
     border-radius: 3px;
-    outline: none;
+    top: 12px; /* Center vertically in the top portion */
+    z-index: 1;
 }
 
-.custom-slider::-webkit-slider-thumb {
+.slider-track-fill {
+    position: absolute;
+    height: 6px;
+    background-color: #000;
+    border-radius: 3px;
+    top: 12px;
+    z-index: 2;
+}
+
+.range-input {
+    position: absolute;
+    width: 100%;
+    height: 6px;
+    top: 1rem;
+    left: 0;
+    pointer-events: none;
     -webkit-appearance: none;
     appearance: none;
+    background: none;
+    z-index: 3;
+    margin: 0;
+    padding: 0;
+}
+
+.range-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
     width: 24px;
     height: 24px;
     border-radius: 50%;
     background: #ffffff;
     border: 2px solid #000000;
     cursor: pointer;
+    pointer-events: auto;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: transform 0.1s;
+    margin-top: -9px; /* (6px - 24px) / 2 = -9px */
 }
 
-.custom-slider::-webkit-slider-thumb:hover {
+.range-input::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #000000;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: none;
+}
+
+.range-input:focus {
+    outline: none;
+}
+
+.range-input:focus::-webkit-slider-thumb {
     transform: scale(1.1);
 }
 
 .slider-labels {
     display: flex;
     justify-content: space-between;
-    margin-top: 0.75rem;
+    margin-top: 0.5rem; /* Space from the slider track area */
     font-size: 0.875rem;
     color: #6b7280;
+    font-weight: 500;
 }
 
 /* Rating Options */

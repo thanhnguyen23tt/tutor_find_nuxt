@@ -260,8 +260,8 @@
 // Auto-imported: ref, onMounted, useRouter
 
 definePageMeta({
-  layout: 'auth',
-  middleware: 'role'
+  middleware: 'auth',
+  layout: 'empty'
 });
 
 const router = useRouter();

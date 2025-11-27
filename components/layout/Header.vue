@@ -71,9 +71,7 @@ const shouldShowItem = (item) => {
 	return matchesRole(item);
 };
 
-const filteredMenuItems = computed(() => {
-	return userMenuItems.filter(item => shouldShowItem(item));
-});
+
 
 const filteredActionButtons = computed(() => {
 	return headerActionButtons.filter(button => shouldShowItem(button));
@@ -93,18 +91,6 @@ const desktopActionButtons = computed(() => {
 	}
 
 	return baseActionButtons.value.filter(action => action.requiresAuth !== true);
-});
-
-const guestMenuButtons = computed(() => {
-	return baseActionButtons.value.filter(action => action.requiresAuth === false);
-});
-
-const menuActionButtons = computed(() => {
-	if (isAuthenticatedCheck.value) {
-		return baseActionButtons.value.filter(action => action.requiresAuth !== false);
-	}
-
-	return baseActionButtons.value.filter(action => action.requiresAuth === undefined);
 });
 
 const fetchNotifications = async () => {
@@ -230,6 +216,174 @@ onMounted(() => {
 const getNotificationIcon = (notification) => {
 	const type = notification.type || 'schedule'; // default to schedule
 	return notification_type_icons[type] || notification_type_icons.schedule;
+};
+
+// Mobile bottom navigation
+const showMoreMenu = ref(false);
+const showProfileMenu = ref(false);
+const maxVisibleItems = 4; // Including "More" button
+
+const mobileNavItems = computed(() => {
+	const items = [];
+	
+	// 1. Trang chủ
+	items.push({
+		id: 'home',
+		name: 'Trang chủ',
+		path: '/',
+		icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+		iconViewBox: '0 0 24 24'
+	});
+	
+	// 2. Tìm kiếm
+	items.push({
+		id: 'search',
+		name: 'Tìm kiếm',
+		path: '/search',
+		icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
+		iconViewBox: '0 0 24 24'
+	});
+	
+	// 3. Tin nhắn
+	if (isAuthenticatedCheck.value) {
+		const messageItem = userMenuItems.find(item => item.id === 5); // Message item
+		if (messageItem) {
+			items.push({
+				id: 'message',
+				name: 'Tin nhắn',
+				path: messageItem.path,
+				icon: messageItem.icon,
+				iconViewBox: messageItem.iconViewBox,
+				badge: unreadData.value.messages
+			});
+		}
+
+		items.push({
+			id: 'profile',
+			name: 'Hồ sơ',
+			action: 'toggleProfileMenu',
+			icon: ['M16 7a4 4 0 11-8 0 4 4 0 018 0z', 'M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'],
+			iconViewBox: '0 0 24 24',
+			isProfile: true
+		});
+	} else {
+		items.push({
+			id: 'login',
+			name: 'Đăng nhập',
+			path: '/auth/login',
+			icon: ['M16 7a4 4 0 11-8 0 4 4 0 018 0z', 'M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'],
+			iconViewBox: '0 0 24 24',
+		});
+	}
+	
+	return items;
+});
+
+const visibleNavItems = computed(() => {
+	if (mobileNavItems.value.length <= maxVisibleItems) {
+		return mobileNavItems.value;
+	}
+	return mobileNavItems.value.slice(0, maxVisibleItems - 1);
+});
+
+const moreMenuItems = computed(() => {
+	if (mobileNavItems.value.length <= maxVisibleItems) {
+		return [];
+	}
+	
+	return mobileNavItems.value.slice(maxVisibleItems - 1);
+});
+
+const profileMenuItems = computed(() => {
+	const items = [];
+	
+	// 1. Xem hồ sơ
+	items.push({
+		id: 'view_profile_custom',
+		name: 'Xem hồ sơ',
+		path: '/profile',
+		icon: ['M16 7a4 4 0 11-8 0 4 4 0 018 0z', 'M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'],
+		iconViewBox: '0 0 24 24',
+		priority: 0
+	});
+
+	// 2. userMenuItems (excluding id 1 to avoid duplicate "Hồ sơ")
+	items.push(...userMenuItems.filter(item => shouldShowItem(item) && item.id !== 1));
+
+	// 3. navigationLinks
+	const navIcons = {
+		1: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+		2: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
+		3: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253'
+	};
+	
+	items.push(...navigationLinks.map(link => ({
+		...link,
+		icon: navIcons[link.id] || 'M4 6h16M4 12h16M4 18h16',
+		iconViewBox: '0 0 24 24'
+	})));
+
+	// 4. headerActionButtons
+	items.push(...headerActionButtons.filter(item => shouldShowItem(item)));
+
+	// Sort by priority
+	return items.sort((a, b) => (a.priority || 999) - (b.priority || 999));
+});
+
+const hasMoreItems = computed(() => moreMenuItems.value.length > 0);
+
+const toggleMoreMenu = () => {
+	showMoreMenu.value = !showMoreMenu.value;
+	
+	// Add haptic feedback for mobile
+	if (process.client && navigator.vibrate) {
+		navigator.vibrate(50);
+	}
+};
+
+const closeMoreMenu = () => {
+	showMoreMenu.value = false;
+};
+
+const handleMoreItemClick = (item) => {
+	if (item.action) {
+		handleMenuAction(item.action);
+	}
+	closeMoreMenu();
+};
+
+const toggleProfileMenu = () => {
+	showProfileMenu.value = !showProfileMenu.value;
+	showMoreMenu.value = false;
+	
+	if (process.client && navigator.vibrate) {
+		navigator.vibrate(50);
+	}
+};
+
+const closeProfileMenu = () => {
+	showProfileMenu.value = false;
+};
+
+const handleMobileNavClick = (item) => {
+	if (item.path) {
+		navigateTo(item.path);
+	} else if (item.action === 'toggleProfileMenu') {
+		toggleProfileMenu();
+	} else if (item.action) {
+		handleMenuAction(item.action);
+	}
+};
+
+const handleProfileItemClick = (item) => {
+	if (item.action) {
+		if (item.action === 'toggleNotifications') {
+			toggleNotifications();
+		} else {
+			handleMenuAction(item.action);
+		}
+	}
+	closeProfileMenu();
 };
 </script>
 
@@ -388,148 +542,278 @@ const getNotificationIcon = (notification) => {
 							</div>
 						</div>
 
-						<div class="user-info" @click="toggleDropdown">
+						<div class="user-info" @click="navigateTo('/profile')">
 							<img v-if="userData?.avatar" :src="userData.avatar" alt="User avatar" class="user-avatar">
 							<div v-else class="user-avatar">
 								{{ getFirstCharacterOfLastName(userData.full_name) }}
 							</div>
 						</div>
 					</template>
-
-					<template v-else>
-						<button type="button" class="mobile-menu-trigger" @click="toggleDropdown">
-							<svg class="icon-max" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-									d="M4 7h16M4 12h16M10 17h10" />
-							</svg>
-						</button>
-					</template>
-
-					<div class="dropdown-menu" :class="{ 'show': showDropdown }">
-						<button class="mobile-close-button" @click="closeMenus">
-							<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-									d="M6 18L18 6M6 6l12 12" />
-							</svg>
-						</button>
-
-						<div class="mobile-nav-links">
-							<NuxtLink v-for="link in navigationLinks" :key="`mobile-${link.id}`" :to="link.path"
-								class="dropdown-item card-item mobile-nav-item" @click="closeMenus">
-								{{ link.name }}
-							</NuxtLink>
-							<hr class="dropdown-divider">
-						</div>
-
-						<div v-if="menuActionButtons.length" class="menu-action-buttons">
-							<template v-for="action in menuActionButtons" :key="`menu-${action.id}`">
-								<NuxtLink v-if="action.type === 'router-link'" :to="action.path"
-									class="dropdown-item card-item menu-action-item" @click="closeMenus">
-									<svg class="icon-md" :viewBox="action.iconViewBox" :fill="action.fill || 'none'"
-										xmlns="http://www.w3.org/2000/svg">
-										<template v-for="(item, i) in normalizeIcon(action.icon)" :key="i">
-											<path v-if="item.type === 'path'" :d="item.d"
-												:stroke="action.stroke || 'currentColor'"
-												:stroke-width="action.strokeWidth || '2'"
-												:stroke-linecap="action.strokeLinecap || 'round'"
-												:stroke-linejoin="action.strokeLinejoin || 'round'" />
-											<line v-else-if="item.type === 'line'" :x1="item.x1" :y1="item.y1"
-												:x2="item.x2" :y2="item.y2" :stroke="action.stroke || 'currentColor'"
-												:stroke-width="action.strokeWidth || '2'"
-												:stroke-linecap="action.strokeLinecap || 'round'"
-												:stroke-linejoin="action.strokeLinejoin || 'round'" />
-										</template>
-									</svg>
-									<span class="menu-action-label">{{ action.menuLabel || action.tooltip }}</span>
-								</NuxtLink>
-
-								<div v-else-if="action.type === 'icon'" class="dropdown-item card-item menu-action-item"
-									@click="closeMenus">
-									<svg class="icon-md" :viewBox="action.iconViewBox" :fill="action.fill || 'none'"
-										xmlns="http://www.w3.org/2000/svg">
-										<template v-for="(item, i) in normalizeIcon(action.icon)" :key="i">
-											<path v-if="item.type === 'path'" :d="item.d"
-												:stroke="action.stroke || 'currentColor'"
-												:stroke-width="action.strokeWidth || '2'"
-												:stroke-linecap="action.strokeLinecap || 'round'"
-												:stroke-linejoin="action.strokeLinejoin || 'round'" />
-											<line v-else-if="item.type === 'line'" :x1="item.x1" :y1="item.y1"
-												:x2="item.x2" :y2="item.y2" :stroke="action.stroke || 'currentColor'"
-												:stroke-width="action.strokeWidth || '2'"
-												:stroke-linecap="action.strokeLinecap || 'round'"
-												:stroke-linejoin="action.strokeLinejoin || 'round'" />
-										</template>
-									</svg>
-									<span class="menu-action-label">{{ action.menuLabel || action.tooltip }}</span>
-								</div>
-
-								<button v-else-if="action.type === 'action'" type="button"
-									:class="['dropdown-item', 'card-item', 'menu-action-item', action.className]"
-									@click="handleAuthAction(action.action)">
-									<span class="menu-action-label">{{ action.label || action.tooltip }}</span>
-								</button>
-							</template>
-							<hr class="dropdown-divider menu-action-divider">
-						</div>
-
-						<template v-for="item in filteredMenuItems" :key="item.id">
-							<!-- Menu item có link bình thường -->
-							<NuxtLink v-if="!item.action" :to="item.path" class="dropdown-item card-item"
-								:class="item.className" @click="closeMenus">
-								<svg class="icon-md" fill="none" stroke="currentColor"
-									:viewBox="item.iconViewBox || '0 0 24 24'" :stroke-width="item.strokeWidth || '2'">
-									<path v-for="(path, index) in item.icon" :key="index" :d="path"
-										stroke-linecap="round" stroke-linejoin="round" />
-								</svg>
-								<span>{{ item.name }}</span>
-							</NuxtLink>
-
-							<!-- Menu item có action (ví dụ: Đăng xuất) -->
-							<a v-else href="#" class="dropdown-item card-item" :class="item.className"
-								@click.prevent="handleMenuAction(item.action)">
-								<svg class="icon-md" fill="none" stroke="currentColor"
-									:viewBox="item.iconViewBox || '0 0 24 24'" :stroke-width="item.strokeWidth || '2'">
-									<path v-for="(path, index) in item.icon" :key="index" :d="path"
-										stroke-linecap="round" stroke-linejoin="round" />
-								</svg>
-								<span>{{ item.name }}</span>
-							</a>
-
-							<!-- Divider nếu có -->
-							<hr v-if="item.isDivider" class="dropdown-divider">
-						</template>
-
-						<div v-if="guestMenuButtons.length" class="menu-auth-buttons">
-							<template v-for="action in guestMenuButtons" :key="`guest-${action.id}`">
-								<NuxtLink v-if="action.type === 'router-link'" :to="action.path"
-									class="dropdown-item card-item menu-auth-item" @click="closeMenus">
-									<span class="menu-action-label">{{ action.label || action.tooltip }}</span>
-								</NuxtLink>
-
-								<button v-else-if="action.type === 'action'" type="button"
-									:class="['dropdown-item', 'card-item', 'menu-auth-item', action.className]"
-									@click="handleAuthAction(action.action)">
-									<span class="menu-action-label">{{ action.label || action.tooltip }}</span>
-								</button>
-							</template>
-						</div>
-					</div>
 				</div>
 			</div>
 		</div>
 	</header>
+
+	<!-- Mobile Bottom Navigation -->
+	<nav class="mobile-bottom-nav">
+		<button 
+			v-for="item in visibleNavItems" 
+			:key="item.id" 
+			class="mobile-nav-item"
+			:class="{ 'active': (item.path === '/' ? $route.path === '/' : (item.path && $route.path.startsWith(item.path))) || (item.id === 'profile' && showProfileMenu) }"
+			@click="handleMobileNavClick(item)"
+		>
+			<div class="mobile-nav-icon-wrapper">
+				<svg 
+					v-if="Array.isArray(item.icon)"
+					class="mobile-nav-icon" 
+					:viewBox="item.iconViewBox" 
+					fill="none" 
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path v-for="(path, index) in item.icon" :key="index" :d="path" />
+				</svg>
+				<svg 
+					v-else
+					class="mobile-nav-icon" 
+					:viewBox="item.iconViewBox" 
+					fill="none" 
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path :d="item.icon" />
+				</svg>
+				<span v-if="item.badge && item.badge > 0" class="mobile-nav-badge">{{ item.badge }}</span>
+			</div>
+			<span class="mobile-nav-label">{{ item.name }}</span>
+		</button>
+
+		<button 
+			v-if="hasMoreItems"
+			class="mobile-nav-item mobile-nav-more"
+			:class="{ 'active': showMoreMenu }"
+			@click="toggleMoreMenu"
+		>
+			<div class="mobile-nav-icon-wrapper">
+				<svg 
+					class="mobile-nav-icon" 
+					viewBox="0 0 24 24" 
+					fill="none" 
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<circle cx="12" cy="12" r="1" />
+					<circle cx="12" cy="5" r="1" />
+					<circle cx="12" cy="19" r="1" />
+				</svg>
+			</div>
+			<span class="mobile-nav-label">Thêm</span>
+		</button>
+	</nav>
+
+	<!-- More Menu Overlay -->
+	<Transition name="more-menu-overlay">
+		<div v-if="showMoreMenu" class="more-menu-overlay" @click="closeMoreMenu"></div>
+	</Transition>
+
+	<!-- More Menu Panel -->
+	<Transition name="more-menu">
+		<div v-if="showMoreMenu" class="more-menu-panel">
+			<div class="more-menu-header">
+				<h3>Thêm</h3>
+				<button class="more-menu-close" @click="closeMoreMenu">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
+			<div class="more-menu-content">
+				<template v-for="item in moreMenuItems" :key="item.id">
+					<NuxtLink 
+						v-if="!item.action" 
+						:to="item.path" 
+						class="more-menu-item"
+						@click="closeMoreMenu"
+					>
+						<svg 
+							v-if="Array.isArray(item.icon)"
+							class="more-menu-icon" 
+							:viewBox="item.iconViewBox || '0 0 24 24'" 
+							fill="none" 
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path v-for="(path, index) in item.icon" :key="index" :d="path" />
+						</svg>
+						<svg 
+							v-else
+							class="more-menu-icon" 
+							:viewBox="item.iconViewBox || '0 0 24 24'" 
+							fill="none" 
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path :d="item.icon" />
+						</svg>
+						<span class="more-menu-label">{{ item.name }}</span>
+					</NuxtLink>
+
+					<button 
+						v-else
+						class="more-menu-item"
+						@click="handleMoreItemClick(item)"
+					>
+						<svg 
+							v-if="Array.isArray(item.icon)"
+							class="more-menu-icon" 
+							:viewBox="item.iconViewBox || '0 0 24 24'" 
+							fill="none" 
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path v-for="(path, index) in item.icon" :key="index" :d="path" />
+						</svg>
+						<svg 
+							v-else
+							class="more-menu-icon" 
+							:viewBox="item.iconViewBox || '0 0 24 24'" 
+							fill="none" 
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+			stroke-linejoin="round"
+						>
+							<path :d="item.icon" />
+						</svg>
+						<span class="more-menu-label">{{ item.name }}</span>
+					</button>
+				</template>
+			</div>
+		</div>
+	</Transition>
+
+	<!-- Profile Menu Overlay -->
+	<Transition name="more-menu-overlay">
+		<div v-if="showProfileMenu" class="more-menu-overlay" @click="closeProfileMenu"></div>
+	</Transition>
+
+	<!-- Profile Menu Panel -->
+	<Transition name="more-menu">
+		<div v-if="showProfileMenu" class="more-menu-panel">
+			<div class="more-menu-header">
+				<h3>Menu</h3>
+				<button class="more-menu-close" @click="closeProfileMenu">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
+			<div class="more-menu-content">
+				<template v-for="item in profileMenuItems" :key="item.id">
+					<NuxtLink 
+						v-if="!item.action" 
+						:to="item.path" 
+						class="more-menu-item"
+						@click="closeProfileMenu"
+					>
+						<svg 
+							v-if="Array.isArray(item.icon)"
+							class="more-menu-icon" 
+							:viewBox="item.iconViewBox || '0 0 24 24'" 
+							fill="none" 
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path v-for="(path, index) in item.icon" :key="index" :d="path" />
+						</svg>
+						<svg 
+							v-else
+							class="more-menu-icon" 
+							:viewBox="item.iconViewBox || '0 0 24 24'" 
+							fill="none" 
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path :d="item.icon" />
+						</svg>
+						<span class="more-menu-label">{{ item.name || item.label || item.tooltip }}</span>
+						<span v-if="item.badgeKey && unreadData[item.badgeKey] > 0" class="mobile-nav-badge" style="position: static; margin-left: auto;">
+							{{ unreadData[item.badgeKey] }}
+						</span>
+					</NuxtLink>
+
+					<button 
+						v-else
+						class="more-menu-item"
+						@click="handleProfileItemClick(item)"
+					>
+						<svg 
+							v-if="Array.isArray(item.icon)"
+							class="more-menu-icon" 
+							:viewBox="item.iconViewBox || '0 0 24 24'" 
+							fill="none" 
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path v-for="(path, index) in item.icon" :key="index" :d="path" />
+						</svg>
+						<svg 
+							v-else
+							class="more-menu-icon" 
+							:viewBox="item.iconViewBox || '0 0 24 24'" 
+							fill="none" 
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path :d="item.icon" />
+						</svg>
+						<span class="more-menu-label">{{ item.name || item.label || item.tooltip }}</span>
+						<span v-if="item.badgeKey && unreadData[item.badgeKey] > 0" class="mobile-nav-badge" style="position: static; margin-left: auto;">
+							{{ unreadData[item.badgeKey] }}
+						</span>
+					</button>
+				</template>
+			</div>
+		</div>
+	</Transition>
 </template>
 
 <style scoped>
 .header {
-	background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
 	backdrop-filter: blur(20px);
 	border-bottom: 1px solid rgba(226, 232, 240, 1);
 	position: sticky;
 	top: 0;
 	z-index: 100;
-	/* box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); */
+	background: white;
 	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 768px) {
+	.header {
+		display: none;
+	}
 }
 
 .header::before {
@@ -1025,20 +1309,6 @@ const getNotificationIcon = (notification) => {
 }
 
 @media (max-width: 1024px) {
-	.auth-buttons {
-		display: none;
-	}
-
-	.mobile-menu-trigger {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.header-action-buttons {
-		display: none;
-	}
-
 	.menu-action-buttons {
 		display: flex;
 		flex-direction: column;
@@ -1666,5 +1936,223 @@ const getNotificationIcon = (notification) => {
 	background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
 	transform: translateY(-2px);
 	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+/* Mobile Bottom Navigation */
+.mobile-bottom-nav {
+	display: none;
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: #fff;
+	border-top: 1px solid #e5e7eb;
+	padding: 0.5rem 0;
+	z-index: 1000;
+	box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.mobile-nav-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	padding: 0.5rem;
+	text-decoration: none;
+	color: #6b7280;
+	transition: all 0.2s ease;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	position: relative;
+}
+
+.mobile-nav-item.active {
+	color: #000;
+}
+
+.mobile-nav-item.active .mobile-nav-icon-wrapper::before {
+	content: '';
+	position: absolute;
+	top: -0.5rem;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 32px;
+	height: 3px;
+	background: #000;
+	border-radius: 0 0 3px 3px;
+}
+
+.mobile-nav-icon-wrapper {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 0.25rem;
+}
+
+.mobile-nav-icon {
+	width: 24px;
+	height: 24px;
+}
+
+.mobile-nav-label {
+	font-size: 0.75rem;
+	font-weight: 500;
+	text-align: center;
+}
+
+.mobile-nav-badge {
+	position: absolute;
+	top: -4px;
+	right: -4px;
+	background: #ef4444;
+	color: #fff;
+	font-size: 0.625rem;
+	font-weight: 600;
+	min-width: 16px;
+	height: 16px;
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 4px;
+}
+
+/* More Menu Overlay */
+.more-menu-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 1001;
+	backdrop-filter: blur(4px);
+}
+
+.more-menu-overlay-enter-active,
+.more-menu-overlay-leave-active {
+	transition: opacity 0.3s ease;
+}
+
+.more-menu-overlay-enter-from,
+.more-menu-overlay-leave-to {
+	opacity: 0;
+}
+
+/* More Menu Panel */
+.more-menu-panel {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: #fff;
+	border-radius: 20px 20px 0 0;
+	z-index: 1002;
+	max-height: 70vh;
+	display: flex;
+	flex-direction: column;
+	box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.more-menu-enter-active,
+.more-menu-leave-active {
+	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.more-menu-enter-from,
+.more-menu-leave-to {
+	transform: translateY(100%);
+}
+
+.more-menu-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 1.25rem 1.5rem;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.more-menu-header h3 {
+	font-size: 1.125rem;
+	font-weight: 600;
+	color: #1f2937;
+	margin: 0;
+}
+
+.more-menu-close {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	border: none;
+	background: #f3f4f6;
+	color: #6b7280;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.more-menu-close svg {
+	width: 20px;
+	height: 20px;
+}
+
+.more-menu-close:active {
+	transform: scale(0.95);
+	background: #e5e7eb;
+}
+
+.more-menu-content {
+	overflow-y: auto;
+	padding: 0.5rem;
+	flex: 1;
+}
+
+.more-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: 1rem 1.25rem;
+	text-decoration: none;
+	color: #374151;
+	border-radius: 12px;
+	transition: all 0.2s ease;
+	border: none;
+	background: transparent;
+	width: 100%;
+	text-align: left;
+	cursor: pointer;
+	font-size: 1rem;
+}
+
+.more-menu-item:active {
+	background: #f3f4f6;
+	transform: scale(0.98);
+}
+
+.more-menu-icon {
+	width: 24px;
+	height: 24px;
+	flex-shrink: 0;
+}
+
+.more-menu-label {
+	font-weight: 500;
+	flex: 1;
+}
+
+@media (max-width: 768px) {
+	.mobile-bottom-nav {
+		display: flex;
+	}
+
+	/* Add padding to body to account for fixed bottom nav */
+	body {
+		padding-bottom: env(safe-area-inset-bottom, 0);
+	}
 }
 </style>

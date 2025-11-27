@@ -281,13 +281,5 @@ const getReasonFromLogs = (booking) => {
 <style scoped>
 @import '~/assets/css/BookingManager.css';
 
-.avatar-clickable {
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.avatar-clickable:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
+@import url("~/assets/css/BookingCardList.css");
 </style>

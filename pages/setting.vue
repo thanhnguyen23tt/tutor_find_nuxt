@@ -1,11 +1,16 @@
 <script setup>
 definePageMeta({
 	layout: 'empty',
+	middleware: [
+		() => {
+		useLayoutStore().setHiddenFooter(true)
+		}
+	]
 });
+
 
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 
-const layoutStore = useLayoutStore();
 const router = useRouter();
 
 // Tabs
@@ -24,22 +29,13 @@ const tabs = [
 const goHome = () => {
 	router.push('/');
 };
-
-// Lifecycle
-onMounted(() => {
-	layoutStore.setHiddenFooter(true);
-});
-
-onUnmounted(() => {
-	layoutStore.setHiddenFooter(false);
-});
 </script>
 
 <template>
 	<div class="airbnb-settings-page">
 		<!-- Header -->
 		<header class="settings-header">
-			<div class="header-container">
+			<div class="header-container container">
 				<div class="logo" @click="goHome">
 					<Logo />
 				</div>
@@ -48,7 +44,7 @@ onUnmounted(() => {
 		</header>
 
 		<main class="settings-main">
-			<div class="main-container">
+			<div class="main-container container">
 				<!-- Sidebar -->
 				<aside class="settings-sidebar">
 					<h1 class="sidebar-title">Cài đặt tài khoản</h1>
@@ -110,9 +106,7 @@ onUnmounted(() => {
 
 .header-container {
 	width: 100%;
-	max-width: 1120px;
 	margin: 0 auto;
-	padding: 0 24px;
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -147,9 +141,7 @@ onUnmounted(() => {
 }
 
 .main-container {
-	max-width: 1120px;
 	margin: 0 auto;
-	padding: 0 24px;
 	display: grid;
 	grid-template-columns: 300px 1fr;
 	gap: 48px;

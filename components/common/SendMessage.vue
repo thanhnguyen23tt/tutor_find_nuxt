@@ -2,7 +2,8 @@
     <base-modal v-if="isOpen" :isOpen="isOpen" @close="closeModal" size="small" title="Gửi tin nhắn" description="Gửi tin nhắn nếu bạn muốn liên hệ với người dùng">
         <div class="send-message">
             <div class="user-info">
-                <img :src="user?.avatar" class="avatar">
+                <img v-if="user?.avatar" :src="user?.avatar" class="avatar">
+				<div v-else class="avatar">{{ getFirstCharacterOfLastName(user?.full_name) }}</div>
                 <div class="user-details">
                     <h4 class="name">Liên hệ {{ user?.full_name || 'User' }}</h4>
                     <span class="desc">Giới thiệu bản thân với {{ user?.full_name }}, chia sẻ vấn đề của bạn và đặt bất kỳ câu hỏi nào</span>
@@ -52,6 +53,7 @@ const emit = defineEmits(['messageSent', 'close']);
 
 const { api } = useApi();
 const { success, error: notifyError } = useNotification();
+const { getFirstCharacterOfLastName } = useHelper();
 
 const message = ref('');
 
@@ -117,6 +119,10 @@ const sendMessage = async () => {
     border: 3px solid #ffffff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--font-size-heading-5);
 }
 
 .user-details {

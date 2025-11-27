@@ -91,22 +91,12 @@ const hiddenFooter = computed(() => layoutStore.isFooterHidden);
 <style scoped>
 .footer {
     color: white;
-    padding: 80px 0 40px;
+    padding: 40px 0 40px;
     border-top: none;
     position: relative;
     overflow: hidden;
+	background: #f7f7f7;
 }
-
-.footer::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
-}
-
 .container {
     margin: auto;
     position: relative;
@@ -179,7 +169,7 @@ const hiddenFooter = computed(() => layoutStore.isFooterHidden);
 
 .group-title {
     font-size: var(--font-size-heading-6);
-    font-weight: 700;
+    font-weight: 500;
     margin-bottom: 1.5rem;
     color: black;
     position: relative;
@@ -218,7 +208,6 @@ const hiddenFooter = computed(() => layoutStore.isFooterHidden);
     color: black;
     text-decoration: none;
     transition: all 0.3s ease;
-    font-weight: 500;
 }
 
 .links-list li a:hover {
@@ -263,6 +252,12 @@ const hiddenFooter = computed(() => layoutStore.isFooterHidden);
     .footer-brand {
         max-width: none;
     }
+
+	.footer-bottom {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+    }
 }
 
 @media (max-width: 768px) {
@@ -275,21 +270,12 @@ const hiddenFooter = computed(() => layoutStore.isFooterHidden);
         gap: 24px;
     }
 
-    .footer-bottom {
-        flex-direction: column;
-        gap: 16px;
-        text-align: center;
-    }
-
     .bottom-links {
         justify-content: center;
     }
 }
 
 @media (max-width: 640px) {
-    .container {
-        padding: 0 16px;
-    }
 
     .footer-links {
         grid-template-columns: 1fr;

@@ -112,13 +112,61 @@ const ICE_SERVERS = [{
 
 const MOBILE_BREAKPOINT = 1024
 
+// ===== Text Constants =====
+const CONSTANTS = {
+    labels: {
+        self: 'Bạn',
+        waiting: 'Chờ...',
+        participants: 'người tham gia',
+        bookingCode: 'Mã booking'
+    },
+    titles: {
+        settings: 'Cài đặt',
+        splitMode: 'Chế độ 50/50',
+        pinMyScreen: 'Ghim màn hình của tôi',
+        pinRemoteScreen: 'Ghim màn hình đối phương',
+        minimize: 'Thu nhỏ',
+        expand: 'Mở rộng',
+        fullscreen: 'Toàn màn hình',
+        exitFullscreen: 'Thoát toàn màn hình',
+        toggleCamera: 'Bật/Tắt camera',
+        cameraOn: 'Tắt camera',
+        cameraOff: 'Bật camera',
+        toggleMic: 'Bật/Tắt mic',
+        micOn: 'Tắt mic',
+        micOff: 'Bật mic',
+        micMuted: 'Mic tắt',
+        shareScreen: 'Chia sẻ màn hình',
+        leaveClassroom: 'Rời khỏi lớp học',
+        hideControls: 'Ẩn thanh công cụ',
+        showControls: 'Hiện thanh công cụ'
+    },
+    messages: {
+        classroomNotStarted: 'Lớp học chưa đến giờ bắt đầu.',
+        classroomEnded: 'Lớp học đã kết thúc.',
+        waitingForTutor: 'Lớp học chưa bắt đầu. Vui lòng chờ gia sư bắt đầu lớp học.',
+        cannotAccess: 'Không thể truy cập lớp học',
+        redirectMessage: 'Bạn sẽ được chuyển về trang quản lý lớp học trong giây lát...',
+        loadError: 'Không thể tải thông tin lớp học',
+        defaultTitle: 'Lớp học trực tuyến',
+        cameraOff: 'Camera đã tắt',
+        waitingConnection: 'Chờ kết nối...',
+        waitingVideo: 'Đang chờ video...'
+    },
+    buttons: {
+        backToManager: 'Quay lại trang quản lý',
+        splitLayout: '50/50',
+        pin: 'Ghim'
+    }
+}
+
 // ===== Computed =====
 const userData = computed(() => userStore.getUserData)
 const userDataUid = computed(() => userData.value?.uid)
 
 const labels = computed(() => ({
-    self: 'Bạn',
-    peer: webrtcState.peerName || 'Chờ...'
+    self: CONSTANTS.labels.self,
+    peer: webrtcState.peerName || CONSTANTS.labels.waiting
 }))
 
 const isLocalVideoOn = computed(() => {
@@ -127,18 +175,18 @@ const isLocalVideoOn = computed(() => {
 })
 
 const checkStatusClassroom = computed(() => {
-    if (!classroomState.data) return 'Lớp học chưa đến giờ bắt đầu.'
+    if (!classroomState.data) return CONSTANTS.messages.classroomNotStarted
 
     const {
         status
     } = classroomState.data
 
-    if (status === statusClassroom.ended) return 'Lớp học đã kết thúc.'
+    if (status === statusClassroom.ended) return CONSTANTS.messages.classroomEnded
     if (status !== statusClassroom.started) {
-        return 'Lớp học chưa bắt đầu. Vui lòng chờ gia sư bắt đầu lớp học.'
+        return CONSTANTS.messages.waitingForTutor
     }
 
-    return 'Lớp học chưa đến giờ bắt đầu.'
+    return CONSTANTS.messages.classroomNotStarted
 })
 
 // ===== Classroom Methods =====
@@ -171,7 +219,7 @@ async function loadClassroom() {
         classroomState.data = {
             id: route.params.id
         }
-        notifyError('Không thể tải thông tin lớp học')
+        notifyError(CONSTANTS.messages.loadError)
         redirectCantAccessClassroom()
         return false
     } finally {
@@ -187,14 +235,14 @@ function validateClassroomAccess(response) {
     if (data.status === statusClassroom.ended) {
         return {
             canAccess: false,
-            message: 'Lớp học đã kết thúc.'
+            message: CONSTANTS.messages.classroomEnded
         }
     }
 
     if (data.status !== statusClassroom.started) {
         return {
             canAccess: false,
-            message: 'Lớp học chưa bắt đầu. Vui lòng chờ gia sư bắt đầu lớp học.'
+            message: CONSTANTS.messages.waitingForTutor
         }
     }
 
@@ -762,8 +810,10 @@ defineExpose({
     <base-loading v-if="classroomState.isLoading" />
 
     <div class="classroom-container" v-if="!classroomState.isLoading">
+        <BasePageError v-if="!classroomState.data?.booking" message="Lớp học không tồn tại hoặc có lỗi xảy ra" />
+
         <!-- Access denied message -->
-        <div v-if="!classroomState.canAccess" class="access-denied">
+        <div v-else-if="!classroomState.canAccess" class="access-denied">
             <div class="access-denied-content">
                 <div class="access-denied-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon-max-4" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -771,15 +821,15 @@ defineExpose({
                         <path d="m4.9 4.9 14.2 14.2"></path>
                     </svg>
                 </div>
-                <h2 class="access-denied-title">Không thể truy cập lớp học</h2>
+                <h2 class="access-denied-title">{{ CONSTANTS.messages.cannotAccess }}</h2>
                 <p class="access-denied-message">{{ checkStatusClassroom }}</p>
-                <p class="access-denied-subtitle">Bạn sẽ được chuyển về trang quản lý lớp học trong giây lát...</p>
+                <p class="access-denied-subtitle">{{ CONSTANTS.messages.redirectMessage }}</p>
                 <NuxtLink to="/classroom-manager" class="access-denied-btn">
                     <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                         <polyline points="9,22 9,12 15,12 15,22"></polyline>
                     </svg>
-                    Quay lại trang quản lý
+                    {{ CONSTANTS.buttons.backToManager }}
                 </NuxtLink>
             </div>
         </div>
@@ -790,29 +840,26 @@ defineExpose({
             <div class="classroom-header">
                 <div class="header-left">
                     <div class="classroom-info" v-if="classroomState.data">
-                        <h3 class="classroom-title">{{ classroomState.data.topic || 'Lớp học trực tuyến' }}</h3>
-                        <p class="classroom-subtitle">Mã booking: {{ classroomState.data.booking?.request_code }}</p>
+                        <h3 class="classroom-title">{{ classroomState.data.topic || CONSTANTS.messages.defaultTitle }}</h3>
+                        <p class="classroom-subtitle">{{ CONSTANTS.labels.bookingCode }}: {{ classroomState.data.booking?.request_code }}</p>
                     </div>
                 </div>
 
                 <div class="header-right">
                     <div class="participants-info fancy-chip">
-                        <svg class="participants-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg class="participants-icon icon-sm" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
                             <circle cx="9" cy="7" r="4"></circle>
                             <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
                             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                         </svg>
                         <span class="count">{{ classroomState.participantsCount }}</span>
-                        <span class="label">người tham gia</span>
+                        <span class="label">{{ CONSTANTS.labels.participants }}</span>
                     </div>
 
                     <div class="header-actions">
-                        <button class="settings-btn" title="Cài đặt">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
-                            </svg>
+                        <button class="settings-btn" :title="CONSTANTS.titles.settings">
+                            <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                         </button>
                     </div>
                 </div>
@@ -840,7 +887,7 @@ defineExpose({
                                         <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path>
                                         <rect x="2" y="6" width="14" height="12" rx="2" />
                                     </svg>
-                                    <p class="overlay-text">Camera đã tắt</p>
+                                    <p class="overlay-text">{{ CONSTANTS.messages.cameraOff }}</p>
                                 </div>
                             </div>
 
@@ -850,31 +897,31 @@ defineExpose({
                                     class="layout-btn" 
                                     :class="{ active: uiState.layoutMode === 'split' }" 
                                     @click="setLayout('split')" 
-                                    title="Chế độ 50/50"
+                                    :title="CONSTANTS.titles.splitMode"
                                     v-if="!uiState.isMobile"
                                 >
                                     <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect x="3" y="5" width="8" height="14" rx="2"></rect>
                                         <rect x="13" y="5" width="8" height="14" rx="2"></rect>
                                     </svg>
-                                    <span>50/50</span>
+                                    <span>{{ CONSTANTS.buttons.splitLayout }}</span>
                                 </button>
                                 <button 
                                     class="layout-btn" 
                                     :class="{ active: uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local' }" 
                                     @click="pinLocal" 
-                                    title="Ghim màn hình của tôi"
+                                    :title="CONSTANTS.titles.pinMyScreen"
                                 >
                                     <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect x="2" y="4" width="20" height="14" rx="2"></rect>
                                         <rect x="14" y="12" width="8" height="6" rx="2"></rect>
                                     </svg>
-                                    <span>Ghim</span>
+                                    <span>{{ CONSTANTS.buttons.pin }}</span>
                                 </button>
                                 <button 
                                     class="layout-btn" 
                                     @click="toggleMinimize('local')" 
-                                    :title="uiState.minimized.local ? 'Mở rộng' : 'Thu nhỏ'"
+                                    :title="uiState.minimized.local ? CONSTANTS.titles.expand : CONSTANTS.titles.minimize"
                                     v-if="uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote'"
                                 >
                                     <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -909,7 +956,7 @@ defineExpose({
                             <!-- Video Controls Overlay -->
                             <div class="video-controls">
                                 <div class="video-badges">
-                                    <div v-if="!mediaState.micEnabled" class="badge mute-badge" title="Mic tắt">
+                                    <div v-if="!mediaState.micEnabled" class="badge mute-badge" :title="CONSTANTS.titles.micMuted">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <line x1="2" x2="22" y1="2" y2="22"></line>
                                             <path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"></path>
@@ -944,8 +991,8 @@ defineExpose({
                                         <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path>
                                         <rect x="2" y="6" width="14" height="12" rx="2" />
                                     </svg>
-                                    <p class="overlay-text" v-if="!webrtcState.hasStarted">Chờ kết nối...</p>
-                                    <p class="overlay-text" v-else>Đang chờ video...</p>
+                                    <p class="overlay-text" v-if="!webrtcState.hasStarted">{{ CONSTANTS.messages.waitingConnection }}</p>
+                                    <p class="overlay-text" v-else>{{ CONSTANTS.messages.waitingVideo }}</p>
                                 </div>
                             </div>
 
@@ -955,18 +1002,18 @@ defineExpose({
                                     class="layout-btn" 
                                     :class="{ active: uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote' }" 
                                     @click="pinRemote" 
-                                    title="Ghim màn hình đối phương"
+                                    :title="CONSTANTS.titles.pinRemoteScreen"
                                 >
                                     <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect x="2" y="4" width="20" height="14" rx="2"></rect>
                                         <rect x="14" y="12" width="8" height="6" rx="2"></rect>
                                     </svg>
-                                    <span>Ghim</span>
+                                    <span>{{ CONSTANTS.buttons.pin }}</span>
                                 </button>
                                 <button 
                                     class="layout-btn" 
                                     @click="toggleMinimize('remote')" 
-                                    :title="uiState.minimized.remote ? 'Mở rộng' : 'Thu nhỏ'"
+                                    :title="uiState.minimized.remote ? CONSTANTS.titles.expand : CONSTANTS.titles.minimize"
                                     v-if="uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local'"
                                 >
                                     <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -987,7 +1034,7 @@ defineExpose({
                                 <button 
                                     class="layout-btn" 
                                     @click="toggleElementFullscreen(remoteVideoContainer)" 
-                                    title="Toàn màn hình"
+                                    :title="CONSTANTS.titles.fullscreen"
                                 >
                                     <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
@@ -1011,7 +1058,7 @@ defineExpose({
                 </div>
 
                 <!-- Floating control bar -->
-                <div class="floating-controls" @mouseenter="showControls" @mousemove="showControls" @mouseleave="hideControls" @touchstart="showControls">
+                <div class="floating-controls">
                     <Transition name="slide-up">
                         <div class="floating-controls-wrapper" v-if="uiState.controlsVisible">
                             <!-- Camera -->
@@ -1019,7 +1066,7 @@ defineExpose({
                                 class="control-btn"
                                 :class="{ active: mediaState.camEnabled }"
                                 @click="toggleCamera"
-                                :title="mediaState.camEnabled ? 'Tắt camera' : 'Bật camera'"
+                                :title="mediaState.camEnabled ? CONSTANTS.titles.cameraOn : CONSTANTS.titles.cameraOff"
                             >
                                 <svg
                                     class="icon-md"
@@ -1049,7 +1096,7 @@ defineExpose({
                                 class="control-btn"
                                 :class="{ active: mediaState.micEnabled }"
                                 @click="toggleMic"
-                                :title="mediaState.micEnabled ? 'Tắt mic' : 'Bật mic'"
+                                :title="mediaState.micEnabled ? CONSTANTS.titles.micOn : CONSTANTS.titles.micOff"
                             >
                                 <svg
                                     class="icon-md"
@@ -1080,7 +1127,7 @@ defineExpose({
                                 class="control-btn"
                                 :class="{ active: mediaState.isScreenSharing }"
                                 @click="toggleScreenShare"
-                                title="Chia sẻ màn hình"
+                                :title="CONSTANTS.titles.shareScreen"
                             >
                                 <svg
                                     class="icon-md"
@@ -1109,7 +1156,7 @@ defineExpose({
                             <button
                                 class="control-btn"
                                 @click="toggleFullscreen"
-                                :title="uiState.isFullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'"
+                                :title="uiState.isFullscreen ? CONSTANTS.titles.exitFullscreen : CONSTANTS.titles.fullscreen"
                             >
                                 <svg
                                     class="icon-md"
@@ -1141,7 +1188,7 @@ defineExpose({
                             <button
                                 class="control-btn danger"
                                 @click="onLeaveClassroom"
-                                title="Rời khỏi lớp học"
+                                :title="CONSTANTS.titles.leaveClassroom"
                             >
                                 <svg
                                     class="icon-md"
@@ -1161,7 +1208,7 @@ defineExpose({
                             <div class="separator"></div>
 
                             <!-- Hide Controls -->
-                            <button class="control-btn secondary" @click="hideControls" title="Ẩn thanh công cụ">
+                            <button class="control-btn secondary" @click="hideControls" :title="CONSTANTS.titles.hideControls">
                                 <svg class="icon-md" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
@@ -1171,7 +1218,7 @@ defineExpose({
 
                     <Transition name="fade">
                         <div class="floating-controls-wrapper mini" v-if="!uiState.controlsVisible">
-                             <button class="control-btn" @click="showControls" title="Hiện thanh công cụ">
+                             <button class="control-btn" @click="showControls" :title="CONSTANTS.titles.showControls">
                                 <svg class="icon-md" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="18 15 12 9 6 15"></polyline>
                                 </svg>
@@ -1195,8 +1242,7 @@ defineExpose({
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background-color: #0f172a; /* Slate 900 */
-    background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 75%);
+    background-color: black;
     color: #f8fafc;
     overflow: hidden;
     font-family: 'Inter', sans-serif;
@@ -1295,10 +1341,10 @@ defineExpose({
     align-items: center;
     justify-content: space-between;
     padding: 0.75rem 1.5rem;
-    background: rgba(30, 41, 59, 0.6);
+    background: black;
     backdrop-filter: blur(12px);
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid #333333;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     z-index: 10;
 }
@@ -1310,7 +1356,7 @@ defineExpose({
 }
 
 .classroom-title {
-    font-size: 1.125rem;
+    font-size: var(--font-size-heading-5);
     font-weight: 600;
     color: #f1f5f9;
     margin: 0;
@@ -1372,7 +1418,7 @@ defineExpose({
 }
 
 .settings-btn {
-    width: 36px;
+	width: 36px;
     height: 36px;
     border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1406,7 +1452,6 @@ defineExpose({
     height: 100%;
     display: grid;
     gap: 1rem;
-    padding: 1rem;
     transition: all 0.3s ease;
 }
 
@@ -1429,7 +1474,7 @@ defineExpose({
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid #333333;
     transition: all 0.3s ease;
 }
 
@@ -1441,7 +1486,7 @@ defineExpose({
 .video-grid.layout-pinned .is-secondary {
     position: absolute;
     right: 1rem;
-    bottom: 2rem; /* Space for controls */
+    bottom: 1rem; /* Space for controls */
     width: 280px;
     height: 158px;
     z-index: 20;
@@ -1584,7 +1629,7 @@ defineExpose({
 /* Floating Control Bar */
 .floating-controls {
     position: absolute;
-    bottom: 2rem;
+    bottom: 1rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 50;
@@ -1596,11 +1641,11 @@ defineExpose({
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.75rem 1.25rem;
+    padding: 0.75rem;
     background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
+    border-radius: 3rem;
     box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.4);
     transition: all 0.3s ease;
     pointer-events: auto; /* Re-enable pointer events for the wrapper */
@@ -1704,7 +1749,7 @@ defineExpose({
 }
 
 .video-section.is-fullscreen .floating-controls {
-    bottom: 3rem;
+    bottom: 1rem;
     opacity: 0;
     transition: opacity 0.3s;
 }
@@ -1809,7 +1854,6 @@ defineExpose({
     }
     
     .floating-controls-wrapper {
-        padding: 0.5rem 1rem;
         gap: 0.5rem;
     }
     
@@ -1844,17 +1888,10 @@ defineExpose({
         width: 120px;
         height: 120px;
         aspect-ratio: 3/4;
-        bottom: 1.5rem;
+        bottom: 1rem;
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .video-grid.layout-pinned .is-secondary .layout-controls {
-        top: 0.5rem;
-        right: 0.5rem;
-        transform: none;
-        opacity: 1; /* Always show controls on mobile for secondary */
     }
     
     .video-grid.layout-pinned .is-secondary .layout-btn {
@@ -1862,7 +1899,7 @@ defineExpose({
     }
 
 	.floating-controls {
-		bottom: 1.5rem;
+		bottom: 1rem;
 	}
 
 	.label-text {
