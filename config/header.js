@@ -76,6 +76,31 @@ export const userMenuItems = [
 		priority: 22
 	},
 	{
+		id: 9,
+		name: 'Xem hồ sơ gia sư',
+		path: '/profile/detail?tab=overview',
+		icon: [
+			'M16 7a4 4 0 11-8 0 4 4 0 018 0z',
+			'M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
+		],
+		iconViewBox: '0 0 24 24',
+		requiresAuth: true,
+		is_tutor: true,
+		priority: 23
+	},
+	{
+		id: 10,
+		name: 'Doanh thu',
+		path: '/profile/revenue',
+		icon: [
+			'M12 2v20m0-20a9 9 0 0 1 9 9m-9-9a9 9 0 0 0-9 9m9 11a9 9 0 0 1-9-9m9 9a9 9 0 0 0 9-9M9 8h6M9 12h3M9 16h6'
+		],
+		iconViewBox: '0 0 24 24',
+		requiresAuth: true,
+		is_tutor: true,
+		priority: 24
+	},
+	{
 		id: 5,
 		name: 'Tin nhắn',
 		path: '/message',

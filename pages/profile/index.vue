@@ -22,41 +22,22 @@
 			</div>
 
 			<!-- Quick Access Grid -->
-			<div class="quick-access-grid" v-if="userData?.role === 1">
-				<div class="quick-card" @click="navigateTo('/profile/detail?tab=overview')">
-					<span class="new-badge">MỚI</span>
-					<div class="quick-card-img">
-						<img src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-UserProfile/original/5347d650-16de-4f5a-a38e-79edc988befa.png?im_w=720"
-						alt="Tutor" />
-					</div>
-					<h3 class="quick-card-title">Xem Hồ sơ</h3>
-				</div>
-
-				<div class="quick-card" @click="navigateTo('/profile/revenue')">
-					<span class="new-badge">MỚI</span>
-					<div class="quick-card-img">
-						<img src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-UserProfile/original/797c1df2-a40c-4d93-9550-ca5b213cd01b.png?im_w=240" alt="Schedule">
-					</div>
-					<h3 class="quick-card-title">Doanh thu</h3>
-				</div>
-			</div>
-
-			<div class="quick-access-grid" v-else>
-				<div class="quick-card" @click="navigateTo('/booking/manager')">
-					<span class="new-badge">MỚI</span>
-					<div class="quick-card-img">
-						<img src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-UserProfile/original/5347d650-16de-4f5a-a38e-79edc988befa.png?im_w=720"
-						alt="Tutor" />
-					</div>
-					<h3 class="quick-card-title">Yêu cầu đặt lịch</h3>
-				</div>
-
+			<div class="quick-access-grid">
 				<div class="quick-card" @click="navigateTo('/classroom-manager')">
 					<span class="new-badge">MỚI</span>
 					<div class="quick-card-img">
-						<img src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-UserProfile/original/797c1df2-a40c-4d93-9550-ca5b213cd01b.png?im_w=240" alt="Schedule">
+						<img src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-UserProfile/original/797c1df2-a40c-4d93-9550-ca5b213cd01b.png?im_w=240"
+						alt="Classroom" />
 					</div>
 					<h3 class="quick-card-title">Quản lý lớp học</h3>
+				</div>
+
+				<div class="quick-card" @click="navigateTo('/booking/manager')">
+					<span class="new-badge">MỚI</span>
+					<div class="quick-card-img">
+						<img src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-UserProfile/original/5347d650-16de-4f5a-a38e-79edc988befa.png?im_w=720" alt="Booking">
+					</div>
+					<h3 class="quick-card-title">Yêu cầu đặt lịch</h3>
 				</div>
 			</div>
 
