@@ -1,5 +1,5 @@
 <template>
-	<base-modal title="Bộ lọc nâng cao" description="Tùy chỉnh tìm kiếm của bạn để có kết quả tốt nhất" :is-open="isOpen" @close="$emit('close')">
+	<base-modal :header="false" :is-open="isOpen" @close="$emit('close')">
 		<div class="modern-modal-content">
 			<!-- Mobile Only Filters (Location, Subject, Level) -->
 			<div class="mobile-only-block">
@@ -295,10 +295,6 @@ watch(() => props.filters, (newFilters) => {
 
 <style scoped>
 /* Reuse styles from index.vue/search.vue or ensure they are global/imported */
-.modern-modal-content {
-    padding: 1rem 0;
-}
-
 .filter-section {
     margin-bottom: 2rem;
 }

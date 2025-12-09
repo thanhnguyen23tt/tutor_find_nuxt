@@ -433,7 +433,7 @@
 		:education-level-options="educationLevelOptions"
 		:experience-options="experienceOptions"
 		@close="showFilter = false"
-		@reset="filters = { provinces_id: '', subject: '', educationLevel: '', experience: '', rating: 0, price: 500000 }"
+		@reset="filters = { provinces_id: '', subject: '', educationLevel: '', experience: '', rating: 0, minPrice: 50000, maxPrice: 1000000 }"
 		@apply="handleSearch"
 	/>
 </template>
@@ -455,7 +455,8 @@ const filters = ref({
     educationLevel: '',
     experience: '',
     rating: 0,
-    price: 500000
+    minPrice: 50000,
+    maxPrice: 1000000
 });
 
 const showFilter = ref(false);

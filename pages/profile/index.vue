@@ -210,11 +210,8 @@ const uploadAvatar = async () => {
 
 <style scoped>
 .profile-page-container {
-	min-height: 100vh;
 	background: #f8fafc;
-	padding: 1.5rem 1rem 6rem;
-	/* Added padding-bottom for mobile nav */
-	font-family: 'Inter', sans-serif;
+	padding: 1.5rem 1rem;
 }
 
 /* Main View */

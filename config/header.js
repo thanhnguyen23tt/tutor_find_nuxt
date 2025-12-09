@@ -40,43 +40,6 @@ export const userMenuItems = [
 	},
 	{
 		id: 2,
-		name: 'Yêu cầu đặt lịch',
-		path: '/booking/manager',
-		icon: [
-			'M8 2v4',
-			'M16 2v4',
-			'M3 10h18',
-			'M21 6v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z',
-			'm9 16 2 2 4-4'
-		],
-		iconViewBox: '0 0 24 24',
-		stroke: 'currentColor',
-		strokeWidth: 2,
-		strokeLinecap: 'round',
-		strokeLinejoin: 'round',
-		fill: 'none',
-		requiresAuth: true,
-		priority: 21
-	},
-	{
-		id: 4,
-		name: 'Quản lý lớp học',
-		path: '/classroom-manager',
-		icon: [
-			'M17 20h5v-2a3 3 0 00-5.356-1.857',
-			'M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857',
-			'M7 20H2v-2a3 3 0 015.356-1.857',
-			'M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0',
-			'M15 7a3 3 0 11-6 0 3 3 0 016 0',
-			'm6 3a2 2 0 11-4 0 2 2 0 014 0',
-			'M7 10a2 2 0 11-4 0 2 2 0 014 0'
-		],
-		iconViewBox: '0 0 24 24',
-		requiresAuth: true,
-		priority: 22
-	},
-	{
-		id: 9,
 		name: 'Xem hồ sơ gia sư',
 		path: '/profile/detail?tab=overview',
 		icon: [
@@ -89,7 +52,7 @@ export const userMenuItems = [
 		priority: 23
 	},
 	{
-		id: 10,
+		id: 3,
 		name: 'Doanh thu',
 		path: '/profile/revenue',
 		icon: [
@@ -101,7 +64,7 @@ export const userMenuItems = [
 		priority: 24
 	},
 	{
-		id: 5,
+		id: 4,
 		name: 'Tin nhắn',
 		path: '/message',
 		icon: [
@@ -113,7 +76,7 @@ export const userMenuItems = [
 		priority: 20
 	},
 	{
-		id: 7,
+		id: 5,
 		name: 'Cài đặt',
 		path: '/setting',
 		icon: [
@@ -125,7 +88,7 @@ export const userMenuItems = [
 		priority: 95
 	},
 	{
-		id: 8,
+		id: 6,
 		name: 'Đăng xuất',
 		path: '#',
 		icon: [

@@ -2,14 +2,14 @@
 	<div v-if="isOpen" class="modal-overlay" @click="noClose ? null : emit('close')">
 		<div class="modal-container" :class="sizeClass" @click.stop>
 			<div class="modal-content-wrapper format-scrollbar">
-				<div class="modal-header" v-if="header">
+				<div class="modal-header">
 					<button class="close-button" @click="emit('close')" v-if="!noClose">
 						<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
 								d="M6 18L18 6M6 6l12 12" />
 						</svg>
 					</button>
-					<div class="modal-title-container">
+					<div class="modal-title-container" v-if="header">
 						<h2 class="modal-title" v-if="title">{{ title }}</h2>
 						<p v-if="description" class="modal-description">{{ description }}</p>
 					</div>
