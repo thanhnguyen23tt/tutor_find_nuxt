@@ -5,15 +5,9 @@ definePageMeta({
 	layout: false
 });
 
-import {
-    ref,
-    computed,
-    reactive,
-    onMounted,
-    onBeforeUnmount,
-    nextTick
-} from 'vue'
+import { ref, computed, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue'
 
+// ===== Dynamic Import Peer =====
 let Peer
 if (process.client) {
     const module = await import('simple-peer')
@@ -22,97 +16,20 @@ if (process.client) {
 
 // ===== Composables & Instances =====
 const route = useRoute()
-const {
-    api
-} = useApi()
-const {
-    error: notifyError
-} = useNotification()
-const {
-    status_classroom: statusClassroom
-} = useConfig()
+const { api } = useApi()
+const { error: notifyError } = useNotification()
+const { status_classroom: statusClassroom } = useConfig()
 const userStore = useUserStore()
-
-// ===== Media State (Gộp các biến liên quan đến media) =====
-const mediaState = reactive({
-    localStream: null,
-    screenStream: null,
-    micEnabled: true,
-    camEnabled: true,
-    isScreenSharing: false,
-})
-
-// ===== Video Elements =====
-const localVideo = ref(null)
-const remoteVideo = ref(null)
-const localVideoContainer = ref(null)
-const remoteVideoContainer = ref(null)
-const videoSectionRef = ref(null)
-
-// ===== WebRTC State (Gộp các biến liên quan đến peer) =====
-const webrtcState = reactive({
-    peer: null,
-    channel: null,
-    targetUid: '',
-    peerName: '',
-    lastSentSdp: '',
-    hasStarted: false,
-    remoteStreamPresent: false,
-})
-
-// ===== Classroom State (Gộp các biến liên quan đến classroom) =====
-const classroomState = reactive({
-    data: null,
-    isLoading: false,
-    canAccess: true,
-    participantsCount: 1,
-})
-
-// ===== UI State (Gộp các biến liên quan đến UI) =====
-const uiState = reactive({
-    layoutMode: 'split',
-    pinnedTarget: 'local',
-    isMobile: false,
-    joinSoundEnabled: true,
-    isFullscreen: false,
-    areControlsVisible: true,
-    minimized: {
-        local: false,
-        remote: false
-    },
-    videoPaused: {
-        local: true,
-        remote: true
-    },
-    controlsVisible: false
-})
-
-// ===== Audio Context =====
-const audioContext = ref(null)
 
 // ===== Constants =====
 const MEDIA_CONSTRAINTS = {
-    video: {
-        width: {
-            ideal: 640
-        },
-        height: {
-            ideal: 360
-        },
-        frameRate: {
-            ideal: 24
-        }
-    },
+    video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 24 } },
     audio: true
 }
 
-const ICE_SERVERS = [{
-    urls: 'stun:stun.l.google.com:19302'
-}]
-
+const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }]
 const MOBILE_BREAKPOINT = 1024
 
-// ===== Text Constants =====
 const CONSTANTS = {
     labels: {
         self: 'Bạn',
@@ -125,8 +42,7 @@ const CONSTANTS = {
         splitMode: 'Chế độ 50/50',
         pinMyScreen: 'Ghim màn hình của tôi',
         pinRemoteScreen: 'Ghim màn hình đối phương',
-        minimize: 'Thu nhỏ',
-        expand: 'Mở rộng',
+
         fullscreen: 'Toàn màn hình',
         exitFullscreen: 'Thoát toàn màn hình',
         toggleCamera: 'Bật/Tắt camera',
@@ -160,166 +76,248 @@ const CONSTANTS = {
     }
 }
 
+// ===== Consolidated State =====
+const state = reactive({
+    // Media
+    localStream: null,
+    screenStream: null,
+    micEnabled: true,
+    camEnabled: true,
+    isScreenSharing: false,
+    
+    // WebRTC
+    peer: null,
+    targetUid: '',
+    peerName: '',
+    lastSentSdp: '',
+    hasStarted: false,
+    remoteStreamPresent: false,
+    
+    // Classroom
+    classroom: null,
+    isLoading: false,
+    canAccess: true,
+    participantsCount: 1,
+    
+    // UI
+    layoutMode: 'split',
+    pinnedTarget: 'local',
+    isMobile: false,
+    joinSoundEnabled: true,
+    isFullscreen: false,
+    videoPaused: { local: true, remote: true },
+    controlsVisible: false
+})
+
+// ===== Refs =====
+const localVideo = ref(null)
+const remoteVideo = ref(null)
+const localVideoContainer = ref(null)
+const remoteVideoContainer = ref(null)
+const videoSectionRef = ref(null)
+const audioContext = ref(null)
+
+// ===== Socket =====
+let socket = null
+let controlsTimer = null
+
 // ===== Computed =====
 const userData = computed(() => userStore.getUserData)
-const userDataUid = computed(() => userData.value?.uid)
 
 const labels = computed(() => ({
     self: CONSTANTS.labels.self,
-    peer: webrtcState.peerName || CONSTANTS.labels.waiting
+    peer: state.peerName || CONSTANTS.labels.waiting
 }))
 
 const isLocalVideoOn = computed(() => {
-    const track = mediaState.localStream?.getVideoTracks?.()?. [0]
+    const track = state.localStream?.getVideoTracks?.()?.[0]
     return !!(track?.enabled)
 })
 
 const checkStatusClassroom = computed(() => {
-    if (!classroomState.data) return CONSTANTS.messages.classroomNotStarted
+    if (!state.classroom) return CONSTANTS.messages.classroomNotStarted
 
-    const {
-        status
-    } = classroomState.data
+    const { status } = state.classroom
 
     if (status === statusClassroom.ended) return CONSTANTS.messages.classroomEnded
-    if (status !== statusClassroom.started) {
-        return CONSTANTS.messages.waitingForTutor
-    }
+    if (status !== statusClassroom.started) return CONSTANTS.messages.waitingForTutor
 
     return CONSTANTS.messages.classroomNotStarted
 })
 
 // ===== Classroom Methods =====
 async function loadClassroom() {
-    classroomState.isLoading = true
+    state.isLoading = true
 
     try {
         const id = route.params.id
         const res = await api.apiGet(`classrooms/${id}`)
 
         if (!res?.success) {
-            classroomState.data = {
-                id
-            }
+            state.classroom = { id }
             return false
         }
 
-        classroomState.data = res.data
+        state.classroom = res.data
 
-        // Validate classroom access
         const validationResult = validateClassroomAccess(res)
         if (!validationResult.canAccess) {
             notifyError(validationResult.message)
-            redirectCantAccessClassroom()
+            state.canAccess = false
             return false
         }
 
         return true
     } catch (error) {
-        classroomState.data = {
-            id: route.params.id
-        }
+        state.classroom = { id: route.params.id }
         notifyError(CONSTANTS.messages.loadError)
-        redirectCantAccessClassroom()
+        state.canAccess = false
         return false
     } finally {
-        classroomState.isLoading = false
+        state.isLoading = false
     }
 }
 
 function validateClassroomAccess(response) {
-    const {
-        data
-    } = response
+    const { data } = response
 
     if (data.status === statusClassroom.ended) {
-        return {
-            canAccess: false,
-            message: CONSTANTS.messages.classroomEnded
-        }
+        return { canAccess: false, message: CONSTANTS.messages.classroomEnded }
     }
 
     if (data.status !== statusClassroom.started) {
-        return {
-            canAccess: false,
-            message: CONSTANTS.messages.waitingForTutor
-        }
+        return { canAccess: false, message: CONSTANTS.messages.waitingForTutor }
     }
 
     if (response.time_info?.can_start === false) {
-        return {
-            canAccess: false,
-            message: response.time_info.time_status_text
+        return { canAccess: false, message: response.time_info.time_status_text }
+    }
+
+    return { canAccess: true }
+}
+
+// ===== Socket.IO & WebRTC Methods =====
+async function initSocketIO() {
+    try {
+        if (!process.client) return
+
+        const { initSocket, getSocket } = await import('~/composables/useSocket')
+        
+        socket = getSocket()
+        if (!socket?.connected) {
+            await initSocket()
+            socket = getSocket()
         }
+
+        if (!socket) {
+            console.error('Socket.IO not available')
+            return
+        }
+
+        socket.emit('classroom:join', { classroomId: state.classroom.id })
+
+        // Bind event listeners
+        socket.on('classroom:joined', handleClassroomJoined)
+        socket.on('classroom:users_present', handleUsersPresent)
+        socket.on('classroom:user_joined', handleUserJoining)
+        socket.on('classroom:user_left', handleUserLeaving)
+        socket.on('webrtc:signal', handleSignal)
+
+        console.log('✅ Socket.IO classroom initialized')
+    } catch (error) {
+        console.error('Failed to join classroom:', error)
     }
+}
 
-    return {
-        canAccess: true
+function cleanupSocketIO() {
+    if (socket) {
+        socket.off('classroom:joined', handleClassroomJoined)
+        socket.off('classroom:users_present', handleUsersPresent)
+        socket.off('classroom:user_joined', handleUserJoining)
+        socket.off('classroom:user_left', handleUserLeaving)
+        socket.off('webrtc:signal', handleSignal)
     }
 }
 
-function redirectCantAccessClassroom() {
-    classroomState.canAccess = false
+function handleClassroomJoined(data) {
+    console.log(data, 'handleClassroomJoined')
+    if (data.participantCount !== undefined) {
+        state.participantsCount = data.participantCount
+    }
 }
 
-// ===== Echo & WebRTC Methods =====
-async function initEcho() {
-    if (!process.client || !window?.Echo) return
+function handleUsersPresent(data) {
+    const users = Array.isArray(data) ? data : (data.users || [])
+    const participantCount = data.participantCount !== undefined ? data.participantCount : users.length
+    
+    state.participantsCount = participantCount
 
-    webrtcState.channel = window.Echo.join(`classroom.${classroomState.data.id}`)
-        .here(handleUsersPresent)
-        .joining(handleUserJoining)
-        .leaving(handleUserLeaving)
-
-    window.Echo.private(`private-webrtc.${userDataUid.value}`)
-        .listen('.webrtc.signal', handleSignal)
-}
-
-function handleUsersPresent(users) {
-    classroomState.participantsCount = users.length
-
-    const other = users.find(u => u.id !== userDataUid.value)
+    const other = users.find(u => u.id !== userData.value?.uid)
     if (other) {
-        updatePeerInfo(other)
+        state.targetUid = other.id
+        state.peerName = other.name || ''
     }
 
-    if (users.length >= 2) createPeer(true)
+    if (participantCount >= 2) createPeer(true)
 }
 
-function handleUserJoining(user) {
-    classroomState.participantsCount += 1
+function handleUserJoining(data) {
+	console.log(data, 'handleUserJoining')
+    if (data.participantCount !== undefined) {
+        state.participantsCount = data.participantCount
+    }
 
-    if (user.id !== userDataUid.value) {
-        updatePeerInfo(user)
+    const user = data.user || data
+    if (user.id !== userData.value?.uid) {
+        state.targetUid = user.id
+        state.peerName = user.name || ''
+        
+        if (!state.peer && state.localStream) {
+            console.log('📞 Creating peer connection to new user:', user.id)
+            createPeer(true)
+        }
     }
 
     playJoinSound()
 }
 
-function handleUserLeaving() {
-    classroomState.participantsCount = Math.max(0, classroomState.participantsCount - 1)
-    webrtcState.remoteStreamPresent = false
-}
-
-function updatePeerInfo(user) {
-    webrtcState.targetUid = user.id
-    webrtcState.peerName = user.name || ''
+function handleUserLeaving(data) {
+    if (data && data.participantCount !== undefined) {
+        state.participantsCount = data.participantCount
+    }
+    state.remoteStreamPresent = false
 }
 
 function handleSignal(e) {
-    if (e.from === userDataUid.value) return
+	console.log('📥 Received WebRTC signal:', e.data)
+    if (e.from === userData.value?.uid) return
 
-    if (!webrtcState.peer || webrtcState.peer.destroyed) {
+    if (e.from && !state.targetUid) {
+        state.targetUid = e.from
+        console.log(`🎯 Set target user ID from signal: ${e.from}`)
+    }
+
+    const signalData = e.data;
+
+    if (!signalData) {
+        return
+    }
+
+    if (!state.peer || state.peer.destroyed) {
         createPeer(false)
     }
 
-    if (webrtcState.peer && !webrtcState.peer.destroyed) {
-        webrtcState.peer.signal(e.signal)
+    if (state.peer && !state.peer.destroyed) {
+        try {
+            state.peer.signal(signalData)
+        } catch (error) {
+            console.error('❌ Error signaling peer:', error)
+        }
     }
 }
 
 function playJoinSound() {
-    if (!process.client || !uiState.joinSoundEnabled) return
+    if (!process.client || !state.joinSoundEnabled) return
 
     try {
         if (!audioContext.value) {
@@ -333,7 +331,6 @@ function playJoinSound() {
         oscillator.connect(gainNode)
         gainNode.connect(ctx.destination)
 
-        // Configure sound
         oscillator.frequency.setValueAtTime(800, ctx.currentTime)
         oscillator.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1)
 
@@ -349,9 +346,7 @@ function playJoinSound() {
 }
 
 // ===== Media Methods =====
-async function ensureVideoPlayback(videoRef, stream, {
-    muted = false
-} = {}) {
+async function ensureVideoPlayback(videoRef, stream, { muted = false } = {}) {
     if (!process.client || !stream) return
 
     await nextTick()
@@ -369,24 +364,21 @@ async function ensureVideoPlayback(videoRef, stream, {
         console.warn('Autoplay prevented:', error)
     }
 
-    // Update state
-    if (videoRef === localVideo) uiState.videoPaused.local = element.paused
-    if (videoRef === remoteVideo) uiState.videoPaused.remote = element.paused
+    if (videoRef === localVideo) state.videoPaused.local = element.paused
+    if (videoRef === remoteVideo) state.videoPaused.remote = element.paused
 }
 
 function handleVideoPause(event, target) {
-    uiState.videoPaused[target] = true
+    state.videoPaused[target] = true
     
     const video = event.target
     if (video && !video.ended && video.paused) {
-        video.play().catch(() => {
-            // Autoplay failed, state remains paused, overlay will show
-        })
+        video.play().catch(() => {})
     }
 }
 
 function handleVideoPlay(event, target) {
-    uiState.videoPaused[target] = false
+    state.videoPaused[target] = false
 }
 
 function retryPlay(target) {
@@ -401,13 +393,11 @@ async function startMedia() {
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia(MEDIA_CONSTRAINTS)
-        mediaState.localStream = stream
+        state.localStream = stream
 
-        await ensureVideoPlayback(localVideo, stream, {
-            muted: true
-        })
+        await ensureVideoPlayback(localVideo, stream, { muted: true })
 
-        if (classroomState.participantsCount >= 2) {
+        if (state.participantsCount >= 2) {
             createPeer(true)
         }
     } catch (error) {
@@ -416,9 +406,9 @@ async function startMedia() {
 }
 
 async function toggleScreenShare() {
-    if (!process.client || !webrtcState.peer) return
+    if (!process.client || !state.peer) return
 
-    if (!mediaState.isScreenSharing) {
+    if (!state.isScreenSharing) {
         await startScreenShare()
     } else {
         await stopScreenShare()
@@ -427,19 +417,15 @@ async function toggleScreenShare() {
 
 async function startScreenShare() {
     try {
-        mediaState.screenStream = await navigator.mediaDevices.getDisplayMedia({
-            video: true
-        })
-        const screenTrack = mediaState.screenStream.getVideoTracks()[0]
+        state.screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true })
+        const screenTrack = state.screenStream.getVideoTracks()[0]
 
-        const sender = webrtcState.peer._pc.getSenders().find(s => s.track?.kind === 'video')
+        const sender = state.peer._pc.getSenders().find(s => s.track?.kind === 'video')
 
         if (sender) {
             await sender.replaceTrack(screenTrack)
-            await ensureVideoPlayback(localVideo, mediaState.screenStream, {
-                muted: true
-            })
-            mediaState.isScreenSharing = true
+            await ensureVideoPlayback(localVideo, state.screenStream, { muted: true })
+            state.isScreenSharing = true
             screenTrack.onended = () => toggleScreenShare()
         }
     } catch (error) {
@@ -448,167 +434,182 @@ async function startScreenShare() {
 }
 
 async function stopScreenShare() {
-    const camTrack = mediaState.localStream?.getVideoTracks()[0]
+    const camTrack = state.localStream?.getVideoTracks()[0]
 
     if (camTrack) {
-        const sender = webrtcState.peer._pc.getSenders().find(s => s.track?.kind === 'video')
+        const sender = state.peer._pc.getSenders().find(s => s.track?.kind === 'video')
         if (sender) {
             await sender.replaceTrack(camTrack)
         }
     }
 
-    mediaState.screenStream?.getTracks().forEach(t => t.stop())
+    state.screenStream?.getTracks().forEach(t => t.stop())
 
-    await ensureVideoPlayback(localVideo, mediaState.localStream, {
-        muted: true
-    })
+    await ensureVideoPlayback(localVideo, state.localStream, { muted: true })
 
-    mediaState.isScreenSharing = false
+    state.isScreenSharing = false
 }
 
 function toggleMic() {
-    mediaState.micEnabled = !mediaState.micEnabled
-    mediaState.localStream?.getAudioTracks().forEach(t => {
-        t.enabled = mediaState.micEnabled
+    state.micEnabled = !state.micEnabled
+    state.localStream?.getAudioTracks().forEach(t => {
+        t.enabled = state.micEnabled
     })
 }
 
 function toggleCamera() {
-    mediaState.camEnabled = !mediaState.camEnabled
-    mediaState.localStream?.getVideoTracks().forEach(t => {
-        t.enabled = mediaState.camEnabled
+    state.camEnabled = !state.camEnabled
+    state.localStream?.getVideoTracks().forEach(t => {
+        t.enabled = state.camEnabled
     })
 }
 
 // ===== Peer Methods =====
 function createPeer(initiator) {
-    if (!Peer || !mediaState.localStream || webrtcState.peer) return
+    if (!Peer || !state.localStream || state.peer) return
 
-    webrtcState.peer = new Peer({
+    state.peer = new Peer({
         initiator,
         trickle: false,
-        stream: mediaState.localStream,
-        config: {
-            iceServers: ICE_SERVERS
-        },
+        stream: state.localStream,
+        config: { iceServers: ICE_SERVERS },
         reconnectTimer: 3000
     })
 
-    // Setup peer event listeners
-    setupPeerListeners()
-}
-
-function setupPeerListeners() {
-    const peer = webrtcState.peer
-
-    peer.on('signal', handlePeerSignal)
-    peer.on('connect', handlePeerConnect)
-    peer.on('stream', handlePeerStream)
-    peer.on('close', handlePeerClose)
-    peer.on('error', handlePeerError)
+    state.peer.on('signal', handlePeerSignal)
+    state.peer.on('connect', handlePeerConnect)
+    state.peer.on('stream', handlePeerStream)
+    state.peer.on('close', handlePeerClose)
+    state.peer.on('error', handlePeerError)
 }
 
 async function handlePeerSignal(data) {
     try {
-        // Prevent duplicate SDP sending
-        if (data?.sdp && webrtcState.lastSentSdp === data.sdp) return
+        if (data?.sdp && state.lastSentSdp === data.sdp) return
 
         if (data?.sdp) {
-            webrtcState.lastSentSdp = data.sdp
+            state.lastSentSdp = data.sdp
         }
 
-        await api.apiPost('webrtc/signal', {
-            classroom_id: classroomState.data.id,
-            from: userDataUid.value,
-            to: webrtcState.targetUid || '*',
-            signal: data
-        })
+        if (!state.targetUid) {
+            console.warn('⚠️ No target user ID, cannot send WebRTC signal')
+            return
+        }
+
+        if (socket && socket.connected) {
+            if (data.type === 'offer' || (data.sdp && data.sdp.includes('offer'))) {
+                socket.emit('webrtc:offer', {
+                    offer: data,
+                    classroomId: state.classroom.id,
+                    to: state.targetUid
+                })
+            } else if (data.type === 'answer' || (data.sdp && data.sdp.includes('answer'))) {
+                socket.emit('webrtc:answer', {
+                    answer: data,
+                    classroomId: state.classroom.id,
+                    to: state.targetUid
+                })
+            } else if (data.candidate) {
+                socket.emit('webrtc:ice-candidate', {
+                    candidate: data,
+                    classroomId: state.classroom.id,
+                    to: state.targetUid
+                })
+            } else {
+                socket.emit('webrtc:signal', {
+                    signalType: data.type || 'unknown',
+                    signalData: data,
+                    classroomId: state.classroom.id,
+                    to: state.targetUid
+                })
+            }
+            
+            console.log(`📡 WebRTC signal sent to ${state.targetUid}:`, data.type || 'signal')
+        } else {
+            console.error('Socket not connected, cannot send WebRTC signal')
+        }
     } catch (error) {
         console.error('Signal send error:', error)
     }
 }
 
 function handlePeerConnect() {
-    if (!webrtcState.hasStarted) {
-        webrtcState.hasStarted = true
+    if (!state.hasStarted) {
+        state.hasStarted = true
     }
 }
 
 async function handlePeerStream(remote) {
     console.log('Remote stream received:', remote)
     
-    // Wait for next tick to ensure video element is mounted
     await nextTick()
     
     if (!remoteVideo.value) {
         console.error('Remote video element not ready')
-        // Retry after a short delay
         setTimeout(() => {
             if (remoteVideo.value && remote) {
                 ensureVideoPlayback(remoteVideo, remote)
-                webrtcState.remoteStreamPresent = true
+                state.remoteStreamPresent = true
             }
         }, 100)
         return
     }
     
-    webrtcState.remoteStreamPresent = true
+    state.remoteStreamPresent = true
     await ensureVideoPlayback(remoteVideo, remote)
 }
 
 function handlePeerClose() {
     console.log('Peer connection closed')
-    webrtcState.remoteStreamPresent = false
+    state.remoteStreamPresent = false
     destroyPeer()
 }
 
 function handlePeerError(error) {
     console.error('Peer error:', error)
-    webrtcState.remoteStreamPresent = false
+    state.remoteStreamPresent = false
     destroyPeer()
 }
 
 function destroyPeer() {
-    if (webrtcState.peer) {
+    if (state.peer) {
         try {
-            webrtcState.peer.destroy()
+            state.peer.destroy()
         } catch {}
-        webrtcState.peer = null
+        state.peer = null
     }
 }
 
 // ===== Layout Methods =====
 function setLayout(mode) {
     if (!['split', 'pinned'].includes(mode)) return
+    if (state.isMobile && mode === 'split') return
 
-    // Mobile không cho phép split mode
-    if (uiState.isMobile && mode === 'split') return
-
-    uiState.layoutMode = mode
+    state.layoutMode = mode
 }
 
 function pinLocal() {
-    uiState.layoutMode = 'pinned'
-    uiState.pinnedTarget = 'local'
+    state.layoutMode = 'pinned'
+    state.pinnedTarget = 'local'
 }
 
 function pinRemote() {
-    uiState.layoutMode = 'pinned'
-    uiState.pinnedTarget = 'remote'
+    state.layoutMode = 'pinned'
+    state.pinnedTarget = 'remote'
 }
 
 function updateMobileStatus() {
     if (typeof window !== 'undefined') {
-        uiState.isMobile = window.innerWidth < MOBILE_BREAKPOINT
+        state.isMobile = window.innerWidth < MOBILE_BREAKPOINT
     }
 }
 
 function checkAndAdjustLayoutForMobile() {
     updateMobileStatus()
 
-    if (uiState.isMobile && uiState.layoutMode === 'split') {
-        uiState.layoutMode = 'pinned'
-        uiState.pinnedTarget = 'local'
+    if (state.isMobile && state.layoutMode === 'split') {
+        state.layoutMode = 'pinned'
+        state.pinnedTarget = 'local'
     }
 }
 
@@ -622,27 +623,26 @@ async function toggleFullscreen() {
     if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
         if (elem.requestFullscreen) {
             await elem.requestFullscreen()
-        } else if (elem.webkitRequestFullscreen) { /* Safari */
+        } else if (elem.webkitRequestFullscreen) {
             await elem.webkitRequestFullscreen()
-        } else if (elem.msRequestFullscreen) { /* IE11 */
+        } else if (elem.msRequestFullscreen) {
             await elem.msRequestFullscreen()
         }
     } else {
         if (document.exitFullscreen) {
             await document.exitFullscreen()
-        } else if (document.webkitExitFullscreen) { /* Safari */
+        } else if (document.webkitExitFullscreen) {
             await document.webkitExitFullscreen()
-        } else if (document.msExitFullscreen) { /* IE11 */
+        } else if (document.msExitFullscreen) {
             await document.msExitFullscreen()
         }
     }
 }
 
 function onFullscreenChange() {
-    uiState.isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement)
+    state.isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement)
 
-    // Force play videos when exiting fullscreen to prevent pausing
-    if (!uiState.isFullscreen) {
+    if (!state.isFullscreen) {
         if (localVideo.value && localVideo.value.paused && !localVideo.value.ended) {
             localVideo.value.play().catch(() => {})
         }
@@ -654,10 +654,6 @@ function onFullscreenChange() {
 
 async function toggleElementFullscreen(element) {
     if (!process.client || !element) return
-
-    // On mobile, we might want to fullscreen the video element itself if the container doesn't work well
-    // But usually container is better for custom controls.
-    // Let's try to support standard APIs more robustly.
 
     const isFullscreen = document.fullscreenElement === element || 
     document.webkitFullscreenElement === element || 
@@ -674,20 +670,13 @@ async function toggleElementFullscreen(element) {
                 await document.msExitFullscreen()
             }
         } else {
-            // Mobile Safari often requires the video element itself to be fullscreened for native player
-            // But here we have custom controls, so we want the container.
-            // If requestFullscreen fails on container in iOS, it might be because it only supports it on <video>.
-            // However, modern iOS Safari supports API on elements.
-            
             if (element.requestFullscreen) {
                 await element.requestFullscreen()
             } else if (element.webkitRequestFullscreen) {
                 await element.webkitRequestFullscreen()
             } else if (element.msRequestFullscreen) {
                 await element.msRequestFullscreen()
-            } else if (element.querySelector('video') && uiState.isMobile) {
-                 // Fallback for some mobile browsers: fullscreen the video tag directly if container fails
-                 // Note: This might lose custom controls overlay.
+            } else if (element.querySelector('video') && state.isMobile) {
                  const videoTag = element.querySelector('video')
                  if (videoTag.webkitEnterFullscreen) {
                      videoTag.webkitEnterFullscreen()
@@ -699,11 +688,7 @@ async function toggleElementFullscreen(element) {
     }
 }
 
-function toggleMinimize(target) {
-    if (uiState.minimized[target] !== undefined) {
-        uiState.minimized[target] = !uiState.minimized[target]
-    }
-}
+
 
 // ===== Session Methods =====
 async function onLeaveClassroom() {
@@ -713,34 +698,62 @@ async function onLeaveClassroom() {
 }
 
 // ===== Cleanup =====
-function cleanup() {
-    // Stop all media tracks
-    mediaState.localStream?.getTracks().forEach(t => t.stop())
-    mediaState.screenStream?.getTracks().forEach(t => t.stop())
+async function cleanup() {
+    state.localStream?.getTracks().forEach(t => t.stop())
+    state.screenStream?.getTracks().forEach(t => t.stop())
 
-    // Destroy peer connection
     destroyPeer()
+    cleanupSocketIO()
 
-    // Leave Echo channel
-    if (webrtcState.channel) {
-        webrtcState.channel.leave()
-    }
-
-    // Close audio context
     if (audioContext.value) {
         audioContext.value.close()
     }
+}
+
+// ===== Control Visibility =====
+function handleToggleControls(event) {
+    if (event.target.closest('button') || event.target.closest('.layout-controls')) return
+
+    if (state.isMobile) {
+        if (state.controlsVisible) {
+            hideControls()
+        } else {
+            showControls()
+        }
+    }
+}
+
+function showControls() {
+    state.controlsVisible = true
+    
+    if (controlsTimer) clearTimeout(controlsTimer)
+    
+    if (state.isMobile) {
+        controlsTimer = setTimeout(() => {
+            state.controlsVisible = false
+        }, 3000)
+    }
+}
+
+function hideControls() {
+    if (controlsTimer) clearTimeout(controlsTimer)
+    state.controlsVisible = false
 }
 
 // ===== Lifecycle =====
 onMounted(async () => {
     updateMobileStatus()
 
+    // Show floating controls by default on desktop
+    if (!state.isMobile) {
+        state.controlsVisible = true
+    }
+
     const canAccess = await loadClassroom()
 
     if (canAccess) {
         await startMedia()
-        await initEcho()
+        await initSocketIO()
     }
 
     checkAndAdjustLayoutForMobile()
@@ -759,61 +772,16 @@ onBeforeUnmount(() => {
 
     cleanup()
 })
-
-// Auto-hide controls timer
-let controlsTimer = null
-
-function showControls() {
-    uiState.controlsVisible = true
-    
-    // Clear existing timer
-    if (controlsTimer) clearTimeout(controlsTimer)
-    
-    // Auto-hide after 3 seconds of no interaction
-    controlsTimer = setTimeout(() => {
-        uiState.controlsVisible = false
-    }, 3000)
-}
-
-function hideControls() {
-    if (controlsTimer) clearTimeout(controlsTimer)
-    uiState.controlsVisible = false
-}
-
-// ===== Export for template usage =====
-defineExpose({
-    // State
-    mediaState,
-    webrtcState,
-    classroomState,
-    uiState,
-
-    // Computed
-    labels,
-    isLocalVideoOn,
-    checkStatusClassroom,
-
-    // Methods
-    toggleMic,
-    toggleCamera,
-    toggleScreenShare,
-    setLayout,
-    pinLocal,
-    pinRemote,
-    onLeaveClassroom,
-    toggleFullscreen,
-    toggleElementFullscreen,
-})
 </script>
 
 <template>
-    <base-loading v-if="classroomState.isLoading" />
+    <base-loading v-if="state.isLoading" />
 
-    <div class="classroom-container" v-if="!classroomState.isLoading">
-        <BasePageError v-if="!classroomState.data?.booking" message="Lớp học không tồn tại hoặc có lỗi xảy ra" />
+    <div class="classroom-container" v-if="!state.isLoading">
+        <BasePageError v-if="!state.classroom?.booking" message="Lớp học không tồn tại hoặc có lỗi xảy ra" />
 
         <!-- Access denied message -->
-        <div v-else-if="!classroomState.canAccess" class="access-denied">
+        <div v-else-if="!state.classroom.can_start" class="access-denied">
             <div class="access-denied-content">
                 <div class="access-denied-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon-max-4" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -824,7 +792,7 @@ defineExpose({
                 <h2 class="access-denied-title">{{ CONSTANTS.messages.cannotAccess }}</h2>
                 <p class="access-denied-message">{{ checkStatusClassroom }}</p>
                 <p class="access-denied-subtitle">{{ CONSTANTS.messages.redirectMessage }}</p>
-                <NuxtLink to="/classroom-manager" class="access-denied-btn">
+                <NuxtLink to="/classroom/manager" class="access-denied-btn">
                     <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                         <polyline points="9,22 9,12 15,12 15,22"></polyline>
@@ -839,9 +807,9 @@ defineExpose({
             <!-- Header Section -->
             <div class="classroom-header">
                 <div class="header-left">
-                    <div class="classroom-info" v-if="classroomState.data">
-                        <h3 class="classroom-title">{{ classroomState.data.topic || CONSTANTS.messages.defaultTitle }}</h3>
-                        <p class="classroom-subtitle">{{ CONSTANTS.labels.bookingCode }}: {{ classroomState.data.booking?.request_code }}</p>
+                    <div class="classroom-info" v-if="state.classroom">
+                        <h3 class="classroom-title">{{ state.classroom.topic || CONSTANTS.messages.defaultTitle }}</h3>
+                        <p class="classroom-subtitle">{{ CONSTANTS.labels.bookingCode }}: {{ state.classroom.booking?.request_code }}</p>
                     </div>
                 </div>
 
@@ -853,7 +821,7 @@ defineExpose({
                             <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
                             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                         </svg>
-                        <span class="count">{{ classroomState.participantsCount }}</span>
+                        <span class="count">{{ state.participantsCount }}</span>
                         <span class="label">{{ CONSTANTS.labels.participants }}</span>
                     </div>
 
@@ -866,17 +834,16 @@ defineExpose({
             </div>
 
             <!-- Video Section -->
-            <div class="video-section" ref="videoSectionRef" :class="{ 'is-fullscreen': uiState.isFullscreen }">
-                <div class="video-grid" :class="`layout-${uiState.layoutMode}`">
+            <div class="video-section" ref="videoSectionRef" :class="{ 'is-fullscreen': state.isFullscreen }" @click="handleToggleControls">
+                <div class="video-grid" :class="[`layout-${state.layoutMode}`, { 'controls-visible': state.controlsVisible }]">
                     <!-- Local Video -->
                     <div class="video-container local-video" ref="localVideoContainer" :class="{ 
-                        'is-primary': uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local', 
-                        'is-secondary': uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote',
-                        'is-minimized': uiState.minimized.local && uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote'
+                        'is-primary': state.layoutMode === 'pinned' && state.pinnedTarget === 'local', 
+                        'is-secondary': state.layoutMode === 'pinned' && state.pinnedTarget === 'remote'
                     }">
                         <div class="video-wrapper">
                             <video ref="localVideo" autoplay playsinline webkit-playsinline muted class="video-element" @pause="e => handleVideoPause(e, 'local')" @play="e => handleVideoPlay(e, 'local')" oncontextmenu="return false;"></video>
-                            <div v-if="uiState.videoPaused.local" class="play-overlay" @click.stop="retryPlay('local')">
+                            <div v-if="state.videoPaused.local" class="play-overlay" @click.stop="retryPlay('local')">
                                 <svg class="icon-xl" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M8 5v14l11-7z"/>
                                 </svg>
@@ -895,10 +862,10 @@ defineExpose({
                             <div class="layout-controls">
                                 <button 
                                     class="layout-btn" 
-                                    :class="{ active: uiState.layoutMode === 'split' }" 
+                                    :class="{ active: state.layoutMode === 'split' }" 
                                     @click="setLayout('split')" 
                                     :title="CONSTANTS.titles.splitMode"
-                                    v-if="!uiState.isMobile"
+                                    v-if="!state.isMobile"
                                 >
                                     <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect x="3" y="5" width="8" height="14" rx="2"></rect>
@@ -908,7 +875,7 @@ defineExpose({
                                 </button>
                                 <button 
                                     class="layout-btn" 
-                                    :class="{ active: uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local' }" 
+                                    :class="{ active: state.layoutMode === 'pinned' && state.pinnedTarget === 'local' }" 
                                     @click="pinLocal" 
                                     :title="CONSTANTS.titles.pinMyScreen"
                                 >
@@ -918,27 +885,7 @@ defineExpose({
                                     </svg>
                                     <span>{{ CONSTANTS.buttons.pin }}</span>
                                 </button>
-                                <button 
-                                    class="layout-btn" 
-                                    @click="toggleMinimize('local')" 
-                                    :title="uiState.minimized.local ? CONSTANTS.titles.expand : CONSTANTS.titles.minimize"
-                                    v-if="uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote'"
-                                >
-                                    <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <template v-if="uiState.minimized.local">
-                                            <polyline points="15 3 21 3 21 9"></polyline>
-                                            <polyline points="9 21 3 21 3 15"></polyline>
-                                            <line x1="21" y1="3" x2="14" y2="10"></line>
-                                            <line x1="3" y1="21" x2="10" y2="14"></line>
-                                        </template>
-                                        <template v-else>
-                                            <polyline points="4 14 10 14 10 20"></polyline>
-                                            <polyline points="20 10 14 10 14 4"></polyline>
-                                            <line x1="14" y1="10" x2="21" y2="3"></line>
-                                            <line x1="3" y1="21" x2="10" y2="14"></line>
-                                        </template>
-                                    </svg>
-                                </button>
+
                                 <button 
                                     class="layout-btn" 
                                     @click="toggleElementFullscreen(localVideoContainer)" 
@@ -956,7 +903,7 @@ defineExpose({
                             <!-- Video Controls Overlay -->
                             <div class="video-controls">
                                 <div class="video-badges">
-                                    <div v-if="!mediaState.micEnabled" class="badge mute-badge" :title="CONSTANTS.titles.micMuted">
+                                    <div v-if="!state.micEnabled" class="badge mute-badge" :title="CONSTANTS.titles.micMuted">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <line x1="2" x2="22" y1="2" y2="22"></line>
                                             <path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"></path>
@@ -974,24 +921,23 @@ defineExpose({
 
                     <!-- Remote Video -->
                     <div class="video-container remote-video" ref="remoteVideoContainer" :class="{ 
-                        'is-primary': uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote', 
-                        'is-secondary': uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local',
-                        'is-minimized': uiState.minimized.remote && uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local'
+                        'is-primary': state.layoutMode === 'pinned' && state.pinnedTarget === 'remote', 
+                        'is-secondary': state.layoutMode === 'pinned' && state.pinnedTarget === 'local'
                     }">
                         <div class="video-wrapper">
                             <video ref="remoteVideo" autoplay playsinline webkit-playsinline class="video-element" @pause="e => handleVideoPause(e, 'remote')" @play="e => handleVideoPlay(e, 'remote')" oncontextmenu="return false;"></video>
-                            <div v-if="uiState.videoPaused.remote && webrtcState.remoteStreamPresent" class="play-overlay" @click.stop="retryPlay('remote')">
+                            <div v-if="state.videoPaused.remote && state.remoteStreamPresent" class="play-overlay" @click.stop="retryPlay('remote')">
                                 <svg class="icon-xl" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M8 5v14l11-7z"/>
                                 </svg>
                             </div>
-                            <div v-if="!webrtcState.remoteStreamPresent" class="video-overlay">
+                            <div v-if="!state.remoteStreamPresent" class="video-overlay">
                                 <div class="overlay-content">
                                     <svg class="overlay-icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                         <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path>
                                         <rect x="2" y="6" width="14" height="12" rx="2" />
                                     </svg>
-                                    <p class="overlay-text" v-if="!webrtcState.hasStarted">{{ CONSTANTS.messages.waitingConnection }}</p>
+                                    <p class="overlay-text" v-if="!state.hasStarted">{{ CONSTANTS.messages.waitingConnection }}</p>
                                     <p class="overlay-text" v-else>{{ CONSTANTS.messages.waitingVideo }}</p>
                                 </div>
                             </div>
@@ -1000,7 +946,7 @@ defineExpose({
                             <div class="layout-controls">
                                 <button 
                                     class="layout-btn" 
-                                    :class="{ active: uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'remote' }" 
+                                    :class="{ active: state.layoutMode === 'pinned' && state.pinnedTarget === 'remote' }" 
                                     @click="pinRemote" 
                                     :title="CONSTANTS.titles.pinRemoteScreen"
                                 >
@@ -1010,27 +956,7 @@ defineExpose({
                                     </svg>
                                     <span>{{ CONSTANTS.buttons.pin }}</span>
                                 </button>
-                                <button 
-                                    class="layout-btn" 
-                                    @click="toggleMinimize('remote')" 
-                                    :title="uiState.minimized.remote ? CONSTANTS.titles.expand : CONSTANTS.titles.minimize"
-                                    v-if="uiState.layoutMode === 'pinned' && uiState.pinnedTarget === 'local'"
-                                >
-                                    <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <template v-if="uiState.minimized.remote">
-                                            <polyline points="15 3 21 3 21 9"></polyline>
-                                            <polyline points="9 21 3 21 3 15"></polyline>
-                                            <line x1="21" y1="3" x2="14" y2="10"></line>
-                                            <line x1="3" y1="21" x2="10" y2="14"></line>
-                                        </template>
-                                        <template v-else>
-                                            <polyline points="4 14 10 14 10 20"></polyline>
-                                            <polyline points="20 10 14 10 14 4"></polyline>
-                                            <line x1="14" y1="10" x2="21" y2="3"></line>
-                                            <line x1="3" y1="21" x2="10" y2="14"></line>
-                                        </template>
-                                    </svg>
-                                </button>
+
                                 <button 
                                     class="layout-btn" 
                                     @click="toggleElementFullscreen(remoteVideoContainer)" 
@@ -1060,13 +986,13 @@ defineExpose({
                 <!-- Floating control bar -->
                 <div class="floating-controls">
                     <Transition name="slide-up">
-                        <div class="floating-controls-wrapper" v-if="uiState.controlsVisible">
+                        <div class="floating-controls-wrapper" v-if="state.controlsVisible">
                             <!-- Camera -->
                             <button
                                 class="control-btn"
-                                :class="{ active: mediaState.camEnabled }"
+                                :class="{ active: state.camEnabled }"
                                 @click="toggleCamera"
-                                :title="mediaState.camEnabled ? CONSTANTS.titles.cameraOn : CONSTANTS.titles.cameraOff"
+                                :title="state.camEnabled ? CONSTANTS.titles.cameraOn : CONSTANTS.titles.cameraOff"
                             >
                                 <svg
                                     class="icon-md"
@@ -1079,7 +1005,7 @@ defineExpose({
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
                                 >
-                                    <template v-if="mediaState.camEnabled">
+                                    <template v-if="state.camEnabled">
                                         <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path>
                                         <rect x="2" y="6" width="14" height="12" rx="2"></rect>
                                     </template>
@@ -1094,9 +1020,9 @@ defineExpose({
                             <!-- Microphone -->
                             <button
                                 class="control-btn"
-                                :class="{ active: mediaState.micEnabled }"
+                                :class="{ active: state.micEnabled }"
                                 @click="toggleMic"
-                                :title="mediaState.micEnabled ? CONSTANTS.titles.micOn : CONSTANTS.titles.micOff"
+                                :title="state.micEnabled ? CONSTANTS.titles.micOn : CONSTANTS.titles.micOff"
                             >
                                 <svg
                                     class="icon-md"
@@ -1109,7 +1035,7 @@ defineExpose({
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
                                 >
-                                    <template v-if="mediaState.micEnabled">
+                                    <template v-if="state.micEnabled">
                                         <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
                                         <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
                                         <line x1="12" x2="12" y1="19" y2="22" />
@@ -1125,7 +1051,7 @@ defineExpose({
                             <!-- Screen share -->
                             <button
                                 class="control-btn"
-                                :class="{ active: mediaState.isScreenSharing }"
+                                :class="{ active: state.isScreenSharing }"
                                 @click="toggleScreenShare"
                                 :title="CONSTANTS.titles.shareScreen"
                             >
@@ -1140,7 +1066,7 @@ defineExpose({
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
                                 >
-                                    <template v-if="mediaState.isScreenSharing">
+                                    <template v-if="state.isScreenSharing">
                                         <rect width="20" height="14" x="2" y="3" rx="2"></rect>
                                         <line x1="8" x2="16" y1="21" y2="21"></line>
                                         <line x1="12" x2="12" y1="17" y2="21"></line>
@@ -1156,7 +1082,7 @@ defineExpose({
                             <button
                                 class="control-btn"
                                 @click="toggleFullscreen"
-                                :title="uiState.isFullscreen ? CONSTANTS.titles.exitFullscreen : CONSTANTS.titles.fullscreen"
+                                :title="state.isFullscreen ? CONSTANTS.titles.exitFullscreen : CONSTANTS.titles.fullscreen"
                             >
                                 <svg
                                     class="icon-md"
@@ -1169,7 +1095,7 @@ defineExpose({
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
                                 >
-                                    <template v-if="uiState.isFullscreen">
+                                    <template v-if="state.isFullscreen">
                                         <path d="M8 3v3a2 2 0 0 1-2 2H3"></path>
                                         <path d="M21 8h-3a2 2 0 0 1-2-2V3"></path>
                                         <path d="M3 16h3a2 2 0 0 1 2 2v3"></path>
@@ -1204,11 +1130,8 @@ defineExpose({
                                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                                 </svg>
                             </button>
-
-                            <div class="separator"></div>
-
                             <!-- Hide Controls -->
-                            <button class="control-btn secondary" @click="hideControls" :title="CONSTANTS.titles.hideControls">
+                            <button class="control-btn secondary" @click="hideControls" :title="CONSTANTS.titles.hideControls" v-if="state.isMobile">
                                 <svg class="icon-md" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
@@ -1216,15 +1139,7 @@ defineExpose({
                         </div>
                     </Transition>
 
-                    <Transition name="fade">
-                        <div class="floating-controls-wrapper mini" v-if="!uiState.controlsVisible">
-                             <button class="control-btn" @click="showControls" :title="CONSTANTS.titles.showControls">
-                                <svg class="icon-md" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="18 15 12 9 6 15"></polyline>
-                                </svg>
-                            </button>
-                        </div>
-                    </Transition>
+
                 </div>
             </div>
         </div>
@@ -1232,11 +1147,6 @@ defineExpose({
 </template>
 
 <style scoped>
-/* Global Reset for this component */
-* {
-    box-sizing: border-box;
-}
-
 /* Main Container - Dark Theme for Video Call */
 .classroom-container {
     display: flex;
@@ -1487,7 +1397,7 @@ defineExpose({
     position: absolute;
     right: 1rem;
     bottom: 1rem; /* Space for controls */
-    width: 280px;
+    width: 300px;
     height: 158px;
     z-index: 20;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.1);
@@ -1698,7 +1608,7 @@ defineExpose({
 
 /* For Mic/Cam, usually "Active" means ON. 
    If the user wants "Active" to mean "Muted" (red), we can adjust.
-   Based on template logic: :class="{ active: mediaState.micEnabled }"
+   Based on template logic: :class="{ active: state.micEnabled }"
    So Active = Enabled = Good.
 */
 
@@ -1758,42 +1668,7 @@ defineExpose({
     opacity: 1;
 }
 
-/* Minimized State */
-.video-container.is-minimized {
-    height: auto !important;
-    aspect-ratio: unset !important;
-    min-height: 60px;
-    flex: 0 0 auto;
-    background: #1e293b;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
 
-.video-container.is-minimized .video-wrapper {
-    height: 60px;
-    background: transparent;
-}
-
-.video-container.is-minimized .video-element,
-.video-container.is-minimized .video-overlay {
-    display: none;
-}
-
-.video-container.is-minimized .layout-controls {
-    opacity: 1;
-    transform: translateY(-50%);
-    top: 50%;
-    right: 1rem;
-}
-
-.video-container.is-minimized .video-controls {
-    display: none;
-}
-
-.video-container.is-minimized .video-label {
-    background: transparent;
-    padding: 0;
-    backdrop-filter: none;
-}
 
 /* Transitions */
 .slide-up-enter-active,
@@ -1892,6 +1767,11 @@ defineExpose({
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         border: 1px solid rgba(255,255,255,0.1);
+        transition: bottom 0.3s ease;
+    }
+
+    .video-grid.layout-pinned.controls-visible .is-secondary {
+        bottom: 5.5rem;
     }
     
     .video-grid.layout-pinned .is-secondary .layout-btn {

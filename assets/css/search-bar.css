@@ -1,5 +1,5 @@
 /* Airbnb Search Bar Styles */
-.airbnb-search-bar {
+.filter-search-bar {
     display: flex;
     align-items: center;
     background: #ffffff;
@@ -12,12 +12,16 @@
     transition: all 0.2s ease;
 }
 
-.airbnb-search-bar:hover {
+.filter-search-bar:hover {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
 }
 
-.airbnb-search-bar:has(.search-filter-item.active) {
+.filter-search-bar:has(.search-filter-item.active) {
 	background: #ebebeb;
+}
+.filter-search-bar:has(.search-filter-item.active) 
+.search-filter-item:hover {
+	background: transparent;
 }
 
 .search-filter-item {
@@ -37,7 +41,7 @@
 	content: "";
 	width: 1px;
 	height: 32px;
-	background-color: #dddddd;
+	background: #dddddd;
 	margin-left: 1.5rem;
 }
 
@@ -50,7 +54,7 @@
 }
 
 .search-filter-item:hover::after, .search-filter-item.active::after {
-	content: none;
+	background: transparent;
 }
 
 
@@ -163,8 +167,9 @@
     background: #ffffff;
     border-radius: 32px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-    padding: 1rem;
-    min-width: 350px;
+    padding: 1.5rem;
+    max-width: 350px;
+	min-width: 350px;
     z-index: 100;
     animation: fadeIn 0.2s ease-out;
 }
@@ -174,11 +179,9 @@
 }
 
 .dropdown-title {
-    font-size: var(--font-size-mini);
-    font-weight: 600;
-    color: #717171;
+    font-size: var(--font-size-small);
+    font-weight: 500;
     margin-bottom: 0.5rem;
-    padding-left: 1rem;
 }
 
 .dropdown-list {
@@ -309,12 +312,6 @@
 .mobile-filter-grid {
     display: grid;
     gap: 1rem;
-}
-
-@media (max-width: 1200px) {
-	.desktop-search-bar .search-filter-item:nth-child(4) {
-		display: none;
-	}
 }
 
 @media (max-width: 768px) {
@@ -494,11 +491,11 @@
 }
 
 .rating-option:hover {
-    border-color: var(--color-primary);
+    border-color: black;
 }
 
 .rating-option.active {
-    border-color: var(--color-primary);
+    border-color: black;
 }
 
 .star-icon {
@@ -572,7 +569,7 @@
     font-weight: 600;
     color: #222;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: var(--font-size-base);
 }
 
 .btn-black {
@@ -582,7 +579,7 @@
     padding: 14px 24px;
     border-radius: 8px;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: var(--font-size-base);
     cursor: pointer;
     transition: background 0.2s;
 }
@@ -604,4 +601,110 @@
     align-items: center;
     gap: 1rem;
     justify-content: center;
+}
+
+/* Complex Dropdown Styles */
+.wide-dropdown {
+    min-width: 400px;
+}
+
+.dropdown-section {
+    margin-bottom: 1rem;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: #f0f0f0;
+    margin: 1rem 0;
+}
+
+.chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chip {
+    padding: 0.5rem 1rem;
+    background: #f5f5f5;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    color: #525252;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.chip:hover {
+    background: #e5e5e5;
+}
+
+.chip.active {
+    background: #eef2ff;
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    font-weight: 600;
+}
+
+.search-input-wrapper {
+    position: relative;
+    margin-bottom: 0.75rem;
+}
+
+.custom-input-sm {
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 2.25rem;
+    background: #f9f9f9;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.custom-input-sm:focus {
+    background: #fff;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+}
+
+.search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a3a3a3;
+}
+
+.dropdown-list-scroll {
+    max-height: 250px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.empty-state-sm {
+    padding: 1rem;
+    text-align: center;
+    color: #a3a3a3;
+    font-size: 0.9rem;
+}
+
+/* Checkbox indicator for subject list */
+.checkbox-indicator {
+    width: 1.2rem;
+    height: 1.2rem;
+    border: 2px solid #d4d4d4;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    transition: all 0.2s;
+}
+
+.dropdown-item.active .checkbox-indicator {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
 }

@@ -23,8 +23,7 @@ type NuxtAppInjections =
   InjectionType<typeof import("../../node_modules/nuxt/dist/app/plugins/warn.dev.server.js")> &
   InjectionType<typeof import("../../node_modules/nuxt/dist/app/plugins/check-if-layout-used.js")> &
   InjectionType<typeof import("../../plugins/axios.client")> &
-  InjectionType<typeof import("../../plugins/echo.client")> &
-  InjectionType<typeof import("../../plugins/global-components.client")>
+  InjectionType<typeof import("../../plugins/socket.client")>
 
 declare module '#app' {
   interface NuxtApp extends NuxtAppInjections { }

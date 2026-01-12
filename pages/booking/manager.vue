@@ -14,6 +14,7 @@ import ReviewModal from '~/components/booking/ReviewModal.vue'
 import ComplaintModal from '~/components/booking/ComplaintModal.vue'
 import BookingListTutor from '~/components/booking/BookingListTutor.vue'
 import BookingListStudent from '~/components/booking/BookingListStudent.vue'
+import { convertRangeToTimeSlots } from '~/config/header'
 
 const router = useRouter()
 const { api } = useApi()
@@ -27,30 +28,25 @@ const {
     formatDuration,
     formatCurrency,
     getDayOfWeek,
+	formatTime
 } = useHelper()
 
-const createButton = (label, icon, className, handler, disabled = false) => ({
-    label,
-    icon,
-    class: className,
-    handler,
-    disabled
-})
 
-const createButtonPrimary = (label, icon, handler, disabled = false) => createButton(label, icon, 'btn-primary', handler, disabled)
-const createButtonSecondary = (label, icon, handler, disabled = false) => createButton(label, icon, 'btn-secondary', handler, disabled)
 
 // STATE
 const search = ref('')
 const status = ref('all')
 const currentPage = ref(1)
 const isLoading = ref(false)
+const isRejecting = ref(false)
+const isCancelling = ref(false)
+const isRescheduling = ref(false)
+const isRefunding = ref(false)
 
 const bookings = ref([])
 const dataPaginate = ref({})
 const statusMap = computed(() => configStore.configuration.booking_status || {})
 const listStatusComplaint = computed(() => configStore.configuration.booking_complaint_status || {})
-const listComplaintTypes = computed(() => configStore.configuration.complaint_types || [])
 
 const modals = ref({
     reject: false,
@@ -87,7 +83,7 @@ const forms = ref({
     },
     reschedule: {
         new_date: '',
-        new_time_slot_id: '',
+        new_start_time: '',
         note: ''
     },
     refund: {
@@ -104,9 +100,6 @@ const tutorWeeklyTimeSlots = ref([])
 const processBookingsResponse = (response) => {
     bookings.value = [...(response?.data || [])]
     dataPaginate.value = response?.meta || {}
-    if (response?.list_status) {
-        statusMap.value = response.list_status
-    }
 }
 
 const fetchBookings = async (page = 1, overrides = {}) => {
@@ -147,14 +140,12 @@ watchEffect(() => {
     }
 })
 
+
 const isPageLoading = computed(() => isLoading.value || isInitialLoading.value)
 
 // COMPUTED
 const userData = computed(() => userStore.getUserData)
-const isTutor = computed(() => userData.value.role === 1)
-const tabs = computed(() => statusMap.value)
-
-
+const isTutor = computed(() => userData.value.role === 'tutor')
 
 const availableRescheduleTimeSlots = computed(() => {
     if (!forms.value.reschedule.new_date || !tutorWeeklyTimeSlots.value.length) return []
@@ -162,91 +153,32 @@ const availableRescheduleTimeSlots = computed(() => {
     const dayOfWeek = getDayOfWeek(forms.value.reschedule.new_date)
     if (dayOfWeek === null) return []
 
-    const timeSlots = configStore.configuration.time_slots || []
-    const availableSlots = tutorWeeklyTimeSlots.value.filter(slot => slot.code == dayOfWeek)
-    const availableIds = new Set(availableSlots.map(slot => slot.time_slot_id))
+    const dayRanges = tutorWeeklyTimeSlots.value.filter(slot => (slot.day_of_week_code ?? slot.code) == dayOfWeek)
 
-    return timeSlots.map(timePoint => ({
-        ...timePoint,
-        disabled: timePoint.disabled || !availableIds.has(timePoint.id)
-    }))
+    const slots = convertRangeToTimeSlots(dayRanges)
+
+    // Validate past times if today
+    const now = new Date()
+    const selectedDate = new Date(forms.value.reschedule.new_date)
+    const isToday = selectedDate.toDateString() === now.toDateString()
+
+    return slots.map(slot => {
+        let disabled = false
+        if (isToday) {
+            const [h, m] = slot.time.split(':').map(Number)
+            const slotTime = new Date(now)
+            slotTime.setHours(h, m || 0, 0, 0)
+            
+            if (slotTime <= now) {
+                disabled = true
+            }
+        }
+        return {
+            ...slot,
+            disabled
+        }
+    })
 })
-
-const ACTION_CONFIG = computed(() => {
-    const createConfirmedButton = (label = 'Đã xác nhận', icon = 'check') =>
-        createButtonSecondary(label, icon, null, true);
-
-    const canConfirmReschedule = (booking) =>
-        booking.user_booking_reschedule &&
-        booking.user_booking_reschedule.uid !== userData.value.uid;
-
-    const baseActions = {
-        [statusBooking.confirmed]: {
-            primary: createButtonPrimary('Xem lớp học', 'classroom', (b) => goToClassRoom(b.id))
-        },
-        [statusBooking.both_missed]: {
-            primary: createButtonPrimary('Hoàn tiền', 'refund', (b) => openRefundModal(b)),
-            secondary: createButtonSecondary(
-                (b) => b.user_booking_complaint ? 'Xem khiếu nại' : 'Khiếu nại',
-                'alert',
-                (b) => openComplaintModal(b)
-            )
-        },
-        [statusBooking.rejected]: {
-            primary:  createButtonSecondary('Đã từ chối', 'cancel', null, true)
-        },
-        [statusBooking.cancelled]: {
-            primary: createButtonSecondary('Đã bị hủy', 'x', null, true)
-        }
-    };
-
-    // Tutor-specific actions
-    const tutorActions = {
-        ...baseActions,
-        [statusBooking.pending]: {
-            primary: createButtonPrimary('Xác nhận', 'check', (b) => changeBookingStatus(b.id, 'confirmed')),
-            showReject: true,
-            showReschedule: true
-        },
-        [statusBooking.request_rescheduled]: {
-            primary: (b) => canConfirmReschedule(b)
-                ? createButtonPrimary('Xác nhận', 'check', () => confirmReschedule(b.user_booking_reschedule.id))
-                : null,
-            showReject: canConfirmReschedule
-        },
-        [statusBooking.confirme_completed]: {
-            primary: (b) => b.tutor_confrim
-                ? createConfirmedButton()
-                : createButtonPrimary('Hoàn thành', 'check', (booking) => changeBookingStatus(booking.id, 'completed'))
-        }
-    };
-
-    // User-specific actions (override một số từ tutorActions)
-    const userActions = {
-        ...baseActions,
-        [statusBooking.pending]: {
-            showReschedule: true,
-            showCancelled: true
-        },
-        [statusBooking.confirme_completed]: {
-            primary: (b) => b.user_confrim
-                ? createConfirmedButton()
-                : createButtonPrimary('Hoàn thành', 'check', (booking) => changeBookingStatus(booking.id, 'completed'))
-        },
-        [statusBooking.completed]: {
-            primary: createButtonPrimary(
-                (b) => b.review ? 'Xem đánh giá' : 'Đánh giá',
-                'star',
-                (b) => openReviewModal(b)
-            ),
-            secondary: baseActions[statusBooking.both_missed].secondary
-        }
-    };
-
-    return isTutor.value ? tutorActions : userActions;
-})
-
-
 
 const getStatusClass = (status) => {
     const statusClasses = {
@@ -283,7 +215,7 @@ const resetModal = (modalName) => {
         reschedule: () => {
             forms.value.reschedule = {
                 new_date: '',
-                new_time_slot_id: '',
+                new_start_time: '',
                 note: ''
             }
             selected.value.bookingForReschedule = null
@@ -328,7 +260,12 @@ const changePage = async (page) => {
     }
 }
 
+const handleSearch = () => {
+    changePage(1);
+}
+
 const changeBookingStatus = async (id, newStatus, note = null) => {
+	isLoading.value = true
     try {
         const payload = {
             id,
@@ -343,6 +280,8 @@ const changeBookingStatus = async (id, newStatus, note = null) => {
         }
     } catch (e) {
         notifyError(e.message)
+    } finally {
+        isLoading.value = false
     }
 }
 
@@ -378,23 +317,27 @@ const openCancelConfirmation = (booking) => {
 }
 
 const openRescheduleModal = async (booking) => {
+	isLoading.value = true
+
     selected.value.bookingForReschedule = booking
     forms.value.reschedule = {
         new_date: '',
-        new_time_slot_id: '',
+        new_start_time: '',
         note: ''
     }
 
     try {
-        const res = await api.apiGet(`bookings/${booking.id}/reschedule-info`)
-        if (res.success && res.can_reschedule) {
-            tutorWeeklyTimeSlots.value = res.data.user_weekly_time_slots || []
+        const res = await api.apiGet(`bookings/${booking.tutor.uid}/reschedule-info`)
+        if (res.success) {
+            tutorWeeklyTimeSlots.value = res.data || []
             modals.value.reschedule = true
         } else {
             notifyError(res.message)
         }
     } catch (error) {
         notifyError(error.message)
+    } finally {
+        isLoading.value = false
     }
 }
 
@@ -433,9 +376,14 @@ const openProfileModal = (user) => {
 
 const submitReject = async () => {
     if (!forms.value.reject.note.trim()) return
-    const type = isTutor.value ? statusBooking.rejected : statusBooking.cancelled
-    await changeBookingStatus(selected.value.rejectId, type, forms.value.reject.note)
-    resetModal('reject')
+    isRejecting.value = true
+    try {
+        const type = isTutor.value ? statusBooking.rejected : statusBooking.cancelled
+        await changeBookingStatus(selected.value.rejectId, type, forms.value.reject.note)
+        resetModal('reject')
+    } finally {
+        isRejecting.value = false
+    }
 }
 
 
@@ -446,8 +394,13 @@ const confirmCancel = async () => {
     }
     if (!selected.value.bookingForCancel) return
 
-    await changeBookingStatus(selected.value.bookingForCancel.id, statusBooking.cancelled, forms.value.cancel.note)
-    resetModal('confirmCancel')
+    isCancelling.value = true
+    try {
+        await changeBookingStatus(selected.value.bookingForCancel.id, statusBooking.cancelled, forms.value.cancel.note)
+        resetModal('confirmCancel')
+    } finally {
+        isCancelling.value = false
+    }
 }
 
 const confirmReject = async () => {
@@ -457,16 +410,22 @@ const confirmReject = async () => {
     }
     if (!selected.value.bookingForReject) return
 
-    await changeBookingStatus(selected.value.bookingForReject.id, statusBooking.rejected, forms.value.reject.note)
-    resetModal('confirmReject')
+    isRejecting.value = true
+    try {
+        await changeBookingStatus(selected.value.bookingForReject.id, statusBooking.rejected, forms.value.reject.note)
+        resetModal('confirmReject')
+    } finally {
+        isRejecting.value = false
+    }
 }
 
 const submitReschedule = async () => {
-    if (!forms.value.reschedule.new_date || !forms.value.reschedule.new_time_slot_id || !forms.value.reschedule.note.trim()) {
+    if (!forms.value.reschedule.new_date || !forms.value.reschedule.new_start_time || !forms.value.reschedule.note.trim()) {
         notifyError('Vui lòng điền đầy đủ thông tin: ngày, khung giờ và lý do chuyển lịch')
         return
     }
 
+    isRescheduling.value = true
     try {
         const payload = {
             booking_id: selected.value.bookingForReschedule.id,
@@ -482,13 +441,14 @@ const submitReschedule = async () => {
         }
     } catch (error) {
         notifyError('Gửi yêu cầu chuyển lịch thất bại')
+    } finally {
+        isRescheduling.value = false
     }
 }
 
 
 const handleMessageSent = () => {
     resetModal('sendMessage')
-    success('Gửi tin nhắn thành công!')
 }
 
 const handleReviewSubmitted = (reviewData) => {
@@ -521,9 +481,32 @@ const handleComplaintSubmitted = (complaintData) => {
     resetModal('complaint')
 }
 
+const confirmRefund = async () => {
+    if (!selected.value.bookingForRefund) return
+
+    isRefunding.value = true
+    try {
+        const res = await api.apiPost('bookings/refund', {
+            booking_id: selected.value.bookingForRefund.id
+        })
+        if (res.success) {
+            success(res.message)
+            resetModal('refund')
+            changePage(currentPage.value)
+        } else {
+            notifyError(res.message)
+        }
+    } catch (error) {
+        notifyError('Yêu cầu hoàn tiền thất bại')
+    } finally {
+        isRefunding.value = false
+    }
+}
+
+
 const goToClassRoom = (bookingId) => {
     const routeData = router.resolve({
-        name: 'classroom-manager',
+        name: 'classroom/manager',
         query: {
             booking_id: bookingId
         }
@@ -577,14 +560,13 @@ const selectedBookingForReschedule = computed(() => selected.value.bookingForRes
 
 // WATCHERS & LIFECYCLE
 watch(status, () => changePage(1))
-watch(search, () => changePage(1))
 watch(() => forms.value.reschedule.new_date, (newDate) => {
-    if (newDate) forms.value.reschedule.new_time_slot_id = ''
+    if (newDate) forms.value.reschedule.new_start_time = ''
 })
 </script>
 
 <template>
-<base-loading v-if="isPageLoading" />
+<base-loading v-if="isPageLoading || isLoading" />
 
 <BasePageError v-else-if="initialError" :message="initialError.message || 'Không thể tải danh sách đặt lịch'" />
 
@@ -594,10 +576,21 @@ watch(() => forms.value.reschedule.new_date, (newDate) => {
         <p class="desc">Quản lý và theo dõi tất cả các buổi học của bạn</p>
 
         <div class="booking-manager-toolbar">
-            <base-input v-model="search" placeholder="Tìm kiếm theo tên gia sư, môn học hoặc mã đặt lịch..."></base-input>
+            <div class="search-group">
+                <base-input v-model="search" placeholder="Tìm kiếm theo tên gia sư, môn học hoặc mã đặt lịch..." @keyup.enter="handleSearch"></base-input>
+                <button class="btn-primary btn-lg w-max" @click="handleSearch">
+					<div>
+							<svg xmlns="http://www.w3.org/2000/svg" class="icon-md" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<circle cx="11" cy="11" r="8"></circle>
+								<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+							</svg>
+					</div>
+                    Tìm kiếm
+                </button>
+            </div>
         </div>
 
-        <base-status-tabs v-model="status" :tabs="tabs" />
+        <base-status-tabs v-model="status" :tabs="statusMap" />
 
         <div v-if="bookings.length === 0" class="empty-list">
             <div class="empty-icon">
@@ -615,9 +608,7 @@ watch(() => forms.value.reschedule.new_date, (newDate) => {
         <BookingListTutor 
             v-if="isTutor" 
             :bookings="bookings" 
-            :statusBooking="statusBooking" 
             :isTutor="isTutor" 
-            :actionConfig="ACTION_CONFIG" 
             :userData="userData" 
             @openLogsModal="openLogsModal" 
             @openRejectConfirmation="openRejectConfirmation" 
@@ -625,13 +616,17 @@ watch(() => forms.value.reschedule.new_date, (newDate) => {
             @openRescheduleModal="openRescheduleModal" 
             @openSendMessageModal="openSendMessageModal" 
             @openProfileModal="openProfileModal" 
+            @changeBookingStatus="changeBookingStatus"
+            @confirmReschedule="confirmReschedule"
+            @goToClassRoom="goToClassRoom"
+            @openReviewModal="openReviewModal"
+            @openComplaintModal="openComplaintModal"
+            @openRefundModal="openRefundModal"
         />
         <BookingListStudent 
             v-else 
             :bookings="bookings" 
-            :statusBooking="statusBooking" 
             :isTutor="isTutor" 
-            :actionConfig="ACTION_CONFIG" 
             :userData="userData" 
             @openLogsModal="openLogsModal" 
             @openRejectConfirmation="openRejectConfirmation" 
@@ -639,6 +634,12 @@ watch(() => forms.value.reschedule.new_date, (newDate) => {
             @openRescheduleModal="openRescheduleModal" 
             @openSendMessageModal="openSendMessageModal" 
             @openProfileModal="openProfileModal" 
+            @changeBookingStatus="changeBookingStatus"
+            @confirmReschedule="confirmReschedule"
+            @goToClassRoom="goToClassRoom"
+            @openReviewModal="openReviewModal"
+            @openComplaintModal="openComplaintModal"
+            @openRefundModal="openRefundModal"
         />
 
         <base-pagination v-if="!isPageLoading" :meta="dataPaginate" :current-page="currentPage" @changePage="changePage" />
@@ -714,7 +715,9 @@ watch(() => forms.value.reschedule.new_date, (newDate) => {
             <base-input type="textarea" v-model="noteCancelled" placeholder="Nhập lý do từ chối (ví dụ: Lịch đã kín, không phù hợp chuyên môn...)"></base-input>
             <div class="modal-footer">
                 <button class="btn-md btn-secondary" @click="showRejectModal = false">Hủy</button>
-                <button class="btn-md btn-primary" :disabled="!noteCancelled.trim()" @click="submitReject">Từ chối</button>
+                <button class="btn-md btn-danger" :disabled="!noteCancelled.trim() || isRejecting" :class="{ 'btn-loading': isRejecting }" @click="submitReject">
+                    {{ isRejecting ? 'Đang từ chối...' : 'Từ chối' }}
+                </button>
             </div>
         </div>
     </base-modal>
@@ -723,195 +726,67 @@ watch(() => forms.value.reschedule.new_date, (newDate) => {
 
     <ReviewModal v-if="showReviewModal" :isOpen="showReviewModal" :booking="selectedBookingForReview" :existingReview="existingReview" @reviewSubmitted="handleReviewSubmitted" @close="showReviewModal = false" />
 
-    <ComplaintModal v-if="showComplaintModal" :isOpen="showComplaintModal" :booking="selectedBooking" :listStatusComplaint="listStatusComplaint" :listComplaintTypes="listComplaintTypes" @complaintSubmitted="handleComplaintSubmitted" @close="showComplaintModal = false" />
+    <ComplaintModal v-if="showComplaintModal" :isOpen="showComplaintModal" :booking="selectedBooking" @complaintSubmitted="handleComplaintSubmitted" @close="showComplaintModal = false" />
 
     <!-- Modal chuyển lịch học -->
-    <base-modal v-if="showRescheduleModal" :isOpen="showRescheduleModal" @close="showRescheduleModal = false" title="Chuyển lịch học" description="Chuyển lịch học nếu bạn muốn thay đổi thời gian học" size="large">
+    <base-modal v-if="showRescheduleModal" :isOpen="showRescheduleModal" @close="showRescheduleModal = false" title="Chuyển lịch học" description="Chuyển lịch học nếu bạn muốn thay đổi thời gian học" size="medium">
         <div class="reschedule-modal-content">
-            <!-- Current Booking Info Card -->
-            <div class="info-card">
-                <div class="card-header">
-                    Thông tin lịch học hiện tại
-                </div>
-                <div class="card-content">
-                    <div class="lesson-details-grid">
-                        <div class="lesson-detail-item">
-                            <div class="detail-label">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"></path>
-                                    <path d="M22 10v6"></path>
-                                    <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"></path>
-                                </svg>
-                            </div>
-                            <div class="detail-value">
-                                <span class="title">Môn học</span>
-                                <span class="sub-title">{{ selectedBookingForReschedule?.subject?.name }}</span>
-                            </div>
-                        </div>
-
-                        <div class="lesson-detail-item">
-                            <div class="detail-label">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                                </svg>
-                            </div>
-                            <div class="detail-value">
-                                <span class="title">Cấp độ</span>
-                                <span class="sub-title">{{ selectedBookingForReschedule?.education_level?.name }}</span>
-                            </div>
-                        </div>
-
-                        <div class="lesson-detail-item">
-                            <div class="detail-label">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <polyline points="12 6 12 12 16 14"></polyline>
-                                </svg>
-                            </div>
-                            <div class="detail-value">
-                                <span class="title">Thời gian</span>
-                                <span class="sub-title">
-                                    {{ selectedBookingForReschedule?.start_time_text }} - {{ selectedBookingForReschedule?.end_time_text }}
-                                    <br>
-                                    <small>({{ formatDuration(selectedBookingForReschedule?.duration) }})</small>
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="lesson-detail-item" v-if="selectedBookingForReschedule?.tutor_session">
-                            <div class="detail-label">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="4" width="18" height="16" rx="2" />
-                                    <path d="M7 8h10" />
-                                </svg>
-                            </div>
-                            <div class="detail-value">
-                                <span class="title">Loại buổi học</span>
-                                <span class="sub-title">{{ selectedBookingForReschedule?.tutor_session?.name }}</span>
-                            </div>
-                        </div>
-
-                        <div class="lesson-detail-item">
-                            <div class="detail-label">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="1" x2="12" y2="23"></line>
-                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                                </svg>
-                            </div>
-                            <div class="detail-value">
-                                <span class="title">Học phí mỗi giờ</span>
-                                <span class="sub-title">{{ formatCurrency(selectedBookingForReschedule?.hourly_rate) }}</span>
-                            </div>
-                        </div>
-
-                        <div class="lesson-detail-item">
-                            <div class="detail-label">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                                    <path d="M16 2v4" />
-                                    <path d="M8 2v4" />
-                                    <path d="M3 10h18" />
-                                </svg>
-                            </div>
-                            <div class="detail-value">
-                                <span class="title">Ngày học</span>
-                                <span class="sub-title">{{ selectedBookingForReschedule?.date }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- New Schedule Form Card -->
-            <div class="info-card">
-                <div class="card-header">
-                    Chọn lịch học mới
+            <div class="reschedule-form">
+                <div class="form-group">
+                    <base-date-picker v-model="rescheduleFormData.new_date" />
                 </div>
-                <div class="card-content">
-                    <div class="reschedule-form">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                                    <path d="M16 2v4" />
-                                    <path d="M8 2v4" />
-                                    <path d="M3 10h18" />
-                                </svg>
-                                Ngày học mới
-                            </label>
-                            <base-datepicker v-model="rescheduleFormData.new_date" />
-                        </div>
 
-                        <div class="form-group">
-                            <label class="form-label">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <polyline points="12 6 12 12 16 14"></polyline>
-                                </svg>
-                                Khung giờ mới
-                            </label>
-                            <div class="time-slots-container">
-                                <div class="time-select-grid">
-                                    <button
-                                        v-for="slot in availableRescheduleTimeSlots"
-                                        :key="'reschedule-time-' + slot.id"
-                                        type="button"
-                                        class="time-chip"
-                                        :class="{
-                                            selected: rescheduleFormData.new_time_slot_id === slot.id,
-                                            disabled: slot.disabled || !rescheduleFormData.new_date
-                                        }"
-                                        @click="(!slot.disabled && rescheduleFormData.new_date) && (rescheduleFormData.new_time_slot_id = slot.id)"
-                                    >
-                                        {{ slot.name }}
-                                    </button>
-                                </div>
-                                <div v-if="!rescheduleFormData.new_time_slot_id && rescheduleFormData.new_date" class="form-error">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <line x1="12" y1="8" x2="12" y2="12" />
-                                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                                    </svg>
-                                    Vui lòng chọn khung giờ
-                                </div>
-                                <div v-if="rescheduleFormData.new_date && availableRescheduleTimeSlots.length === 0" class="form-error">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <line x1="12" y1="8" x2="12" y2="12" />
-                                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                                    </svg>
-                                    Gia sư không có lịch trống vào ngày này
-                                </div>
-                            </div>
+                <div class="form-group">
+                    <div class="time-slots-container">
+                        <div class="time-select-grid">
+                            <button
+                                v-for="slot in availableRescheduleTimeSlots"
+                                :key="'reschedule-time-' + slot.id"
+                                type="button"
+                                class="time-chip"
+                                :class="{
+                                    selected: rescheduleFormData.new_start_time === slot.time,
+                                    disabled: slot.disabled || !rescheduleFormData.new_date
+                                }"
+                                @click="(!slot.disabled && rescheduleFormData.new_date) && (rescheduleFormData.new_start_time = slot.time)"
+                            >
+                                {{ slot.name }}
+                            </button>
                         </div>
-
-                        <div class="form-group">
-                            <label class="form-label">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                    <polyline points="14,2 14,8 20,8"></polyline>
-                                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                                    <polyline points="10,9 9,9 8,9"></polyline>
-                                </svg>
-                                Lý do chuyển lịch <span class="required">*</span>
-                            </label>
-                            <base-input
-                                type="textarea"
-                                v-model="rescheduleFormData.note"
-                                placeholder="Vui lòng nhập lý do chuyển lịch học (bắt buộc)"
-                                :rows="4"
-                            ></base-input>
+                        <div v-if="!rescheduleFormData.new_start_time && rescheduleFormData.new_date" class="form-error">
+                            <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            Vui lòng chọn khung giờ
                         </div>
-
-                        <div class="notice-content">
-                            <p class="notice-text">
-                                <strong>Lưu ý:</strong> Yêu cầu chuyển lịch sẽ được gửi cho gia sư để xem xét và xác nhận.
-                                Gia sư có thể chấp nhận hoặc từ chối yêu cầu này trong vòng 24 giờ.
-                            </p>
+                        <div v-if="rescheduleFormData.new_date && availableRescheduleTimeSlots.length === 0" class="form-error">
+                            <svg class="icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            Gia sư không có lịch trống vào ngày này
                         </div>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <base-input
+                        type="textarea"
+                        v-model="rescheduleFormData.note"
+                        placeholder="Vui lòng nhập lý do chuyển lịch học (bắt buộc)"
+                        :rows="4"
+                    ></base-input>
+                </div>
+
+                <div class="notice-content">
+                    <p class="notice-text">
+                        <strong>Lưu ý:</strong> Yêu cầu chuyển lịch sẽ được gửi cho gia sư để xem xét và xác nhận.
+                        Gia sư có thể chấp nhận hoặc từ chối yêu cầu này trong vòng 24 giờ.
+                    </p>
                 </div>
             </div>
 
@@ -926,20 +801,21 @@ watch(() => forms.value.reschedule.new_date, (newDate) => {
                 <button
                     class="btn-md btn-primary"
                     @click="submitReschedule"
-                    :disabled="!rescheduleFormData.new_date || !rescheduleFormData.new_time_slot_id || !rescheduleFormData.note.trim()"
+                    :disabled="!rescheduleFormData.new_date || !rescheduleFormData.new_start_time || !rescheduleFormData.note.trim() || isRescheduling"
+                    :class="{ 'btn-loading': isRescheduling }"
                 >
                     <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M22 2 11 13"></path>
                         <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                     </svg>
-                    <span>Gửi yêu cầu</span>
+                    <span>{{ isRescheduling ? 'Đang gửi...' : 'Gửi yêu cầu' }}</span>
                 </button>
             </div>
         </div>
     </base-modal>
 
     <!-- Confirmation Modals -->
-    <base-modal v-if="modals.confirmCancel" :isOpen="modals.confirmCancel" @close="resetModal('confirmCancel')" title="Xác nhận hủy lịch học" description="Xác nhận hủy lịch học nếu bạn không muốn tiếp tục" size="small">
+    <base-modal v-if="modals.confirmCancel" :isOpen="modals.confirmCancel" @close="resetModal('confirmCancel')" size="small">
         <div class="confirmation-modal">
             <div class="confirmation-icon">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -968,19 +844,19 @@ watch(() => forms.value.reschedule.new_date, (newDate) => {
                     </svg>
                     <span>Hủy</span>
                 </button>
-                <button class="btn-md btn-danger" @click="confirmCancel" :disabled="!forms.cancel.note.trim()">
+                <button class="btn-md btn-danger" @click="confirmCancel" :disabled="!forms.cancel.note.trim() || isCancelling" :class="{ 'btn-loading': isCancelling }">
                     <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 6h18"></path>
                         <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                         <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
                     </svg>
-                    <span>Xác nhận hủy</span>
+                    <span>{{ isCancelling ? 'Đang hủy...' : 'Xác nhận hủy' }}</span>
                 </button>
             </div>
         </div>
     </base-modal>
 
-    <base-modal v-if="modals.confirmReject" :isOpen="modals.confirmReject" @close="resetModal('confirmReject')" title="Xác nhận từ chối lịch học" description="Xác nhận từ chối lịch học nếu bạn không muốn tiếp tục" size="small">
+    <base-modal v-if="modals.confirmReject" :isOpen="modals.confirmReject" @close="resetModal('confirmReject')" size="small">
         <div class="confirmation-modal">
             <div class="confirmation-icon">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1009,12 +885,12 @@ watch(() => forms.value.reschedule.new_date, (newDate) => {
                     </svg>
                     <span>Hủy</span>
                 </button>
-                <button class="btn-md btn-danger" @click="confirmReject" :disabled="!forms.reject.note.trim()">
+                <button class="btn-md btn-danger" @click="confirmReject" :disabled="!forms.reject.note.trim() || isRejecting" :class="{ 'btn-loading': isRejecting }">
                     <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"/>
                         <path d="m4.9 4.9 14.2 14.2"/>
                     </svg>
-                    <span>Xác nhận từ chối</span>
+                    <span>{{ isRejecting ? 'Đang từ chối...' : 'Xác nhận từ chối' }}</span>
                 </button>
             </div>
         </div>
@@ -1049,20 +925,20 @@ watch(() => forms.value.reschedule.new_date, (newDate) => {
                         <span class="amount-label">Số tiền hoàn</span>
                         <span class="amount-value">{{ formatCurrency(selected.bookingForRefund?.total_price) }}</span>
                     </div>
-                    <div class="payment-method" v-if="selected.bookingForRefund?.payment?.payment_method">
+                    <div class="payment-method" v-if="selected.bookingForRefund?.payment">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="6" width="18" height="13" rx="2"></rect>
                             <path d="M3 10H20.5"></path>
                             <path d="M7 15H9"></path>
                         </svg>
-                        <span>{{ selected.bookingForRefund?.payment?.payment_method?.name }}</span>
+                        <span>{{ selected.bookingForRefund?.payment?.payment_method_name }}</span>
                     </div>
                 </div>
             </div>
 
             <div class="refund-notice">
                 <div class="notice-header">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"/>
                         <line x1="12" y1="8" x2="12" y2="12"/>
                         <line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -1085,11 +961,11 @@ watch(() => forms.value.reschedule.new_date, (newDate) => {
                     </svg>
                     <span>Hủy</span>
                 </button>
-                <button class="btn-md btn-success" @click="confirmRefund">
+                <button class="btn-md btn-success" @click="confirmRefund" :disabled="isRefunding" :class="{ 'btn-loading': isRefunding }">
                     <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8|M3 3v5h5|M12 7v5l3 3"></path>
                     </svg>
-                    <span>Xác nhận hoàn tiền</span>
+                    <span>{{ isRefunding ? 'Đang hoàn tiền...' : 'Xác nhận hoàn tiền' }}</span>
                 </button>
             </div>
         </div>
@@ -1156,7 +1032,7 @@ watch(() => forms.value.reschedule.new_date, (newDate) => {
                     <p class="bio-text">{{ selected.profileUser.about_you }}</p>
                 </div>
 
-                <div class="detail-section" v-if="selected.profileUser.role === 1 && selected.profileUser.user_subjects?.length">
+                <div class="detail-section" v-if="selected.profileUser.role === 'tutor' && selected.profileUser.user_subjects?.length">
                     <h3 class="section-title">Môn học giảng dạy</h3>
                     <div class="subjects-grid">
                         <div v-for="subject in selected.profileUser.user_subjects" :key="subject.id" class="subject-chip">
@@ -1195,4 +1071,10 @@ watch(() => forms.value.reschedule.new_date, (newDate) => {
 @import '~/assets/css/lessonInformation.css';
 @import '~/assets/css/BookingManager.css';
 @import '~/assets/css/ProfileModal.css';
+
+.search-group {
+    display: flex;
+    gap: 1rem;
+    flex: 1;
+}
 </style>

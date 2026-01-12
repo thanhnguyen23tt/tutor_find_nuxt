@@ -4,9 +4,15 @@ export const order_benefits = [
     "Hỗ trợ 24/7 từ đội ngũ TutorFind"
 ];
 
-export const genderOptions = [
-    { id: 1, name: 'Nam' },
-    { id: 2, name: 'Nữ' }
+export const gender_options = [
+    { value: 1, name: 'Nam' },
+    { value: 0, name: 'Nữ' },
+    { value: 2, name: 'Khác' }
+];
+
+export const uploadMethods = [
+    { id: 'upload', name: 'Tải lên ảnh có sẵn', desc: 'Được đề xuất' },
+    { id: 'webcam', name: 'Chụp ảnh bằng webcam', desc: '' },
 ];
 
 export const experiences = [
@@ -16,11 +22,12 @@ export const experiences = [
     { id: 'expert', name: 'Chuyên gia (5+ năm)' }
 ];
 
-export const list_status_complaint = [
-    { id: 1, name: 'Chưa xử lý' },
-    { id: 2, name: 'Đang xử lý' },
-    { id: 3, name: 'Đã xử lý' }
-];
+export const booking_complaint_status = {
+	pending: 'pending',
+	resolved: 'resolved',
+	rejected: 'rejected',
+	under_review: 'under_review'
+}
 
 export const status_booking = {
     waiting_payment: 'waiting_payment',
@@ -70,6 +77,12 @@ export const notification_type = {
     profile: 'profile',
     payment: 'payment',
     warning: 'warning'
+};
+
+export const status_identity_verification = {
+    pending: 'pending',
+    approved: 'approved',
+    rejected: 'rejected'
 };
 
 // SVG icons for notification types

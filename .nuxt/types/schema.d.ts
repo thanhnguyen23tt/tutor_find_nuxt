@@ -94,6 +94,10 @@ declare module 'nuxt/schema' {
   interface PublicRuntimeConfig {
    apiUrl: string,
 
+   baseUrl: string,
+
+   realtimeUrl: string,
+
    apiBaseUrl: string,
 
    pusherAppKey: string,
@@ -104,7 +108,17 @@ declare module 'nuxt/schema' {
 
    pusherPort: string,
 
-   baseUrl: string,
+   reverbAppId: string,
+
+   reverbAppKey: string,
+
+   reverbAppSecret: string,
+
+   reverbHost: string,
+
+   reverbPort: string,
+
+   reverbScheme: string,
   }
 }
 declare module 'vue' {

@@ -75,11 +75,11 @@
 
                     <div class="social-login">
                         <button type="button" class="btn-lg btn-white google w-100" @click="handleGoogleLogin">
-                            <img src="/images/google.svg" alt="Google" class="social-icon">
+                            <img src="/images/google.webp" alt="Google" class="social-icon">
                             Google
                         </button>
                         <button type="button" class="btn-lg btn-white facebook w-100" @click="handleFacebookLogin">
-                            <img src="/images/facebook.svg" alt="Facebook" class="social-icon">
+                            <img src="/images/facebook.webp" alt="Facebook" class="social-icon">
                             Facebook
                         </button>
                     </div>
@@ -300,9 +300,6 @@
 
 
 <script setup>
-// Auto-imported: ref, reactive, onUnmounted, useRouter
-// Auto-imported: useFormValidation from composables/useFormValidation.js
-
 definePageMeta({
   layout: 'auth',
   middleware: 'guest'
@@ -310,8 +307,8 @@ definePageMeta({
 
 const {handleValidationError, clearError, clearAllErrors, getError } = useFormValidation();
 
-const { login } = useAuth();
-const { api } = useApi();
+const { login, sendResetOtp: authSendResetOtp, verifyResetOtp: authVerifyResetOtp, resetPassword: authResetPassword } = useAuth();
+// const { api } = useApi(); // No longer needed directly here
 const { success, error: notifyError } = useNotification();
 
 const formType = ref('email');
@@ -364,7 +361,7 @@ const handleSubmit = async () => {
 		
         await login(formData);
 
-        navigateTo('/');
+    return navigateTo('/');
     } catch (error) {
         handleValidationError(error, error.data.message);
     } finally {
@@ -373,14 +370,14 @@ const handleSubmit = async () => {
 };
 
 const openRegisterModal = () => {
-    navigateTo('/auth/register');
+return navigateTo('/auth/register');
 };
 
 const handleGoogleLogin = () => {
     if (process.client) {
         const config = useRuntimeConfig();
         const apiUrl = config.public.apiBaseUrl;
-    window.location.href = `${apiUrl}/api/auth/google`;
+    	window.location.href = `${apiUrl}/api/auth/google`;
     }
 };
 
@@ -388,7 +385,7 @@ const handleFacebookLogin = () => {
     if (process.client) {
         const config = useRuntimeConfig();
         const apiUrl = config.public.apiBaseUrl;
-    window.location.href = `${apiUrl}/api/auth/facebook`;
+    	window.location.href = `${apiUrl}/api/auth/facebook`;
     }
 };
 
@@ -428,7 +425,7 @@ const sendResetOtp = async () => {
         isLoadingOtp.value = true;
         clearAllForgotPasswordErrors();
 
-        const response = await api.apiPost('auth/password/reset/otp', {
+        const response = await authSendResetOtp({
             email: forgotPasswordData.email
         });
 
@@ -500,7 +497,7 @@ const verifyOtp = async () => {
         isLoadingOtp.value = true;
         clearAllForgotPasswordErrors();
 
-        const response = await api.apiPost('auth/password/reset/verify', {
+        const response = await authVerifyResetOtp({
             email: forgotPasswordData.email,
             otp: forgotPasswordData.otp
         });
@@ -528,7 +525,7 @@ const resetPassword = async () => {
             return;
         }
 
-        const response = await api.apiPost('auth/password/reset', {
+        const response = await authResetPassword({
             email: forgotPasswordData.email,
             otp: forgotPasswordData.otp,
             password: forgotPasswordData.password,

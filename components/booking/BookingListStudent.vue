@@ -1,10 +1,10 @@
 <template>
 <div class="booking-card">
     <div v-for="booking in bookings" :key="booking.id" @click="$emit('openLogsModal', booking.user_booking_logs)">
-        <div class="booking-card-wrapper" :class="getWrapperClass(booking)">
+        <div class="booking-card-wrapper">
             <!-- Left section: Display TUTOR info for Student -->
             <div class="booking-card-left">
-                <img v-if="booking.tutor?.avatar" :src="booking.tutor.avatar" alt="Tutor avatar" class="avatar avatar-clickable" @click.stop="$emit('openProfileModal', booking.tutor)">
+                <img v-if="booking.tutor?.avatar" :src="showImage(booking.tutor.avatar)" alt="Tutor avatar" class="avatar avatar-clickable" @click.stop="$emit('openProfileModal', booking.tutor)">
                 <div v-else class="avatar avatar-clickable" @click.stop="$emit('openProfileModal', booking.tutor)">{{ getFirstCharacterOfLastName(booking.tutor?.full_name) }}</div>
 
                 <div class="content">
@@ -33,10 +33,10 @@
                             <polyline points="12 6 12 12 16 14" />
                         </svg>
                         <div>
-                            <span>{{ booking.start_time_text }} - {{ booking.end_time_text }} ({{ formatDuration(booking.duration) }})</span>
+                            <span>{{ formatTime(booking.start_time) }} - {{ formatTime(booking.end_time) }} ({{ formatDuration(booking.duration) }})</span>
                         </div>
                     </div>
-                    <button class="status-btn" :class="booking.statusClass">{{ booking.statusText }}</button>
+                    <button class="status-btn">{{ booking.statusText }}</button>
                 </div>
             </div>
 
@@ -57,13 +57,13 @@
                     <span>Loại buổi học: {{ booking.tutor_session?.name }}</span>
                 </div>
 
-                <div v-if="booking.payment?.payment_method" class="booking-card-center_content">
+                <div v-if="booking.payment" class="booking-card-center_content">
                     <svg class="icon-md" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect x="3" y="6" width="18" height="13" rx="2" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></rect>
                         <path d="M3 10H20.5" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
                         <path d="M7 15H9" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
                     </svg>
-                    <span>{{ booking.payment?.payment_method?.name }} - {{ booking.payment?.payment_method?.description }}</span>
+                    <span>Thanh toán bằng: {{ booking.payment?.payment_method_name }}</span>
                 </div>
 
                 <div v-if="isTimeVisible(booking.status)" class="booking-card-center_content time-text">
@@ -71,11 +71,11 @@
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
                     </svg>
-                    <span>{{ booking.time_text }}</span>
+                    <span>{{ booking.time_info_text }}</span>
                 </div>
 
                 <!-- Display reason for rejected/cancelled -->
-                <template v-if="[props.statusBooking.rejected, props.statusBooking.cancelled].includes(booking.status) && getReasonFromLogs(booking)">
+                <template v-if="[statusBooking.rejected, statusBooking.cancelled].includes(booking.status) && getReasonFromLogs(booking)">
                     <div class="booking-card-center_content reason-text">
                         <div class="relative">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 12H7" style="transform: none; transform-origin: 50% 50%; transform-box: fill-box;"></path><path d="M19 18H5"></path><path d="M21 6H3"></path></svg>
@@ -85,20 +85,23 @@
                 </template>
 
                 <!-- Reschedule Info -->
-                <template v-if="booking.user_booking_reschedule && booking.status == props.statusBooking.request_rescheduled">
+                <template v-if="booking.user_booking_reschedule && booking.status == statusBooking.request_rescheduled">
                     <div class="booking-card-center_content">
                         <svg class="icon-md" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10" />
                             <polyline points="12 6 12 12 16 14" />
                         </svg>
-                        <span>Cũ: {{ booking.date }} ({{ booking.time_slot?.name }} - {{ booking.end_time_text }})</span>
+                        <span>Cũ: {{ booking.date }} ({{ formatTime(booking.start_time) }} - {{ formatTime(booking.end_time) }})</span>
                     </div>
+
+					<div class="separator"></div>
+
                     <div class="booking-card-center_content">
                         <svg class="icon-md" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10" />
                             <polyline points="12 6 12 12 16 14" />
                         </svg>
-                        <span>Mới: {{ booking.user_booking_reschedule?.new_date }} ({{ booking.user_booking_reschedule?.new_time_slot?.name }} - {{ booking.user_booking_reschedule?.end_time_new }})</span>
+                        <span>Mới: {{ booking.user_booking_reschedule?.new_date }} ({{ formatTime(booking.user_booking_reschedule?.start_time) }} - {{ formatTime(booking.user_booking_reschedule?.end_time) }})</span>
                     </div>
                     <div class="booking-card-center_content">
                         <svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -122,56 +125,23 @@
                 <div class="price-per-hour">{{ formatCurrency(booking.hourly_rate) }}/giờ</div>
 
                 <div class="action-group" @click.stop>
-                    <!-- Primary Action -->
-                    <button v-if="getActionButton(booking, 'primary')" class="action-btn" :class="getActionButton(booking, 'primary').class" :disabled="getActionButton(booking, 'primary').disabled" @click="getActionButton(booking, 'primary').handler">
+                    <button 
+                        v-for="(action, index) in resolveActions(booking)" 
+                        :key="index"
+                        class="action-btn" 
+                        :class="action.class"
+                        @click="action.handler" 
+                        :disabled="action.disabled"
+                    >
                         <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path v-if="getActionButton(booking, 'primary').icon === 'star'" :d="ICONS.star" />
-                            <path
-                            v-for="(d, i) in ICONS[getActionButton(booking, 'primary').icon].split('|')"
+                            <path v-if="action.icon === 'star'" :d="ICONS.star" />
+                            <path v-else
+                            v-for="(d, i) in ICONS[action.icon].split('|')"
                             :key="i"
                             :d="d"
                             />
                         </svg>
-                        <span class="btn-text">{{ getActionButton(booking, 'primary').label }}</span>
-                    </button>
-
-                    <!-- Secondary Action -->
-                    <button v-if="getActionButton(booking, 'secondary')" class="action-btn" :class="getActionButton(booking, 'secondary').class" @click="getActionButton(booking, 'secondary').handler">
-                        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path
-                            v-for="(d, i) in ICONS[getActionButton(booking, 'secondary').icon].split('|')"
-                            :key="i"
-                            :d="d"
-                            />
-                        </svg>
-                        <span class="btn-text">{{ getActionButton(booking, 'secondary').label }}</span>
-                    </button>
-
-                    <!-- Quick Buttons -->
-                    <button v-if="shouldShow(booking, 'reject')" class="action-btn btn-secondary" @click="$emit('openRejectConfirmation', booking)">
-                        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="m4.9 4.9 14.2 14.2" />
-                        </svg>
-                        <span class="btn-text">Từ chối</span>
-                    </button>
-
-                    <button v-if="shouldShow(booking, 'cancel')" class="action-btn btn-secondary" @click="$emit('openCancelConfirmation', booking)">
-                        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="m4.9 4.9 14.2 14.2" />
-                        </svg>
-                        <span class="btn-text">Hủy lịch học</span>
-                    </button>
-
-                    <button v-if="shouldShow(booking, 'reschedule')" class="action-btn btn-secondary" @click="$emit('openRescheduleModal', booking)">
-                        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                            <line x1="16" y1="2" x2="16" y2="6"></line>
-                            <line x1="8" y1="2" x2="8" y2="6"></line>
-                            <line x1="3" y1="10" x2="21" y2="10"></line>
-                        </svg>
-                        <span class="btn-text">Chuyển lịch</span>
+                        <span class="btn-text">{{ action.label }}</span>
                     </button>
 
                     <button class="action-btn btn-secondary" @click="$emit('openSendMessageModal', booking.tutor)">
@@ -193,16 +163,28 @@ import {
     defineEmits
 } from 'vue'
 
-const { formatDuration, formatCurrency, getFirstCharacterOfLastName } = useHelper()
+const { status_booking: statusBooking } = useConfig()
+const { formatDuration, formatCurrency, getFirstCharacterOfLastName, showImage, formatTime } = useHelper()
 
 const props = defineProps({
     bookings: Array,
-    statusBooking: Object,
-    actionConfig: Object,
     userData: Object
 })
 
-defineEmits(['openLogsModal', 'openRejectConfirmation', 'openCancelConfirmation', 'openRescheduleModal', 'openSendMessageModal', 'openProfileModal'])
+const emit = defineEmits([
+    'openLogsModal', 
+    'openRejectConfirmation', 
+    'openCancelConfirmation', 
+    'openRescheduleModal', 
+    'openSendMessageModal', 
+    'openProfileModal',
+    'changeBookingStatus',
+    'confirmReschedule',
+    'goToClassRoom',
+    'openReviewModal',
+    'openComplaintModal',
+    'openRefundModal'
+])
 
 const ICONS = {
     check: 'M20 6 9 17l-5-5',
@@ -218,47 +200,45 @@ const ICONS = {
     refund: 'M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8|M3 3v5h5'
 }
 
-const getWrapperClass = (booking) => ({
-    'warning': booking.status === props.statusBooking.request_rescheduled,
-    'success': booking.status === props.statusBooking.completed
-})
-
 const isTimeVisible = (status) => {
-    return [props.statusBooking.confirmed].includes(status)
+    return [statusBooking.confirmed].includes(status)
 }
 
-const getActionButton = (booking, type = 'primary') => {
-    const config = props.actionConfig[booking.status]
-    if (!config) return null
+// Check if an action is allowed based on allowed_actions array from API
+const resolveActions = (booking) => {
+    if (!booking.allowed_actions) return []
+    
+    return booking.allowed_actions.map(bgAction => {
+        const actionMap = {
+            'confirmed': { icon: 'check', class: 'btn-primary', type: 'change_status', value: 'confirmed' },
+            'confirme_completed': { icon: 'check', class: 'btn-primary', type: 'change_status', value: 'completed' },
+            'view_classroom': { icon: 'classroom', class: 'btn-primary', handler: () => emit('goToClassRoom', booking.id) },
+            'refund': { icon: 'refund', class: 'btn-primary', handler: () => emit('openRefundModal', booking) },
+            'complaint': { icon: 'alert', class: 'btn-secondary', handler: () => emit('openComplaintModal', booking) },
+            'rejected': { icon: 'reject', class: 'btn-secondary', handler: () => emit('openRejectConfirmation', booking) },
+            'cancelled': { icon: 'x', class: 'btn-secondary', handler: () => emit('openCancelConfirmation', booking) },
+            'reschedule': { icon: 'reschedule', class: 'btn-secondary', handler: () => emit('openRescheduleModal', booking) },
+            'review': { icon: 'star', class: 'btn-primary', handler: () => emit('openReviewModal', booking) }
+        }
 
-    const btnConfig = typeof config[type] === 'function' ? config[type](booking) : config[type]
-    if (!btnConfig) return null
+        const config = actionMap[bgAction.action]
+        if (!config) return null
+        
+        let handler = config.handler
+        // Handle change_status type
+        if (!handler && bgAction.type === 'change_status') {
+            const statusValue = config.value || bgAction.action
+            handler = () => emit('changeBookingStatus', booking.id, statusValue)
+        }
 
-    return {
-        label: typeof btnConfig.label === 'function' ? btnConfig.label(booking) : btnConfig.label,
-        icon: btnConfig.icon,
-        class: btnConfig.class,
-        disabled: btnConfig.disabled || false,
-        handler: () => btnConfig.handler?.(booking)
-    }
-}
-
-const shouldShow = (booking, action) => {
-    const config = props.actionConfig[booking.status]
-    if (!config) return false
-
-    if (action === 'reject') {
-        const showReject = config.showReject
-        return typeof showReject === 'function' ? showReject(booking) : showReject
-    }
-    if (action === 'cancel') {
-        return config.showCancelled || false
-    }
-    if (action === 'reschedule') {
-        const showReschedule = config.showReschedule
-        return typeof showReschedule === 'function' ? showReschedule(booking) : showReschedule
-    }
-    return false
+        return {
+            label: bgAction.label,
+            icon: config.icon,
+            class: config.class,
+            handler: handler,
+            disabled: false
+        }
+    }).filter(Boolean)
 }
 
 const getReasonFromLogs = (booking) => {
@@ -276,4 +256,10 @@ const getReasonFromLogs = (booking) => {
 <style scoped>
 @import '~/assets/css/BookingManager.css';
 @import url("~/assets/css/BookingCardList.css");
+
+.separator {
+    height: 1px;
+    background-color: #e5e7eb;
+    margin: 3px 0;
+}
 </style>

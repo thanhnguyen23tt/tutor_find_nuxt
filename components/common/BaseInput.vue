@@ -249,7 +249,7 @@ input, textarea {
     border: 2px solid #e5e7eb;
     border-radius: 14px;
     font-weight: 500;
-    font-family: "Gill Sans", sans-serif;
+    /* font-family: "Gill Sans", sans-serif; */
     background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
     color: #374151;
     font-size: var(--font-size-small);

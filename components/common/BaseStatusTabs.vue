@@ -29,9 +29,8 @@ const handleSelectChange = (value) => {
     emit('update:modelValue', value);
 };
 
-// Convert tabs to options format for BaseSelect
-const selectOptions = computed(() => {
-    const list_tabs = props.tabs.map(tab => ({
+const statusMap = computed(() => {
+	const list_tabs = props.tabs.map(tab => ({
         id: tab.value || tab.id,
         name: tab.label || tab.name
     }));
@@ -92,53 +91,53 @@ const scrollRight = () => {
 const scrollToActiveTab = () => {
     if (!tabsContainer.value || !tabsWrapper.value) return;
 
-    nextTick(() => {
-        const activeButton = tabsWrapper.value?.querySelector('button.active');
-        if (activeButton && tabsContainer.value) {
-            const container = tabsContainer.value;
-            const button = activeButton;
+    const activeButton = tabsWrapper.value?.querySelector('button.active');
+    if (activeButton && tabsContainer.value) {
+        const container = tabsContainer.value;
+        const button = activeButton;
 
-            // Get button position relative to wrapper
-            const buttonOffsetLeft = button.offsetLeft;
-            const buttonWidth = button.offsetWidth;
-            const containerWidth = container.clientWidth;
-            const containerScrollLeft = container.scrollLeft;
+        // Get button position relative to wrapper
+        const buttonOffsetLeft = button.offsetLeft;
+        const buttonWidth = button.offsetWidth;
+        const containerWidth = container.clientWidth;
+        const containerScrollLeft = container.scrollLeft;
 
-            // Calculate if button is visible
-            const buttonLeft = buttonOffsetLeft;
-            const buttonRight = buttonLeft + buttonWidth;
-            const visibleLeft = containerScrollLeft;
-            const visibleRight = containerScrollLeft + containerWidth;
+        // Calculate if button is visible
+        const buttonLeft = buttonOffsetLeft;
+        const buttonRight = buttonLeft + buttonWidth;
+        const visibleLeft = containerScrollLeft;
+        const visibleRight = containerScrollLeft + containerWidth;
 
-            // Check if button is outside visible area
-            if (buttonLeft < visibleLeft) {
-                // Button is to the left, scroll to show it
-                container.scrollTo({
-                    left: Math.max(0, buttonLeft - 10), // 10px padding
-                    behavior: 'smooth'
-                });
-            } else if (buttonRight > visibleRight) {
-                // Button is to the right, scroll to show it
-                container.scrollTo({
-                    left: buttonRight - containerWidth + 10, // 10px padding
-                    behavior: 'smooth'
-                });
-            }
+        // Check if button is outside visible area
+        if (buttonLeft < visibleLeft) {
+            // Button is to the left, scroll to show it
+            container.scrollTo({
+                left: Math.max(0, buttonLeft - 10), // 10px padding
+                behavior: 'instant' // Use instant instead of smooth for faster response
+            });
+        } else if (buttonRight > visibleRight) {
+            // Button is to the right, scroll to show it
+            container.scrollTo({
+                left: buttonRight - containerWidth + 10, // 10px padding
+                behavior: 'instant' // Use instant instead of smooth for faster response
+            });
         }
-    });
+    }
 };
 
 // Watch for modelValue changes to scroll to active tab
 watch(() => props.modelValue, () => {
-    nextTick(() => {
+    // Use requestAnimationFrame for better performance
+    requestAnimationFrame(() => {
         scrollToActiveTab();
-        setTimeout(checkScrollPosition, 300); // Wait for scroll animation
+        // Check scroll position after scrolling
+        requestAnimationFrame(checkScrollPosition);
     });
 });
 
 // Watch for tabs changes
 watch(() => props.tabs, () => {
-    nextTick(() => {
+    requestAnimationFrame(() => {
         checkScrollPosition();
         scrollToActiveTab();
     });
@@ -151,7 +150,7 @@ const handleScroll = () => {
 
 // Lifecycle hooks
 onMounted(() => {
-    nextTick(() => {
+    requestAnimationFrame(() => {
         checkScrollPosition();
         scrollToActiveTab();
 
@@ -199,10 +198,10 @@ onUnmounted(() => {
         <div ref="tabsContainer" class="tabs-container">
             <div ref="tabsWrapper" class="tabs-wrapper">
                 <button
-                    v-for="tab in tabs"
+                    v-for="tab in statusMap"
                     :key="tab.value || tab.id"
-                    :class="{ active: modelValue === tab.value }"
-                    @click="handleTabClick(tab.value)"
+                    :class="{ active: modelValue === tab.value || modelValue === tab.id }"
+                    @click="handleTabClick(tab.value || tab.id)"
                 >
                     {{ tab.label || tab.name }}
                 </button>
@@ -234,7 +233,7 @@ onUnmounted(() => {
     <div class="mobile-view">
         <BaseSelect
             :model-value="modelValue"
-            :options="selectOptions"
+            :options="statusMap"
             :placeholder="'Chọn trạng thái'"
             type="no-search"
             :width-full="true"
@@ -363,7 +362,7 @@ onUnmounted(() => {
     color: #64748b;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.15s ease; /* Reduced from 0.3s to 0.15s */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -451,19 +450,6 @@ onUnmounted(() => {
     }
 }
 
-/* Animation for tab switching */
-@keyframes tabSwitch {
-    0% {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+/* Remove or reduce animation for faster tab switching */
 
-.base-status-tabs button.active {
-    animation: tabSwitch 0.3s ease-out;
-}
 </style>

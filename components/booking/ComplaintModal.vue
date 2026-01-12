@@ -14,16 +14,16 @@
                         <div class="board-title">Trạng thái xử lý</div>
                         <div class="board-steps">
                             <div
-                                v-for="key in Object.keys(listStatusComplaint)"
-                                :key="key"
+                                v-for="item in listStatusComplaint"
+                                :key="item.id"
                                 class="board-step"
-                                :class="{ active: existingComplaint.status === key }"
+                                :class="{ active: existingComplaint.status === item.id }"
                             >
-                                <div class="icon-circle" :class="{ active: existingComplaint.status === key }">
-                                    <template v-if="key==='rejected'">
+                                <div class="icon-circle" :class="{ active: existingComplaint.status === item.id }">
+                                    <template v-if="item.id ==='rejected'">
                                         <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
                                     </template>
-                                    <template v-else-if="key==='under_review'">
+                                    <template v-else-if="item.id ==='under_review'">
                                         <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg>
                                     </template>
                                     <template v-else>
@@ -31,7 +31,7 @@
                                     </template>
                                 </div>
                                 <div class="step-text">
-                                    <div class="step-title">{{ listStatusComplaint?.[key] || key }}</div>
+                                    <div class="step-title">{{ item.name }}</div>
                                     <div class="step-desc"></div>
                                 </div>
                             </div>
@@ -141,11 +141,14 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
-
 const { api } = useApi();
 const { success, error: notifyError } = useNotification();
 const { formatDate } = useHelper();
+
+const configStore = useConfigStore();
+
+const listStatusComplaint = computed(() => configStore.configuration.booking_complaint_status || {})
+const listComplaintTypes = computed(() => configStore.configuration.complaint_types || [])
 
 const props = defineProps({
     isOpen: {
@@ -156,14 +159,6 @@ const props = defineProps({
         type: Object,
         default: null
     },
-    listStatusComplaint: {
-        type: Object,
-        default: () => ({})
-    },
-    listComplaintTypes: {
-        type: Object,
-        default: () => ({})
-    }
 });
 
 const emit = defineEmits(['close', 'complaintSubmitted']);
@@ -172,7 +167,7 @@ const complaintType = ref('');
 const description = ref('');
 const isSubmitting = ref(false);
 const existingComplaint = computed(() => props.booking?.user_booking_complaint);
-const optionComplaintTypes = computed(() => props.listComplaintTypes);
+const optionComplaintTypes = computed(() => listComplaintTypes.value);
 
 const canSubmit = computed(() =>
     !!complaintType.value && description.value.trim().length > 0

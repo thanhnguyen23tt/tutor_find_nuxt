@@ -232,7 +232,7 @@ watch(
     font-size: var(--font-size-small);
     color: #6b7280;
     margin-bottom: 0.25rem;
-    font-weight: 600;
+    font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     transition: color 0.3s ease;
@@ -244,8 +244,7 @@ watch(
 }
 
 .day-number {
-    font-size: var(--font-size-base);
-    font-weight: 700;
+    font-size: var(--font-size-small);
     color: #374151;
     border-radius: 12px;
     display: flex;
@@ -259,20 +258,20 @@ watch(
 }
 
 .day.selected {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    /* background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%); */
     border-color: var(--color-primary);
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(7, 27, 102, 0.25);
 }
 
 .day.selected .day-name {
-    color: white;
+    color: var(--color-primary);
 }
 
 .day.selected .day-number {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--color-primary);
+    border-color: rgba(var(--color-primary), 0.3);
+	color: white;
 }
 
 .day.today:not(.selected) .day-number {

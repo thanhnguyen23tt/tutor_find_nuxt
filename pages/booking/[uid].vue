@@ -11,10 +11,13 @@
 
 <script setup async>
 import RealBooking from '~/components/booking/RealBooking.vue'
-definePageMeta({	
-  middleware: 'auth',
+definePageMeta({
+  middleware: [
+		() => {
+		useLayoutStore().setHiddenFooter(true)
+		}
+	]
 });
-
 const route = useRoute()
 const {
     api
@@ -46,7 +49,7 @@ const {
 // watchEffect(() => {
 //     if (process.client && tutorInfoError.value) {
 //         notifyError('Không thể tải thông tin gia sư')
-//         navigateTo('/')
+//     return navigateTo('/')
 //     }
 // })
 </script>

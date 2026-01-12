@@ -24,8 +24,8 @@
                         <!-- Tutor Card -->
                         <div
                             class="role-card tutor-card"
-                            :class="{ 'selected': selectedRole === 1 }"
-                            @click="selectRole(1)"
+                            :class="{ 'selected': selectedRole === 'tutor' }"
+                            @click="selectRole('tutor')"
                         >
                             <div class="role-card-icon tutor-icon">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -59,8 +59,8 @@
                         <!-- Student Card -->
                         <div
                             class="role-card student-card"
-                            :class="{ 'selected': selectedRole === 0 }"
-                            @click="selectRole(0)"
+                            :class="{ 'selected': selectedRole === 'user' }"
+                            @click="selectRole('user')"
                         >
                             <div class="role-card-icon student-icon">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -299,13 +299,13 @@ const confirmRole = async () => {
 
         // Show success message
         success(
-            selectedRole.value === 0 ?
+            selectedRole.value === 'user' ?
             'Chào mừng bạn đến với TutorFind với vai trò Học sinh!' :
             'Chào mừng bạn đến với TutorFind với vai trò Gia sư!'
         );
 
         // Redirect to home after successful role selection
-        navigateTo('/');
+    return navigateTo('/');
 
     } catch (error) {
         console.error('Error updating role:', error);
@@ -318,9 +318,9 @@ const confirmRole = async () => {
 // Check if user already has a role
 onMounted(() => {
     const user = userStore.getUserData;
-    if (user && user.role !== 99) {
+    if (user && user.role !== 'unselected') {
         // User already has a role, redirect to home
-        navigateTo('/');
+    return navigateTo('/');
     }
 });
 </script>
@@ -847,7 +847,7 @@ onMounted(() => {
 }
 
 .illustration-text p {
-    font-size: 16px;
+    font-size: var(--font-size-base);
     opacity: 0.9;
     line-height: 1.6;
 }

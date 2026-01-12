@@ -6,7 +6,7 @@
 			<div class="user-card">
 				<div class="avatar-wrapper">
 					<div class="change-image" @click="handleAvatarClick">
-						<img :src="avatarPreview || userData?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'" alt="Avatar"
+						<img :src="avatarPreview || showImage(userData?.avatar) || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'" alt="Avatar"
 							class="avatar-img" />
 						<div class="button-change">
 							<svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -19,11 +19,15 @@
 				</div>
 				<h2 class="user-name">{{ userData?.full_name }}</h2>
 				<p class="user-location">{{ userData?.address_preview || 'Chưa cập nhật' }}</p>
+				
+				<div class="profile-completion-widget" v-if="userData?.profile_completed_status">
+					{{ userData.profile_status_text }}
+				</div>
 			</div>
 
 			<!-- Quick Access Grid -->
 			<div class="quick-access-grid">
-				<div class="quick-card" @click="navigateTo('/classroom-manager')">
+				<div class="quick-card" @click="navigateTo('/classroom/manager')">
 					<span class="new-badge">MỚI</span>
 					<div class="quick-card-img">
 						<img src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-UserProfile/original/797c1df2-a40c-4d93-9550-ca5b213cd01b.png?im_w=240"
@@ -42,7 +46,7 @@
 			</div>
 
 			<!-- Become Tutor Banner -->
-			<div class="banner-card" @click="navigateTo('/profile/register-tutor')" v-if="userData?.role !== 1">
+			<div class="banner-card" @click="navigateTo('/profile/register-tutor')" v-if="userData?.role !== 'tutor'">
 				<div class="banner-img">
 					<img src="https://a0.muscache.com/im/pictures/airbnb-platform-assets/AirbnbPlatformAssets-UserProfile/original/ed28537a-fc3c-4253-bb89-a6d927df7e50.png?im_w=720" alt="Info"/>
 				</div>
@@ -89,13 +93,15 @@ definePageMeta({
 })
 import { userMenuItems } from '~/config/header';
 
-const { normalizeIcon } = useHelper();
+const { normalizeIcon, showImage } = useHelper();
 const userStore = useUserStore();
 const { api } = useApi();
 const { success, error: notifyError } = useNotification();
 const { handleValidationError } = useFormValidation();
 
-const userData = computed(() => userStore.getUserData);
+const userData = computed(() => {
+	return userStore.getUserData;
+});
 
 // Avatar upload states
 const avatarInputRef = ref(null);
@@ -105,20 +111,41 @@ const cropImageSrc = ref(null);
 const showCropModal = ref(false);
 const isLoading = ref(false);
 
+// Check if user is tutor
+const isTutor = computed(() => {
+	return userData.value?.is_tutor === true;
+});
+
 // Filter menu items to show relevant ones
 const filteredMenuItems = computed(() => {
-	return userMenuItems.filter(item => item.id !== 1);
+	return userMenuItems.filter(item => {
+		// Exclude profile item (id 1)
+		if (item.id === 1) return false;
+		
+		// If item requires tutor role, check if user is tutor
+		if (item.is_tutor === true) {
+			return isTutor.value;
+		}
+		
+		// If item requires non-tutor role, check if user is not tutor
+		if (item.is_user === true) {
+			return !isTutor.value;
+		}
+		
+		// Show item by default if no role requirement
+		return true;
+	});
 });
 
 const handleMenuClick = (item) => {
 	if (item.action === 'logout') {
 		userStore.clearAuth();
-		navigateTo('/auth/login');
+	return navigateTo('/auth/login');
 		return;
 	}
 	
 	if (item.path) {
-		navigateTo(item.path);
+	return navigateTo(item.path);
 	}
 };
 
@@ -210,6 +237,7 @@ const uploadAvatar = async () => {
 
 <style scoped>
 .profile-page-container {
+	min-height: 100vh;
 	background: #f8fafc;
 	padding: 1.5rem 1rem;
 }
@@ -313,7 +341,61 @@ const uploadAvatar = async () => {
 
 .user-location {
 	color: #6b7280;
-	font-size: 0.9375rem;
+	font-size: var(--font-size-small);
+	margin-bottom: 0.5rem;
+}
+
+.profile-completion-widget {
+	background: #f8fafc;
+	border-radius: 16px;
+	padding: 0.8rem;
+	text-align: left;
+	margin: auto;
+	font-size: var(--font-size-small);
+	font-weight: 500;
+	width: max-content
+}
+
+.completion-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 0.5rem;
+}
+
+.completion-label {
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: #374151;
+}
+
+.completion-value {
+	font-size: 0.875rem;
+	font-weight: 700;
+	color: var(--color-primary);
+}
+
+.completion-track {
+	width: 100%;
+	height: 6px;
+	background: #e2e8f0;
+	border-radius: 3px;
+	overflow: hidden;
+	margin-bottom: 0.5rem;
+}
+
+.completion-bar {
+	height: 100%;
+	background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+	border-radius: 3px;
+	transition: width 0.3s ease;
+}
+
+.completion-text {
+	font-size: 0.8125rem;
+	color: #64748b;
+	margin: 0;
+	line-height: 1.4;
 }
 
 .quick-access-grid {
@@ -369,7 +451,7 @@ const uploadAvatar = async () => {
 }
 
 .quick-card-title {
-	font-size: 1rem;
+	font-size: var(--font-size-base);
 	font-weight: 700;
 	color: #1f2937;
 	line-height: 1.3;
@@ -409,7 +491,7 @@ const uploadAvatar = async () => {
 }
 
 .banner-title {
-	font-size: 1rem;
+	font-size: var(--font-size-base);
 	font-weight: 700;
 	color: #1f2937;
 	margin-bottom: 0.25rem;
@@ -456,7 +538,7 @@ const uploadAvatar = async () => {
 
 .menu-text {
 	flex: 1;
-	font-size: 1rem;
+	font-size: var(--font-size-base);
 	font-weight: 500;
 	color: #374151;
 }
@@ -465,5 +547,16 @@ const uploadAvatar = async () => {
 	color: #9ca3af;
 	width: 16px;
 	height: 16px;
+}
+
+@media (max-width: 768px) {
+	.profile-page-container {
+		min-height: auto;
+	}
+
+	.quick-card-img {
+		width: 100px;
+		height: 100px;
+	}
 }
 </style>

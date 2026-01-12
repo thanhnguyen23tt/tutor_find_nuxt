@@ -7,7 +7,7 @@ const { verifyToken } = useAuth();
 const { api } = useApi()
 const isLoading = ref(false)
 
-const { data: configuration } = await useAsyncData(
+const { data: configuration, pending: isLoadingConfig } = await useAsyncData(
 	'app-configuration',
 	async () => {
 		try {
@@ -20,12 +20,10 @@ const { data: configuration } = await useAsyncData(
 		}
 	},
 	{
-		server: true,
+		server: false,
 		lazy: false
 	}
 )
-
-console.log(configuration.value)
 
 onMounted(async () => {
 	isLoading.value = true
@@ -35,9 +33,9 @@ onMounted(async () => {
 </script>
 
 <template>
-	<base-loading v-if="isLoading"></base-loading>
+	<base-loading v-if="isLoadingConfig || isLoading"></base-loading>
 
-	<div>
+	<div v-else>
 		<NuxtLayout>
 			<NuxtPage />
 		</NuxtLayout>

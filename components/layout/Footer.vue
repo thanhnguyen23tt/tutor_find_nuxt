@@ -95,7 +95,7 @@ const hiddenFooter = computed(() => layoutStore.isFooterHidden);
     border-top: none;
     position: relative;
     overflow: hidden;
-	background: #f7f7f7;
+	background: #f9fafb;
 }
 .container {
     margin: auto;

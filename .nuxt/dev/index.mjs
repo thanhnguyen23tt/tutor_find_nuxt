@@ -3,7 +3,7 @@ import { Server } from 'node:http';
 import { resolve, dirname, join } from 'node:path';
 import nodeCrypto from 'node:crypto';
 import { parentPort, threadId } from 'node:worker_threads';
-import { defineEventHandler, handleCacheHeaders, splitCookiesString, createEvent, fetchWithEvent, isEvent, eventHandler, setHeaders, sendRedirect, proxyRequest, getRequestHeader, setResponseHeaders, setResponseStatus, send, getRequestHeaders, setResponseHeader, appendResponseHeader, getRequestURL, getResponseHeader, removeResponseHeader, createError, getQuery as getQuery$1, readBody, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getResponseStatus, getRouterParam, setCookie, getResponseStatusText } from 'file://C:/Users/ADMIN/tutor_find_fe_nuxt/node_modules/h3/dist/index.mjs';
+import { defineEventHandler, handleCacheHeaders, splitCookiesString, createEvent, fetchWithEvent, isEvent, eventHandler, setHeaders, sendRedirect, proxyRequest, getRequestHeader, setResponseHeaders, setResponseStatus, send, getRequestHeaders, setResponseHeader, appendResponseHeader, getRequestURL, getResponseHeader, removeResponseHeader, createError, getQuery as getQuery$1, readBody, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getResponseStatus, getRouterParam, setCookie, getCookie, deleteCookie, getResponseStatusText } from 'file://C:/Users/ADMIN/tutor_find_fe_nuxt/node_modules/h3/dist/index.mjs';
 import { escapeHtml } from 'file://C:/Users/ADMIN/tutor_find_fe_nuxt/node_modules/@vue/shared/dist/shared.cjs.js';
 import { createRenderer, getRequestDependencies, getPreloadLinks, getPrefetchLinks } from 'file://C:/Users/ADMIN/tutor_find_fe_nuxt/node_modules/vue-bundle-renderer/dist/runtime.mjs';
 import { parseURL, withoutBase, joinURL, getQuery, withQuery, withTrailingSlash, decodePath, withLeadingSlash, withoutTrailingSlash, joinRelativeURL } from 'file://C:/Users/ADMIN/tutor_find_fe_nuxt/node_modules/ufo/dist/index.mjs';
@@ -650,12 +650,19 @@ const _inlineRuntimeConfig = {
   },
   "public": {
     "apiUrl": "http://127.0.0.1:8000",
-    "apiBaseUrl": "",
+    "baseUrl": "http://localhost:3000",
+    "realtimeUrl": "http://localhost:3001",
+    "apiBaseUrl": "http://127.0.0.1:8000",
     "pusherAppKey": "561b3dcff3a18d2342e3",
     "pusherAppCluster": "ap1",
     "pusherHost": "443",
     "pusherPort": "",
-    "baseUrl": "http://localhost:3000"
+    "reverbAppId": "local",
+    "reverbAppKey": "local-key",
+    "reverbAppSecret": "local-secret",
+    "reverbHost": "localhost",
+    "reverbPort": "8080",
+    "reverbScheme": "http"
   }
 };
 const envOptions = {
@@ -1868,13 +1875,21 @@ async function getIslandContext(event) {
   return ctx;
 }
 
+const _lazy_h1p81L = () => Promise.resolve().then(function () { return callback_get$3; });
+const _lazy_4UrVEB = () => Promise.resolve().then(function () { return callback_get$1; });
 const _lazy_TnU7Tt = () => Promise.resolve().then(function () { return login_post$1; });
+const _lazy_pFRo2Y = () => Promise.resolve().then(function () { return logout_post$1; });
+const _lazy_2DZbh5 = () => Promise.resolve().then(function () { return refreshToken_post$1; });
 const _lazy_48xP_s = () => Promise.resolve().then(function () { return register_post$1; });
 const _lazy_O_i3JT = () => Promise.resolve().then(function () { return renderer$1; });
 
 const handlers = [
   { route: '', handler: _jZ3xbn, lazy: false, middleware: true, method: undefined },
+  { route: '/api/auth/facebook/callback', handler: _lazy_h1p81L, lazy: true, middleware: false, method: "get" },
+  { route: '/api/auth/google/callback', handler: _lazy_4UrVEB, lazy: true, middleware: false, method: "get" },
   { route: '/api/login', handler: _lazy_TnU7Tt, lazy: true, middleware: false, method: "post" },
+  { route: '/api/logout', handler: _lazy_pFRo2Y, lazy: true, middleware: false, method: "post" },
+  { route: '/api/refreshToken', handler: _lazy_2DZbh5, lazy: true, middleware: false, method: "post" },
   { route: '/api/register', handler: _lazy_48xP_s, lazy: true, middleware: false, method: "post" },
   { route: '/__nuxt_error', handler: _lazy_O_i3JT, lazy: true, middleware: false, method: undefined },
   { route: '/__nuxt_island/**', handler: _SxA8c9, lazy: false, middleware: false, method: undefined },
@@ -2209,7 +2224,82 @@ const styles$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   default: styles
 }, Symbol.toStringTag, { value: 'Module' }));
 
+const callback_get$2 = defineEventHandler(async (event) => {
+  useRuntimeConfig();
+  const query = getQuery$1(event);
+  const token = query.access_token;
+  const error = query.error;
+  if (error) {
+    return {
+      error
+    };
+  }
+  if (!token) {
+    return {
+      error: "missing_token"
+    };
+  }
+  try {
+    setCookie(event, "token", token, {
+      maxAge: response.expires_in || 60 * 60 * 24 * 7,
+      // 1 week
+      path: "/"
+    });
+    return {
+      success: true
+    };
+  } catch (error2) {
+    console.error("Facebook callback error:", error2);
+    return {
+      error: "auth_failed"
+    };
+  }
+});
+
+const callback_get$3 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: callback_get$2
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const callback_get = defineEventHandler(async (event) => {
+  useRuntimeConfig();
+  const query = getQuery$1(event);
+  const token = query.access_token;
+  const error = query.error;
+  if (error) {
+    return {
+      error
+    };
+  }
+  if (!token) {
+    return {
+      error: "missing_token"
+    };
+  }
+  try {
+    setCookie(event, "token", token, {
+      maxAge: response.expires_in || 60 * 60 * 24 * 7,
+      // 1 week
+      path: "/"
+    });
+    return {
+      success: true
+    };
+  } catch (error2) {
+    console.error("Google callback error:", error2);
+    return {
+      error: "auth_failed"
+    };
+  }
+});
+
+const callback_get$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: callback_get
+}, Symbol.toStringTag, { value: 'Module' }));
+
 const login_post = defineEventHandler(async (event) => {
+  var _a, _b, _c;
   const config = useRuntimeConfig();
   const body = await readBody(event);
   try {
@@ -2217,15 +2307,24 @@ const login_post = defineEventHandler(async (event) => {
       method: "POST",
       body
     });
-    if (response == null ? void 0 : response.token) {
-      setCookie(event, "token", response.token, {
-        maxAge: 60 * 60 * 24 * 7,
-        // 1 week
+    if ((_a = response == null ? void 0 : response.access_token) == null ? void 0 : _a.token) {
+      const expiresIn = response.access_token.expires_in || 60 * 60 * 24 * 7;
+      setCookie(event, "token", response.access_token.token, {
+        maxAge: expiresIn,
         path: "/"
-        // httpOnly: false // Allow client-side access for useApi
       });
+      if ((_b = response.refresh_token) == null ? void 0 : _b.token) {
+        setCookie(event, "refresh_token", response.refresh_token.token, {
+          maxAge: response.refresh_token.expires_in || 60 * 60 * 24 * 30,
+          // 30 days fallback
+          path: "/"
+        });
+      }
     }
-    return response;
+    return {
+      ...response,
+      token: (_c = response.access_token) == null ? void 0 : _c.token
+    };
   } catch (error) {
     return error;
   }
@@ -2236,7 +2335,86 @@ const login_post$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProper
   default: login_post
 }, Symbol.toStringTag, { value: 'Module' }));
 
+const logout_post = defineEventHandler(async (event) => {
+  const config = useRuntimeConfig();
+  const token = getCookie(event, "token");
+  try {
+    if (token) {
+      await $fetch(`${config.public.apiUrl}/api/auth/logout`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+    }
+  } catch (error) {
+  }
+  deleteCookie(event, "token");
+  return { success: true };
+});
+
+const logout_post$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: logout_post
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const refreshToken_post = defineEventHandler(async (event) => {
+  var _a, _b, _c;
+  const config = useRuntimeConfig();
+  const refreshToken = getCookie(event, "refresh_token");
+  if (!refreshToken) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: "No refresh token found"
+    });
+  }
+  try {
+    const response = await $fetch(`${config.public.apiUrl}/api/auth/refresh`, {
+      method: "POST",
+      body: {
+        refresh_token: refreshToken
+      }
+    });
+    if ((_a = response == null ? void 0 : response.access_token) == null ? void 0 : _a.token) {
+      const expiresIn = response.access_token.expires_in || 60 * 60 * 24 * 7;
+      setCookie(event, "token", response.access_token.token, {
+        maxAge: expiresIn,
+        path: "/"
+      });
+      if ((_b = response.refresh_token) == null ? void 0 : _b.token) {
+        setCookie(event, "refresh_token", response.refresh_token.token, {
+          maxAge: response.refresh_token.expires_in || 60 * 60 * 24 * 7,
+          // 7 days
+          path: "/"
+        });
+      }
+      return {
+        ...response,
+        token: (_c = response.access_token) == null ? void 0 : _c.token
+      };
+    }
+    throw createError({
+      statusCode: 401,
+      statusMessage: "Refresh failed"
+    });
+  } catch (error) {
+    deleteCookie(event, "token");
+    deleteCookie(event, "refresh_token");
+    throw createError({
+      statusCode: 401,
+      statusMessage: "Refresh failed",
+      data: error.data
+    });
+  }
+});
+
+const refreshToken_post$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: refreshToken_post
+}, Symbol.toStringTag, { value: 'Module' }));
+
 const register_post = defineEventHandler(async (event) => {
+  var _a, _b;
   const config = useRuntimeConfig();
   const body = await readBody(event);
   try {
@@ -2244,13 +2422,19 @@ const register_post = defineEventHandler(async (event) => {
       method: "POST",
       body
     });
-    if (response == null ? void 0 : response.token) {
-      setCookie(event, "token", response.token, {
-        maxAge: 60 * 60 * 24 * 7,
-        // 1 week
+    if ((_a = response == null ? void 0 : response.access_token) == null ? void 0 : _a.token) {
+      const expiresIn = response.access_token.expires_in || 60 * 60 * 24 * 7;
+      setCookie(event, "token", response.access_token.token, {
+        maxAge: expiresIn,
         path: "/"
-        // httpOnly: false // Allow client-side access for useApi
       });
+      if ((_b = response.refresh_token) == null ? void 0 : _b.token) {
+        setCookie(event, "refresh_token", response.refresh_token.token, {
+          maxAge: response.refresh_token.expires_in || 60 * 60 * 24 * 30,
+          // 30 days
+          path: "/"
+        });
+      }
     }
     return response;
   } catch (error) {

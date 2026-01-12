@@ -607,7 +607,7 @@ useHead({
     }
 
     .step-description {
-        font-size: 16px;
+        font-size: var(--font-size-base);
     }
 }
 
@@ -715,7 +715,7 @@ useHead({
 }
 
 .benefit-text {
-    font-size: 16px;
+    font-size: var(--font-size-base);
     font-weight: var(--font-medium);
     color: #374151;
     line-height: 1.5;
@@ -791,7 +791,7 @@ useHead({
     }
 
     .help-description {
-        font-size: 16px;
+        font-size: var(--font-size-base);
     }
 
     .benefit-text {
@@ -938,7 +938,7 @@ useHead({
     justify-content: space-between;
     align-items: center;
     padding: 0.75rem 0;
-    font-size: 1rem;
+    font-size: var(--font-size-base);
 }
 
 .breakdown-label {
@@ -1049,7 +1049,7 @@ useHead({
     display: flex;
     align-items: flex-start;
     gap: 1rem;
-    font-size: 1rem;
+    font-size: var(--font-size-base);
     line-height: 1.6;
     color: #374151;
 }
@@ -1083,7 +1083,7 @@ useHead({
     }
 
     .commission-subtitle {
-        font-size: 1rem;
+        font-size: var(--font-size-base);
         margin-bottom: 3rem;
     }
 
@@ -1106,7 +1106,7 @@ useHead({
     }
 
     .breakdown-value {
-        font-size: 1rem;
+        font-size: var(--font-size-base);
     }
 
     .breakdown-row.final .breakdown-value {
@@ -1161,7 +1161,7 @@ useHead({
     }
 
     .breakdown-row.final .breakdown-value {
-        font-size: 1rem;
+        font-size: var(--font-size-base);
     }
 
     .feature-item {
@@ -1237,7 +1237,7 @@ useHead({
 }
 
 .boss-benefit-description {
-    font-size: 16px;
+    font-size: var(--font-size-base);
     font-weight: var(--font-normal);
     line-height: 1.6;
     color: #555;
@@ -1358,7 +1358,7 @@ useHead({
 }
 
 .faq-intro p {
-    font-size: 16px;
+    font-size: var(--font-size-base);
     font-weight: var(--font-normal);
     line-height: 1.6;
     color: #374151;

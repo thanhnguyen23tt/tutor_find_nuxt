@@ -1,8 +1,5 @@
 <template>
-<!-- Loading overlay -->
-<base-loading v-if="isLoading" />
-
-<div class="section-card schedule-section" v-if="!isLoading">
+<div class="section-card schedule-section">
     <div class="header-wrapper">
         <div class="header-left">
             <div class="icon-wrapper">
@@ -41,92 +38,50 @@
             </div>
         </div>
 
-        <div class="schedule-main format-scrollbar">
-            <div class="schedule-grid">
-                <div class="list-days">
-                    <div class="day time-header">
-                        <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
+        <!-- Unified Schedule List -->
+        <div class="schedule-list">
+            <div 
+                v-for="day in weekDayOptions" 
+                :key="day.id" 
+                class="schedule-card"
+            >
+                <div class="card-header" :class="{ 'is-empty': getDayRanges(day.id).length === 0 }">
+                    <div class="header-left">
+                        <div class="day-avatar">
+                            <span>{{ getDayAbbreviation(day.name) }}</span>
+                        </div>
+                        <div class="header-info">
+                            <span class="day-title" :class="{ 'text-muted': getDayRanges(day.id).length === 0 }">{{ day.name }}</span>
+                            <span class="slot-count">{{ getDayRanges(day.id).length }} khung giờ</span>
+                        </div>
+                    </div>
+                    <button class="btn-add-circle" @click="onAddSlotForDay(day)">
+                        <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
-                    </div>
-                    <div class="day" v-for="day in weekDayOptions" :key="day.id">
-                        <span>{{ day.name }}</span>
-                        <span>{{ day.name }}</span>
-                    </div>
+                    </button>
                 </div>
-                <div class="list-time" v-for="slot in timeSlotOptions" :key="slot.id">
-                        <div class="time time-header">
-                            <span>{{ slot.name }}</span>
-                        </div>
-                        <div class="time" v-for="day in weekDayOptions" :key="day.id + '-' + slot.id">
-                            <template v-if="hasTimeSlot(day, slot)">
-                                <div class="content-card" :class="{ 'time-available': getTimeSlotAvailability(day, slot), 'time-busy': !getTimeSlotAvailability(day, slot) }">
-                                    <div class="time-status-indicator">
-                                        <span class="status-dot" :class="{ 'dot-available': getTimeSlotAvailability(day, slot), 'dot-busy': !getTimeSlotAvailability(day, slot) }"></span>
-                                        <span class="status-text">{{ findSlot(day.id, slot.id)?.is_available_text }}</span>
-                                    </div>
-                                    <div class="content-detail">
-                                        <span v-if="!getTimeSlotAvailability(day, slot)" @click.stop="viewBooking(day, slot)">#{{ findSlot(day.id, slot.id)?.request_code }}</span>
-                                        <span v-else>{{ getSlotTimeRange(day, slot) }}</span>
-                                    </div>
-                                    <div class="slot-actions">
-                                        <button @click.stop="handleEditTimeSlot(getTimeSlotId(day, slot))">
-                                            <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"></path></svg>
-                                        </button>
-                                        <button @click.stop="handleDeleteTimeSlot(getTimeSlotId(day, slot))">
-                                            <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            </template>
-                            <template v-else>
-                                <button class="add-new" @click="onAddSlot(day, slot)">
-                                    <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M5 12h14"></path>
-                                        <path d="M12 5v14"></path>
-                                    </svg>
-                                </button>
-                            </template>
+
+                <div class="card-body">
+                    <div v-if="getDayRanges(day.id).length > 0" class="time-slots-grid">
+                        <div 
+                            v-for="slot in getDayRanges(day.id)" 
+                            :key="slot.id" 
+                            class="time-slot-pill cursor-pointer"
+                            @click="handleEditRange(slot)"
+                        >
+                            <span class="time-text">{{ formatTimeDisplay(slot.start_time) }} - {{ formatTimeDisplay(slot.end_time) }}</span>
+                            <button class="btn-remove-slot" @click.stop="handleDeleteRange(slot)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
                         </div>
                     </div>
-            </div>
-        </div>
-
-        <!-- Mobile layout: day tabs + single-day slots -->
-        <div class="schedule-mobile">
-            <div class="mobile-day-tabs">
-                <button
-                    v-for="day in weekDayOptions"
-                    :key="'m-' + day.id"
-                    class="day-tab"
-                    :class="{ active: day.id === selectedMobileDayId }"
-                    @click="selectedMobileDayId = day.id"
-                >
-                    {{ day.name }}
-                </button>
-            </div>
-            <div class="mobile-time-list">
-                <div class="mobile-time-row" v-for="slot in timeSlotOptions" :key="'m-time-' + slot.id">
-                    <div class="mobile-time-label">{{ slot.name }}</div>
-                    <div class="mobile-time-actions">
-                        <template v-if="selectedDayObj && hasTimeSlot(selectedDayObj, slot)">
-                            <div class="mobile-status-indicator">
-                                <span class="mobile-status-dot" :class="{ 'dot-available': getTimeSlotAvailability(selectedDayObj, slot), 'dot-busy': !getTimeSlotAvailability(selectedDayObj, slot) }"></span>
-                                <span class="mobile-status-text">{{ getTimeSlotAvailability(selectedDayObj, slot) ? 'Trống' : 'Bận' }}</span>
-                            </div>
-                            <div @click="handleEditTimeSlot(getTimeSlotId(selectedDayObj, slot))">
-                                <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"></path></svg>
-                            </div>
-                            <div @click="handleDeleteTimeSlot(getTimeSlotId(selectedDayObj, slot))">
-                                <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
-                            </div>
-                        </template>
-                        <template v-else>
-                            <div @click="onAddSlot(selectedDayObj, slot)">
-                                <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-                            </div>
-                        </template>
+                    <div v-else class="empty-slots">
+                        <span>Chưa có khung giờ</span>
                     </div>
                 </div>
             </div>
@@ -138,9 +93,9 @@
     <base-modal
         :is-open="showAddTimeSlotModal"
         title="Thêm khung giờ"
-		description="Khung giờ là thời gian bạn có thể dạy hoặc học"
+		description="Thêm các khoảng thời gian bạn có thể dạy hoặc học"
         size="medium"
-        @close="showAddTimeSlotModal = false"
+        @close="closeAddModal"
     >
         <div class="modal-content">
             <base-select
@@ -151,42 +106,81 @@
                 required="true"
             />
 
-            <div class="form-group-container d-grid">
-                <div class="time-multi-controls">
-                    <base-input
-                        v-model="timeFilter"
-                        type="text"
-                        class="search-input"
-                        placeholder="Lọc khung giờ..."
-                    ></base-input>
-                    <div class="actions">
-                        <button type="button" class="btn-md btn-secondary" @click="selectAllFiltered">Chọn tất cả</button>
-                    </div>
+            <!-- Danh sách ranges đã thêm -->
+            <div v-if="newTimeSlot.ranges.length > 0" class="ranges-list">
+                <div class="ranges-header">
+                    <span class="ranges-title">Các khung giờ đã chọn ({{ newTimeSlot.ranges.length }})</span>
                 </div>
-
-                <div class="time-multi-select">
-                    <div
-                        v-for="opt in filteredSelectableTimeSlots"
-                        :key="opt.id"
-                        class="time-chip"
-                        :class="{ selected: isSelected(opt.id), disabled: opt.disabled }"
-                        @click="!opt.disabled && toggleSelect(opt.id)"
-                    >
-                        <span class="chip-label">{{ opt.name }}</span>
+                <div class="range-items">
+                    <div v-for="(range, index) in newTimeSlot.ranges" :key="index" class="range-item">
+                        <div class="range-time">
+                            <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span>{{ formatTimeDisplay(range.start_time) }} - {{ formatTimeDisplay(range.end_time) }}</span>
+                        </div>
+                        <button type="button" class="btn-remove" @click="removeRange(index)">
+                            <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 6 6 18"></path>
+                                <path d="m6 6 12 12"></path>
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </div>
+
+            <!-- Form thêm range mới -->
+            <div class="add-range-form">
+                <div class="form-label">Thêm khoảng thời gian</div>
+                <div class="time-range-inputs">
+                    <base-select
+                        v-model="currentRange.start_time"
+                        :options="availableStartTimes"
+                        label="Từ giờ"
+                        placeholder="Chọn giờ bắt đầu"
+                        widthFull="true"
+                    />
+                    <div class="range-separator">
+                        <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14"></path>
+                            <path d="m12 5 7 7-7 7"></path>
+                        </svg>
+                    </div>
+                    <base-select
+                        v-model="currentRange.end_time"
+                        :options="availableEndTimes"
+                        label="Đến giờ"
+                        placeholder="Chọn giờ kết thúc"
+                        widthFull="true"
+                        :disabled="!currentRange.start_time"
+                    />
+                </div>
+                <button 
+                    type="button" 
+                    class="btn-md btn-secondary btn-add-range" 
+                    @click="addRange"
+                    :disabled="!canAddRange"
+                >
+                    <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14"></path>
+                        <path d="M12 5v14"></path>
+                    </svg>
+                    <span>Thêm khoảng giờ này</span>
+                </button>
+            </div>
+
             <div class="modal-footer">
-                <button class="btn-md btn-secondary" @click="showAddTimeSlotModal = false">
+                <button class="btn-md btn-secondary" @click="closeAddModal">
                     <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18 6 6 18"></path>
                         <path d="m6 6 12 12"></path>
                     </svg>
                     <span>Hủy</span>
                 </button>
-                <button class="btn-md btn-primary" @click="addTimeSlot" :disabled="!canSubmitNew">
+                <button :class="['btn-md', 'btn-primary', { 'btn-loading': isSubmitting }]" @click="addTimeSlot" :disabled="!canSubmitNew || isSubmitting">
                     <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
-                    <span>Thêm {{ newTimeSlot.time_slot_ids.length || '' }} khung giờ</span>
+                    <span>{{ isSubmitting ? 'Đang lưu...' : `Lưu ${newTimeSlot.ranges.length || ''} khung giờ` }}</span>
                 </button>
             </div>
         </div>
@@ -220,7 +214,7 @@
                     </svg>
                     <span>Hủy</span>
                 </button>
-                <button class="btn-md btn-primary" @click="confirmDelete">
+                <button :class="['btn-md', 'btn-danger', { 'btn-loading': isDeleting }]" @click="confirmDelete" :disabled="isDeleting">
                     <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 6h18"></path>
                         <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
@@ -228,7 +222,7 @@
                         <line x1="10" x2="10" y1="11" y2="17"></line>
                         <line x1="14" x2="14" y1="11" y2="17"></line>
                     </svg>
-                    <span>Xóa</span>
+                    <span>{{ isDeleting ? 'Đang xóa...' : 'Xóa' }}</span>
                 </button>
             </div>
         </div>
@@ -248,16 +242,31 @@
                 label="Ngày trong tuần"
                 required="true"
             />
-            <div class="form-group-container">
-            <base-select
-                v-model="selectedTimeSlot.time_slot_id"
-                :options="timeSlotOptions"
-                label="Khung giờ"
-                placeholder="Chọn khung giờ"
-                widthFull="true"
-                required="true"
-            />
+            
+            <div class="time-range-inputs" style="margin-top: 1rem;">
+                <base-select
+                    v-model="selectedTimeSlot.start_time"
+                    :options="availableStartTimes"
+                    label="Từ giờ"
+                    placeholder="Chọn giờ bắt đầu"
+                    widthFull="true"
+                />
+                <div class="range-separator">
+                    <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14"></path>
+                        <path d="m12 5 7 7-7 7"></path>
+                    </svg>
+                </div>
+                <base-select
+                    v-model="selectedTimeSlot.end_time"
+                    :options="editAvailableEndTimes"
+                    label="Đến giờ"
+                    placeholder="Chọn giờ kết thúc"
+                    widthFull="true"
+                    :disabled="!selectedTimeSlot.start_time"
+                />
             </div>
+
             <div class="modal-footer">
                 <button class="btn-md btn-secondary" @click="showEditTimeSlotModal = false">
                     <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -266,36 +275,17 @@
                     </svg>
                     <span>Hủy</span>
                 </button>
-                <button class="btn-md btn-primary" @click="updateTimeSlot">
+                <button :class="['btn-md', 'btn-primary', { 'btn-loading': isUpdating }]" @click="updateTimeSlot" :disabled="isUpdating">
                     <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                         <polyline points="17,21 17,13 7,13 7,21"></polyline>
                         <polyline points="7,3 7,8 15,8"></polyline>
                     </svg>
-                    <span>Cập nhật</span>
+                    <span>{{ isUpdating ? 'Đang cập nhật...' : 'Cập nhật' }}</span>
                 </button>
             </div>
         </div>
     </base-modal>
-
-<!--
-    <div class="content-card">
-        <div class="subject-wrapper">
-            <div class="icon-wrapper">
-                <svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                </svg>
-            </div>
-            <span class="subject-name">Toán cao cấp</span>
-        </div>
-        <div class="content-detail">
-            <span class="user-name">Nguyễn tiến thành</span>
-            <span>07:00</span> - <span>08:00</span>
-        </div>
-    </div>
- -->
-<!-- End language-section -->
 </template>
 
 <script setup>
@@ -322,8 +312,9 @@ const emit = defineEmits(['update-data']);
 // STATE
 // ============================================
 const scheduleSlots = ref(props.userDataDetail.user_weekly_time_slots || []);
-const isLoading = ref(false);
-const timeFilter = ref('');
+const isSubmitting = ref(false);
+const isUpdating = ref(false);
+const isDeleting = ref(false);
 const selectedMobileDayId = ref(null);
 
 // Modal states
@@ -333,11 +324,16 @@ const modals = reactive({
     delete: false
 });
 
-// Form data
+// Form data for ranges
 const newTimeSlot = ref({
     day_of_week_code: '',
-    time_slot_ids: [],
-    repeat_weekly: true
+    ranges: []
+});
+
+// Current range being edited
+const currentRange = ref({
+    start_time: '',
+    end_time: ''
 });
 
 const selectedTimeSlot = ref({
@@ -352,7 +348,18 @@ const selectedTimeSlot = ref({
 // COMPUTED
 // ============================================
 const weekDayOptions = computed(() => configStore.configuration?.day_of_weeks || []);
-const timeSlotOptions = computed(() => configStore.configuration?.time_slots || []);
+// Generate time slots (every hour)
+const timeSlotOptions = computed(() => {
+    const slots = [];
+    for (let h = 0; h < 24; h++) {
+        const timeStr = `${String(h).padStart(2, '0')}:00`;
+        const nameStr = timeStr;
+        slots.push({ id: timeStr, name: nameStr, time: timeStr });
+    }
+    // Add 24:00 for end time selection
+    slots.push({ id: '24:00', name: '24:00', time: '24:00' });
+    return slots;
+});
 
 // Initialize mobile day selection
 watch(weekDayOptions, (days) => {
@@ -361,37 +368,49 @@ watch(weekDayOptions, (days) => {
     }
 }, { immediate: true });
 
-const selectedDayObj = computed(() =>
-    weekDayOptions.value.find(d => d.id === selectedMobileDayId.value)
-);
-
-const selectedDaySlots = computed(() => {
-    if (!newTimeSlot.value.day_of_week_code) return [];
-    return scheduleSlots.value.filter(
-        slot => slot.day_of_week_code == newTimeSlot.value.day_of_week_code
-    );
-});
-
-const selectableTimeSlots = computed(() => {
-    const usedIds = new Set(selectedDaySlots.value.map(s => s.time_slot_id));
+// Available start times (all time slots)
+const availableStartTimes = computed(() => {
     return timeSlotOptions.value.map(slot => ({
-        ...slot,
-        disabled: usedIds.has(slot.id)
+        id: slot.time,
+        name: slot.name
     }));
 });
 
-const filteredSelectableTimeSlots = computed(() => {
-    const keyword = timeFilter.value.trim().toLowerCase();
-    if (!keyword) return selectableTimeSlots.value;
-
-    return selectableTimeSlots.value.filter(slot =>
-        (slot.name || '').toLowerCase().includes(keyword)
-    );
+// Available end times (must be after start time)
+const availableEndTimes = computed(() => {
+    if (!currentRange.value.start_time) return [];
+    
+    return timeSlotOptions.value
+        .filter(slot => slot.time > currentRange.value.start_time)
+        .map(slot => ({
+            id: slot.time,
+            name: slot.name
+        }));
 });
 
+// Available end times for edit modal
+const editAvailableEndTimes = computed(() => {
+    if (!selectedTimeSlot.value.start_time) return [];
+    
+    return timeSlotOptions.value
+        .filter(slot => slot.time > selectedTimeSlot.value.start_time)
+        .map(slot => ({
+            id: slot.time,
+            name: slot.name
+        }));
+});
+
+// Check if current range can be added
+const canAddRange = computed(() => {
+    return currentRange.value.start_time && 
+           currentRange.value.end_time && 
+           currentRange.value.start_time < currentRange.value.end_time;
+});
+
+// Check if form can be submitted
 const canSubmitNew = computed(() =>
-    !!newTimeSlot.value.day_of_week_code &&
-    newTimeSlot.value.time_slot_ids.length > 0
+    newTimeSlot.value.day_of_week_code !== null &&
+    newTimeSlot.value.ranges.length > 0
 );
 
 // ============================================
@@ -411,67 +430,88 @@ const findSlot = (dayId, slotId) => {
     );
 };
 
-const getTimeSlotName = (slotId) => {
-    return timeSlotOptions.value.find(t => t.id == slotId)?.name || '';
+// Get all ranges for a specific day
+const getDayRanges = (dayId) => {
+    return scheduleSlots.value.filter(slot => slot.day_of_week_code == dayId);
 };
 
 const resetNewTimeSlot = () => {
     newTimeSlot.value = {
         day_of_week_code: '',
-        time_slot_ids: [],
-        repeat_weekly: true
+        ranges: []
     };
-    timeFilter.value = '';
+    currentRange.value = {
+        start_time: '',
+        end_time: ''
+    };
 };
 
-// ============================================
-// TIME SLOT CHECKS
-// ============================================
-const hasTimeSlot = (day, slot) => {
-    return !!findSlot(day.id, slot.id);
+// Format time for display
+const formatTimeDisplay = (timeStr) => {
+    return timeStr || '';
 };
 
-const getTimeSlotId = (day, slot) => {
-    return findSlot(day.id, slot.id)?.id || null;
-};
+// Add a new range to the list
+const addRange = () => {
+    if (!canAddRange.value) return;
 
-const getSlotTimeRange = (day, slot) => {
-    const found = findSlot(day.id, slot.id);
-    return found?.time_slot_name || getTimeSlotName(found?.time_slot_id) || null;
-};
+    // Check for overlapping ranges
+    const hasOverlap = newTimeSlot.value.ranges.some(range => {
+        return (
+            (currentRange.value.start_time >= range.start_time && currentRange.value.start_time < range.end_time) ||
+            (currentRange.value.end_time > range.start_time && currentRange.value.end_time <= range.end_time) ||
+            (currentRange.value.start_time <= range.start_time && currentRange.value.end_time >= range.end_time)
+        );
+    });
 
-const getTimeSlotAvailability = (day, slot) => {
-    const found = findSlot(day.id, slot.id);
-    // is_available = null => trống (true)
-    // is_available = booking_id => đã đặt (false)
-    return found ? (found.is_available == null) : false;
-};
-
-// ============================================
-// SELECTION HANDLERS
-// ============================================
-const isSelected = (id) => newTimeSlot.value.time_slot_ids.includes(id);
-
-const toggleSelect = (id) => {
-    const ids = newTimeSlot.value.time_slot_ids;
-    const index = ids.indexOf(id);
-
-    if (index === -1) {
-        ids.push(id);
-    } else {
-        ids.splice(index, 1);
+    if (hasOverlap) {
+        notifyError('Khoảng thời gian này trùng với khoảng thời gian đã chọn!');
+        return;
     }
+
+    newTimeSlot.value.ranges.push({
+        start_time: currentRange.value.start_time,
+        end_time: currentRange.value.end_time
+    });
+
+    // Reset current range
+    currentRange.value = {
+        start_time: '',
+        end_time: ''
+    };
 };
 
-const selectAllFiltered = () => {
-    const availableIds = filteredSelectableTimeSlots.value
-        .filter(slot => !slot.disabled)
-        .map(slot => slot.id);
+// Remove a range from the list
+const removeRange = (index) => {
+    newTimeSlot.value.ranges.splice(index, 1);
+};
 
-    const currentSet = new Set(newTimeSlot.value.time_slot_ids);
-    availableIds.forEach(id => currentSet.add(id));
+// Close add modal and reset
+const closeAddModal = () => {
+    modals.add = false;
+    resetNewTimeSlot();
+};
 
-    newTimeSlot.value.time_slot_ids = Array.from(currentSet);
+const getDayAbbreviation = (name) => {
+    if (!name) return '';
+    const map = {
+        'Thứ Hai': 'T2',
+        'Thứ Ba': 'T3',
+        'Thứ Tư': 'T4',
+        'Thứ Năm': 'T5',
+        'Thứ Sáu': 'T6',
+        'Thứ Bảy': 'T7',
+        'Chủ Nhật': 'CN'
+    };
+    return map[name] || name.substring(0, 2);
+};
+
+// View booking by ID
+const viewBookingById = (bookingId) => {
+    if (bookingId) {
+        const routeData = router.resolve({ name: 'classroom/manager', query: { booking_id: bookingId } });
+        window.open(routeData.href, "_blank");
+    }
 };
 
 // ============================================
@@ -480,11 +520,11 @@ const selectAllFiltered = () => {
 const addTimeSlot = async () => {
     if (!canSubmitNew.value) return;
 
-    isLoading.value = true;
+    isSubmitting.value = true;
     try {
         const payload = {
             day_of_week_code: newTimeSlot.value.day_of_week_code,
-            time_slot_ids: newTimeSlot.value.time_slot_ids,
+            ranges: newTimeSlot.value.ranges
         };
 
         const response = await api.apiPost('me/schedule', payload);
@@ -504,33 +544,34 @@ const addTimeSlot = async () => {
         notifyError(error?.message || 'Thêm khung giờ thất bại!');
         console.error('Failed to add time slot:', error);
     } finally {
-        isLoading.value = false;
+        isSubmitting.value = false;
     }
 };
 
 const updateTimeSlot = async () => {
     if (!selectedTimeSlot.value.id) return;
 
+   isUpdating.value = true;
     try {
         const response = await api.apiPut(
             `me/schedule/${selectedTimeSlot.value.id}`,
             {
                 day_of_week_code: selectedTimeSlot.value.day_of_week_code,
-                time_slot_id: selectedTimeSlot.value.time_slot_id,
+                start_time: selectedTimeSlot.value.start_time,
+                end_time: selectedTimeSlot.value.end_time
             }
         );
 
         if (response?.data) {
             const updated = response.data;
-            const timeSlotName = getTimeSlotName(updated.time_slot_id || updated.data?.time_slot_id);
 
             const newSlots = scheduleSlots.value.map(slot => {
                 if (slot.id === selectedTimeSlot.value.id) {
                     return {
                         ...slot,
                         day_of_week_code: selectedTimeSlot.value.day_of_week_code,
-                        time_slot_id: selectedTimeSlot.value.time_slot_id,
-                        time_slot_name: timeSlotName || slot.time_slot_name
+                        start_time: selectedTimeSlot.value.start_time,
+                        end_time: selectedTimeSlot.value.end_time
                     };
                 }
                 return slot;
@@ -544,10 +585,13 @@ const updateTimeSlot = async () => {
     } catch (error) {
         notifyError(error?.response?.data?.message || 'Cập nhật khung giờ thất bại!');
         console.error('Failed to update time slot:', error);
+    } finally {
+        isUpdating.value = false;
     }
 };
 
 const deleteTimeSlot = async (id) => {
+    isDeleting.value = true;
     try {
         await api.apiDelete(`me/schedule/${id}`);
 
@@ -558,37 +602,35 @@ const deleteTimeSlot = async (id) => {
     } catch (error) {
         notifyError(error?.message || 'Xóa khung giờ thất bại!');
         console.error('Failed to delete time slot:', error);
+    } finally {
+        isDeleting.value = false;
     }
 };
 
 // ============================================
 // UI HANDLERS
 // ============================================
-const onAddSlot = (day, slot) => {
-    newTimeSlot.value = {
-        day_of_week_code: day.id,
-        time_slot_ids: [slot.id],
-        repeat_weekly: true
-    };
+const onAddSlotForDay = (day) => {
+    if (!day) return;
+    newTimeSlot.value.day_of_week_code = day.id;
     modals.add = true;
 };
 
-const handleEditTimeSlot = (id) => {
-    const slot = scheduleSlots.value.find(s => s.id === id);
+const handleEditRange = (slot) => {
     if (!slot) return;
 
     selectedTimeSlot.value = {
         id: slot.id,
         day_of_week_code: slot.day_of_week_code,
-        time_slot_id: slot.time_slot_id,
-        time_slot_name: slot.time_slot_name
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        time_slot_name: `${formatTimeDisplay(slot.start_time)} - ${formatTimeDisplay(slot.end_time)}`
     };
 
     modals.edit = true;
 };
 
-const handleDeleteTimeSlot = (id) => {
-    const slot = scheduleSlots.value.find(s => s.id === id);
+const handleDeleteRange = (slot) => {
     if (!slot) return;
 
     const dayName = weekDayOptions.value.find(
@@ -598,9 +640,8 @@ const handleDeleteTimeSlot = (id) => {
     selectedTimeSlot.value = {
         id: slot.id,
         day_of_week_code: slot.day_of_week_code,
-        time_slot_id: slot.time_slot_id,
         dayName,
-        time_slot_name: slot.time_slot_name
+        time_slot_name: `${formatTimeDisplay(slot.start_time)} - ${formatTimeDisplay(slot.end_time)}`
     };
 
     modals.delete = true;
@@ -609,17 +650,6 @@ const handleDeleteTimeSlot = (id) => {
 const confirmDelete = () => {
     deleteTimeSlot(selectedTimeSlot.value.id);
     modals.delete = false;
-};
-
-const viewBooking = (day, slot) => {
-    const weeklySlot = scheduleSlots.value.find(s => s.day_of_week_code == day.id && s.time_slot_id == slot.id);
-
-    if (weeklySlot && weeklySlot.is_available !== null) {
-        // is_available chứa booking_id
-        const bookingId = weeklySlot.is_available;
-        const routeData = router.resolve(({ name: 'classroom-manager', query: { booking_id: bookingId } }));
-        window.open(routeData.href, "_blank");
-    }
 };
 
 // ============================================
@@ -645,6 +675,176 @@ const selectedTimeSlotId = computed(() => selectedTimeSlot.value.id);
 
 <style scoped>
 @import url('~/assets/css/profileNew.css');
+
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.schedule-card {
+    background: #ffffff;
+    border-top: 1px solid #f2f4f7;
+    padding: 1.5rem 0;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.day-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.day-avatar span {
+    font-weight: 700;
+    font-size: var(--font-size-heading-6);
+}
+
+.card-header.is-empty .day-avatar {
+    background: #e2e8f0; /* Gray background for empty state */
+    color: #64748b;
+}
+
+.card-header.is-empty .btn-add-circle {
+   /* Optional: make the button pop more or less on empty? Keeping it consistent for now */
+}
+
+.text-muted {
+    color: #94a3b8 !important;
+}
+
+.header-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.day-title {
+    font-size: var(--font-size-heading-6);
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.slot-count {
+    font-size: var(--font-size-small);
+    color: var(--gray-600);
+}
+
+.btn-add-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #001C55;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-add-circle:hover {
+    background: #e9ecef;
+    color: #00123A;
+}
+
+.time-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.time-slot-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background-color: #EFF6FF;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.time-slot-pill.cursor-pointer {
+    cursor: pointer;
+}
+
+.time-slot-pill:hover {
+    border-color: #dbeafe;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.time-text {
+    font-weight: 600;
+    color: #001C55;
+    font-size: 0.9375rem;
+}
+
+.btn-remove-slot {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-remove-slot:hover {
+    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.empty-slots {
+    padding: 1rem;
+    text-align: center;
+    color: #9ca3af;
+    font-style: italic;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px dashed #e5e7eb;
+}
+
+@media (max-width: 640px) {
+    .time-slots-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .schedule-card {
+        padding: 1rem;
+    }
+    
+    .day-avatar {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .day-avatar span {
+        font-size: 1rem;
+    }
+}
+
 
 /* Enhanced Mobile Schedule */
 .schedule-mobile {
@@ -860,8 +1060,348 @@ const selectedTimeSlotId = computed(() => selectedTimeSlot.value.id);
 }
 
 @media (max-width: 768px) {
-    .schedule-main { display: none; }
-    .schedule-mobile { display: grid; gap: 0.5rem; }
+    .schedule-by-days { display: none; }
+    .schedule-mobile { display: flex; flex-direction: column; gap: 0.5rem; }
+}
+
+/* Day-based schedule layout */
+.schedule-by-days {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.day-column {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.day-column:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    color: var(--gray-900);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.day-header-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.day-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.day-name {
+    font-size: var(--font-size-base);
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+.day-count {
+    font-size: var(--font-size-mini);
+    color: var(--gray-600);
+}
+
+.btn-add-day {
+    padding: 0;
+	border: none;
+    color: black;
+    transition: all 0.2s ease;
+	background: transparent;
+}
+
+.btn-add-day:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.day-ranges {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 150px;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.day-ranges::-webkit-scrollbar {
+    width: 6px;
+}
+
+.day-ranges::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 3px;
+}
+
+.day-ranges::-webkit-scrollbar-thumb {
+    background: var(--color-primary);
+    border-radius: 3px;
+}
+
+.range-card {
+    position: relative;
+    padding: 1rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid var(--color-primary);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.range-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateX(4px);
+}
+
+.range-available {
+    border-left-color: #10b981 !important;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
+}
+
+.range-busy {
+    border-left-color: #ef4444 !important;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+}
+
+.range-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.range-time-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.range-time-display svg {
+    color: var(--color-primary);
+}
+
+.time-text {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    color: #374151;
+}
+
+.range-booking {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(7, 27, 102, 0.05);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.range-booking:hover {
+    background: rgba(7, 27, 102, 0.1);
+}
+
+.booking-code {
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.range-actions {
+    opacity: 0;
+    position: absolute;
+    top: 50%;
+	transform: translateY(-50%);
+    right: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+    transition: opacity 0.3s ease;
+}
+
+.range-card:hover .range-actions {
+    opacity: 1;
+}
+
+.action-btn {
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.action-btn:hover {
+    background: white;
+    transform: scale(1.1);
+}
+
+.edit-btn:hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.delete-btn:hover {
+    color: #ef4444;
+    border-color: #ef4444;
+}
+
+.empty-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3rem 1rem;
+    color: #9ca3af;
+    text-align: center;
+}
+
+.empty-day svg {
+    opacity: 0.5;
+}
+
+.empty-day span {
+    font-size: var(--font-size-small);
+    font-style: italic;
+}
+
+/* Mobile schedule */
+.schedule-mobile {
+    display: none;
+}
+
+.mobile-ranges-container {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.mobile-day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    color: white;
+}
+
+.mobile-day-title {
+    font-size: var(--font-size-large);
+    font-weight: 700;
+}
+
+.mobile-ranges-list {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.mobile-range-card {
+    padding: 1rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid var(--color-primary);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.mobile-range-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.mobile-range-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn-mobile {
+    padding: 0.5rem;
+    background: transparent;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: #6b7280;
+    transition: all 0.2s ease;
+}
+
+.action-btn-mobile:hover {
+    background: #f8fafc;
+    transform: scale(1.1);
+}
+
+.mobile-range-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.mobile-range-time svg {
+    color: var(--color-primary);
+}
+
+.mobile-range-time span {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: #374151;
+}
+
+.mobile-range-booking {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(7, 27, 102, 0.05);
+    border-radius: 6px;
+    text-align: center;
+}
+
+.mobile-range-booking span {
+    font-size: var(--font-size-small);
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.mobile-empty-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3rem 1rem;
+    color: #9ca3af;
+    text-align: center;
+}
+
+.mobile-empty-day svg {
+    opacity: 0.5;
+}
+
+.mobile-empty-day span {
+    font-size: var(--font-size-small);
+    font-style: italic;
 }
 /* Time multi-select enhancements */
 .time-multi-controls {
@@ -1439,4 +1979,120 @@ const selectedTimeSlotId = computed(() => selectedTimeSlot.value.id);
     font-size: var(--font-size-mini);
     color: var(--gray-500);
 } */
+
+/* Range-based time slot selection styles */
+.ranges-list {
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+.ranges-header {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.ranges-title {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    color: #374151;
+}
+
+.range-items {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.range-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid var(--color-primary);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.range-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    color: #374151;
+}
+
+.range-time svg {
+    color: var(--color-primary);
+}
+
+.btn-remove {
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: var(--color-primary);
+	transition: all 0.2s ease;
+	cursor: pointer;
+}
+
+.btn-remove:hover {
+	color: var(--color-primary-dark);
+}
+
+.add-range-form {
+    padding: 1.25rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.add-range-form:hover {
+    border-color: var(--color-primary);
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.add-range-form .form-label {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 1rem;
+}
+
+.time-range-inputs {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 1rem;
+    align-items: end;
+    margin-bottom: 1rem;
+}
+
+.range-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 0.5rem;
+    color: var(--color-primary);
+}
+
+.btn-add-range {
+    width: 100%;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .time-range-inputs {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .range-separator {
+        display: none;
+    }
+}
+
 </style>

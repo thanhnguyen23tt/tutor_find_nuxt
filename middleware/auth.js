@@ -1,30 +1,23 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
-	const userStore = useUserStore();
-	const { verifyToken } = useAuth();
-	const { getToken } = useAuthCookie();
+	const { getToken, getRefreshToken } = useAuthCookie();
 
 	const token = getToken();
+	const refreshToken = getRefreshToken();
 
-	if (!token) {
+	if (!token && !refreshToken) {
 		return navigateTo({
 			path: '/auth/login',
-			query: { redirect: to.fullPath }
 		});
 	}
 
-	// if (!userStore.getUserData || Object.keys(userStore.getUserData).length === 0) {
-	// 	try {
-	// 		await verifyToken();
-
-	// 		// if (!userStore.getUserData) {
-	// 		// 	userStore.clearAuth();
-	// 		// 	return navigateTo({ path: '/auth/login', query: { redirect: to.fullPath } });
-	// 		// }
-	// 		// await userStore.setUserData(userStore.getUserData);
-	// 	} catch (err) {
-	// 		userStore.clearAuth();
-	// 		return navigateTo({ path: '/auth/login', query: { redirect: to.fullPath } });
-	// 	}
-	// }
+	if (!token && refreshToken) {
+		try {
+			await $fetch('/api/refreshToken', { method: 'POST' });
+		} catch (error) {
+			return navigateTo({
+				path: '/auth/login',
+			});
+		}
+	}
 });
 

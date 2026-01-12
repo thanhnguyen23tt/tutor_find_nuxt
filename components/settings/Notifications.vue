@@ -69,7 +69,7 @@
 }
 
 .info-label {
-    font-size: 16px;
+    font-size: var(--font-size-base);
     font-weight: 600;
     color: #222;
     margin-bottom: 4px;

@@ -15,7 +15,7 @@
 			</div>
 
 			<!-- Profile Completion Section -->
-			<div class="completion-section" v-if="userDataDetail">
+			<div class="completion-section clickable" v-if="userDataDetail" @click="showCompletionModal = true">
 				<div class="completion-header-row">
 					<div class="completion-info">
 						<div class="completion-title-wrapper">
@@ -30,7 +30,7 @@
 				
 				<div class="missing-items" v-if="completionStatus.missing.length > 0">
 					<p class="missing-title">Các mục cần hoàn thiện để thu hút học viên:</p>
-					<div class="missing-grid">
+					<div class="missing-grid-summary">
 						<div v-for="item in completionStatus.missing" :key="item.key" class="missing-tag">
 							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3 h-3">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -46,6 +46,60 @@
 					<span>Hồ sơ của bạn đã hoàn thiện tuyệt vời!</span>
 				</div>
 			</div>
+
+			<!-- Profile Completion Modal (Detail) -->
+			<base-modal 
+				:is-open="showCompletionModal" 
+				@close="showCompletionModal = false"
+			>
+				<div class="completion-detail-view">
+					<div class="completion-header-detail">
+						<div class="circular-progress-container">
+							<svg class="circular-progress" viewBox="0 0 100 100">
+								<circle class="bg" cx="50" cy="50" r="45" />
+								<circle 
+									class="progress" 
+									cx="50" 
+									cy="50" 
+									r="45" 
+									stroke-linecap="round"
+									:stroke-dasharray="283"
+									:stroke-dashoffset="283 - (283 * completionStatus.percent / 100)"
+								/>
+							</svg>
+							<div class="progress-text">
+								<span class="percent">{{ completionStatus.percent }}%</span>
+								<span class="label">Hoàn thành</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="completion-grid">
+						<div 
+							v-for="item in completionStatus.items" 
+							:key="item.key" 
+							class="completion-card"
+							:class="{ 'is-completed': item.completed, 'is-incomplete': !item.completed }"
+							@click="scrollToSection(item.key)"
+						>
+							<div class="card-status-icon">
+								<div class="icon-circle">
+									<svg v-if="item.completed" class="icon-md" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+									</svg>
+									<span v-else>!</span>
+								</div>
+							</div>
+							<div class="card-content">
+								<span class="card-title">{{ item.label }}</span>
+								<span class="card-status-text" :class="item.completed ? 'text-blue' : 'text-orange'">
+									{{ item.completed ? 'Đã xong' : 'Cần bổ sung' }}
+								</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</base-modal>
 
 			<div class="tabs-container">
 				<div class="tabs-list">
@@ -81,10 +135,17 @@
 
 <script setup>
 definePageMeta({
-	middleware: 'auth',
-});
+	middleware: [
+		'auth', 
+		() => {
+		useLayoutStore().setHiddenFooter(true)
+		}
+	]
+})
+
 import OverviewNew from '~/components/profile/OverviewNew.vue';
 import ScheduleNew from '~/components/profile/ScheduleNew.vue';
+import { status_identity_verification } from '~/config/index';
 
 const route = useRoute();
 const router = useRouter();
@@ -120,7 +181,6 @@ const REQUIRED_PERSONAL_INFO_FIELDS = [
 	'email',
 	'provinces_id',
 	'about_you',
-	'cccd',
 	'referral_link',
 ];
 
@@ -141,64 +201,13 @@ const isPersonalInfoComplete = (userData = {}) => {
 	return REQUIRED_PERSONAL_INFO_FIELDS.every((field) => !empty(userData[field]));
 };
 
-const calculateProfileCompletion = (userData = {}) => {
-	const completionStatus = {
-		personal_info: isPersonalInfoComplete(userData),
-		education: Array.isArray(userData.user_educations) && userData.user_educations.length > 0,
-		experience: Array.isArray(userData.user_experiences) && userData.user_experiences.length > 0,
-		subjects: Array.isArray(userData.user_subjects) && userData.user_subjects.length > 0,
-		languages: Array.isArray(userData.user_languages) && userData.user_languages.length > 0,
-		schedule: Array.isArray(userData.user_weekly_time_slots) && userData.user_weekly_time_slots.length > 0,
-	};
-
-	const totalFields = Object.keys(completionStatus).length;
-	const completedFields = Object.values(completionStatus).filter(Boolean).length;
-	const percent = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
-	const completed = completedFields === totalFields && totalFields > 0;
-
-	// Use details from existing data instead of fields_info
-	const existingDetails = userData.profile_completion?.details || {};
-	
-	const details = {};
-	
-	// If existingDetails is empty, we might want to define default structure or handle it.
-	// Assuming it's populated from API.
-	Object.keys(existingDetails).forEach(key => {
-		details[key] = {
-			...existingDetails[key],
-			completed: completionStatus[key] ?? false
-		};
-	});
-
-	const incompleteFields = Object.keys(completionStatus)
-		.filter((key) => !completionStatus[key])
-		.map((key) => details[key]?.label ?? key);
-
-	const result = {
-		percent,
-		completed,
-		details,
-		incomplete_fields: incompleteFields
-	};
-
-	return result;
-};
-
 const updateProfileData = (newData) => {
 	const updatedData = {
 		...userDataDetail.value,
 		...newData,
 	};
-
-	const completion = calculateProfileCompletion(updatedData);
-
-	userDataDetail.value = {
-		...updatedData,
-		profile_completion: {
-			...(updatedData.profile_completion ?? {}),
-			...completion,
-		},
-	};
+	// Update local state, computed property 'completionStatus' will react automatically
+	userDataDetail.value = updatedData;
 };
 
 const activeTab = ref('overview');
@@ -230,19 +239,100 @@ const changeTab = (tabId) => {
 };
 
 // Profile Completion Logic
+// Profile Completion Logic
+const showCompletionModal = ref(false);
+
 const completionStatus = computed(() => {
-	const completionData = userDataDetail.value?.profile_completion || {};
-	const percent = completionData.percent || 0;
+	const data = userDataDetail.value || {};
 	
-	// Get missing items from details object where completed is false
-	const details = completionData.details || {};
-	const missing = Object.values(details).filter(item => !item.completed);
+	// Check statuses
+	const checks = {
+		personal_info: isPersonalInfoComplete(data),
+		education: Array.isArray(data.user_educations) && data.user_educations.length > 0,
+		experience: Array.isArray(data.user_experiences) && data.user_experiences.length > 0,
+		subjects: Array.isArray(data.user_subjects) && data.user_subjects.length > 0,
+		languages: Array.isArray(data.user_languages) && data.user_languages.length > 0,
+		schedule: Array.isArray(data.user_weekly_time_slots) && data.user_weekly_time_slots.length > 0,
+	};
+
+	// Calculate percentage
+	const total = Object.keys(checks).length;
+	const completedCount = Object.values(checks).filter(Boolean).length;
+	const percent = total === 0 ? 0 : Math.round((completedCount / total) * 100);
+
+	// Define items for the grid
+	const items = [
+		{ 
+			key: 'personal_info', 
+			label: 'Thông tin cá nhân', 
+			completed: checks.personal_info 
+		},
+		{ 
+			key: 'education', 
+			label: 'Học vấn', 
+			completed: checks.education 
+		},
+		{ 
+			key: 'experience', 
+			label: 'Kinh nghiệm', 
+			completed: checks.experience 
+		},
+		{ 
+			key: 'subjects', 
+			label: 'Môn học giảng dạy', 
+			completed: checks.subjects 
+		},
+		{ 
+			key: 'languages', 
+			label: 'Ngôn ngữ', 
+			completed: checks.languages 
+		},
+		{ 
+			key: 'schedule', 
+			label: 'Lịch trình hàng tuần', 
+			completed: checks.schedule 
+		}
+	];
+
+	// Filter missing items for summary view
+	const missing = items.filter(i => !i.completed);
 
 	return {
 		percent,
+		items,
 		missing
 	};
 });
+
+const scrollToSection = (key) => {
+	showCompletionModal.value = false;
+	
+	// Logic to scroll to section
+	if (key === 'schedule') {
+		changeTab('schedule');
+		return;
+	}
+	
+	changeTab('overview');
+	// Used setTimeout to wait for DOM update after tab change
+	setTimeout(() => {
+		const selectorMap = {
+			personal_info: '.infomation-user',
+			education: '.education-section',
+			experience: '.experience-section',
+			subjects: '.subject-section',
+			languages: '.language-section'
+		};
+		
+		const selector = selectorMap[key];
+		if (selector) {
+			const element = document.querySelector(selector);
+			if (element) {
+				element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			}
+		}
+	}, 100);
+};
 </script>
 
 <style scoped>
@@ -384,7 +474,7 @@ const completionStatus = computed(() => {
 	transform: translateY(-10px);
 }
 
-/* Completion Section */
+/* Completion Section (Summary Style) */
 .completion-section {
 	background: #fff;
 	border-radius: 16px;
@@ -392,6 +482,13 @@ const completionStatus = computed(() => {
 	margin-bottom: 1.5rem;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 	border: 1px solid #e2e8f0;
+	transition: all 0.2s;
+}
+
+.completion-section.clickable:hover {
+	cursor: pointer;
+	box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+	transform: translateY(-2px);
 }
 
 .completion-header-row {
@@ -408,13 +505,13 @@ const completionStatus = computed(() => {
 .completion-title {
 	font-weight: 600;
 	color: #1e293b;
-	font-size: 1rem;
+	font-size: var(--font-size-base);
 }
 
 .completion-percent {
 	font-weight: 700;
 	color: var(--color-primary);
-	font-size: 1rem;
+	font-size: var(--font-size-base);
 }
 
 .completion-percent.text-green {
@@ -454,7 +551,7 @@ const completionStatus = computed(() => {
 	font-weight: 500;
 }
 
-.missing-grid {
+.missing-grid-summary {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 0.5rem;
@@ -492,6 +589,165 @@ const completionStatus = computed(() => {
 
 .text-green {
 	color: #10b981;
+}
+
+/* Modal / Detail View Styles */
+.completion-detail-view {
+	padding: 1rem 0;
+}
+
+.completion-header-detail {
+	display: flex;
+	justify-content: center;
+	margin-bottom: 2rem;
+}
+
+.circular-progress-container {
+	position: relative;
+	width: 160px;
+	height: 160px;
+}
+
+.circular-progress {
+	transform: rotate(-90deg);
+	width: 100%;
+	height: 100%;
+}
+
+.circular-progress .bg {
+	fill: none;
+	stroke: #f1f5f9;
+	stroke-width: 8;
+}
+
+.circular-progress .progress {
+	fill: none;
+	stroke: #2563eb;
+	stroke-width: 8;
+	transition: stroke-dashoffset 0.5s ease;
+}
+
+.progress-text {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	text-align: center;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.progress-text .percent {
+	font-size: 2.5rem;
+	font-weight: 700;
+	color: #1e293b;
+	line-height: 1;
+}
+
+.progress-text .label {
+	font-size: 0.875rem;
+	color: #94a3b8;
+	margin-top: 0.25rem;
+}
+
+/* Grid */
+.completion-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 1rem;
+}
+
+.completion-card {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	padding: 1rem;
+	border-radius: 16px;
+	border: 1px solid #e2e8f0;
+	background: #fff;
+	cursor: pointer;
+	transition: all 0.2s;
+	position: relative;
+	overflow: hidden;
+}
+
+.completion-card:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+	transform: translateY(-2px);
+}
+
+.completion-card.is-completed {
+	background: #f0f9ff;
+	border-color: #e0f2fe;
+}
+
+.completion-card.is-incomplete {
+	background: #ffffff;
+	border-color: #ffedd5;
+}
+
+.card-status-icon {
+	margin-bottom: 0.75rem;
+}
+
+.icon-circle {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.is-completed .icon-circle {
+	background: #fff;
+	color: #2563eb;
+	border: 1px solid #bfdbfe;
+}
+
+.is-completed .icon-circle svg {
+	width: 18px;
+	height: 18px;
+}
+
+.is-incomplete .icon-circle {
+	background: #fff;
+	color: #f97316;
+	border: 1px solid #fed7aa;
+	font-weight: bold;
+	font-size: 1.125rem;
+}
+
+.card-content {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.card-title {
+	font-size: 0.9375rem;
+	font-weight: 500;
+	color: #334155;
+}
+
+.card-status-text {
+	font-size: 0.8125rem;
+	font-weight: 500;
+}
+
+.text-blue {
+	color: #2563eb;
+}
+
+.text-orange {
+	color: #f97316;
+}
+
+@media (max-width: 640px) {
+	.completion-grid {
+		gap: 0.75rem;
+	}
 }
 
 .w-3 { width: 12px; }

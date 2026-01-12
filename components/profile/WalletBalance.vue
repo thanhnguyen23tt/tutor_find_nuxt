@@ -699,7 +699,7 @@ onMounted(() => {
 }
 
 .empty-desc {
-	font-size: 1rem;
+	font-size: var(--font-size-base);
 	color: #6b7280;
 	margin: 0;
 	font-weight: 500;
@@ -865,7 +865,7 @@ onMounted(() => {
 }
 
 .form-section-title {
-	font-size: 1rem;
+	font-size: var(--font-size-base);
 	font-weight: 700;
 	color: #1f2937;
 	margin: 0;
@@ -963,7 +963,7 @@ onMounted(() => {
 }
 
 .balance-info-value {
-	font-size: 1rem;
+	font-size: var(--font-size-base);
 	font-weight: 400;
 	color: #1f2937;
 }

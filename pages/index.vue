@@ -13,21 +13,21 @@
 							Nền tảng gia sư hàng đầu
 						</div>
 						<h1 class="hero-title">
-							Học tập hiệu quả cùng gia sư chất lượng
+							Học tập hiệu quả cùng <span style="color: var(--color-primary);">gia sư</span> chất lượng
 						</h1>
 						<p class="hero-description">
 							Kết nối với những gia sư xuất sắc nhất để nâng cao kiến thức và đạt được mục tiêu học tập
 							của bạn.
 						</p>
 						<div class="hero-buttons">
-							<button class="btn-lg btn-primary" @click="goToSearch">
+							<button class="btn-md border-lg btn-primary" @click="goToSearch">
 								Tìm gia sư ngay
 								<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
 										d="M9 5l7 7-7 7" />
 								</svg>
 							</button>
-							<button class="btn-lg btn-secondary" @click="goToBecomeTutor">
+							<button class="btn-md border-lg btn-secondary" @click="goToBecomeTutor">
 								Tìm hiểu thêm
 							</button>
 						</div>
@@ -113,7 +113,7 @@
 					</div>
 
 					<!-- Modern Search Bar (Desktop) -->
-					<div class="airbnb-search-bar desktop-search-bar" ref="searchBarRef">
+					<div class="filter-search-bar desktop-search-bar" ref="searchBarRef">
 						<div class="search-highlight" :style="highlightStyle"></div>
 						<!-- Location Section -->
 						<div class="search-filter-item" :ref="el => setItemRef(el, 'location')" :class="{ 'active': activeDropdown === 'location' }" @click.stop="toggleDropdown('location')">
@@ -154,34 +154,64 @@
 						<!-- Subject Section -->
 						<div class="search-filter-item" :ref="el => setItemRef(el, 'subject')" :class="{ 'active': activeDropdown === 'subject' }" @click.stop="toggleDropdown('subject')">
 							<div class="section-content">
-								<div class="section-label">Môn học</div>
-								<div class="section-value" :class="{ 'placeholder': !filters.subject }">
-									{{ getSubjectName(filters.subject) || 'Thêm môn học' }}
+								<div class="section-label">Môn học & Trình độ</div>
+								<div class="section-value" :class="{ 'placeholder': !filters.subject_ids || filters.subject_ids.length === 0 }">
+									{{ getSubjectSummary }}
 								</div>
 							</div>
 							<!-- Dropdown -->
-							<div v-show="activeDropdown === 'subject'" class="search-dropdown subject-dropdown" @click.stop>
-								<div class="dropdown-title">Môn học phổ biến</div>
-								<div class="dropdown-list">
-									<div class="dropdown-item" @click="selectSubject('')">
-										<div class="item-icon">
-											<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-										</div>
-										<div class="item-info">
-											<div class="item-title">Tất cả môn học</div>
-											<div class="item-desc">Khám phá tất cả</div>
-										</div>
-									</div>
-									<div v-for="sub in subjectOptions" :key="sub.id" class="dropdown-item" @click="selectSubject(sub.id)">
-										<div class="item-icon">
-											<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 1-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-										</div>
-										<div class="item-info">
-											<div class="item-title">{{ sub.name }}</div>
-											<div class="item-desc">Môn học</div>
-										</div>
-									</div>
-								</div>
+							<div v-show="activeDropdown === 'subject'" class="search-dropdown subject-dropdown wide-dropdown" @click.stop>
+                                <!-- Level Section in Dropdown -->
+                                <div class="dropdown-section">
+                                    <div class="dropdown-title">Trình độ học vấn</div>
+                                    <div class="chip-list">
+                                        <div 
+                                            class="chip" 
+                                            v-for="level in educationLevelOptions" 
+                                            :key="level.id"
+                                            :class="{ active: filters.educationLevel == level.id }"
+                                            @click="selectLevel(level.id)"
+                                        >
+                                            {{ level.name }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="dropdown-divider"></div>
+
+                                <!-- Subject Search & List -->
+                                <div class="dropdown-section">
+                                    <div class="dropdown-title">Môn học</div>
+                                    <div class="search-input-wrapper">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Tìm kiếm môn học..." 
+                                            v-model="subjectSearch"
+                                            class="custom-input-sm"
+                                            @click.stop
+                                        />
+                                    </div>
+                                    
+                                    <div class="dropdown-list-scroll">
+                                        <div class="dropdown-item" 
+                                             v-for="sub in visibleSubjects" 
+                                             :key="sub.id" 
+                                             @click="toggleSubject(sub.id)"
+                                             :class="{ active: isSubjectSelected(sub.id) }"
+                                        >
+                                            <div class="item-info">
+                                                <div class="item-title">{{ sub.name }}</div>
+                                            </div>
+                                             <div class="checkbox-indicator">
+                                                <svg v-if="isSubjectSelected(sub.id)" class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            </div>
+                                        </div>
+                                        <div v-if="visibleSubjects.length === 0" class="empty-state-sm">
+                                            Không tìm thấy
+                                        </div>
+                                    </div>
+                                </div>
 							</div>
 						</div>
 
@@ -236,14 +266,14 @@
 					</div>
 
 					<!-- Mobile Search Bar -->
-					<div class="airbnb-search-bar mobile-search-bar" @click="showFilter = true">
+					<div class="filter-search-bar mobile-search-bar" @click="showFilter = true">
 						<div class="search-icon-wrapper">
 							<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
 						</div>
 						<div class="mobile-search-content">
 							<div class="mobile-search-title">Tìm kiếm gia sư</div>
 							<div class="mobile-search-subtitle">
-								{{ getSubjectName(filters.subject) || 'Bất kỳ đâu' }} • {{ getCityName(filters.provinces_id) || 'Bất kỳ môn nào' }}
+								{{ getSubjectName(filters.subject_ids?.[0]) || 'Bất kỳ đâu' }} • {{ getCityName(filters.provinces_id) || 'Bất kỳ môn nào' }}
 							</div>
 						</div>
 						<div class="filter-icon-wrapper">
@@ -253,13 +283,33 @@
 				</div>
 			</section>
 
+			
+
 			<!-- Featured Tutors Section -->
 			<section class="tutors-section">
 				<div class="container">
-					<div class="tutors-grid">
-						<TutorCard v-for="tutor in tutors" :key="tutor.uid" :tutor="tutor"
+					<div class="tutors-grid" v-if="tutors && tutors.length > 0">
+						<TutorCardFull v-for="tutor in tutors" :key="tutor.uid" :tutor="tutor"
 							@toggle-save="handleToggleSave" @navigate-to-tutor="handleNavigateToTutor"
 							@redirect-to-booking="handleRedirectToBooking" />
+					</div>
+					<div class="tutors-empty" v-else>
+						<div class="empty-state-content">
+							<div class="empty-icon-wrapper">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="empty-icon">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+								</svg>
+								<div class="empty-icon-badge">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="badge-icon">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+									</svg>
+								</div>
+							</div>
+							<h3 class="empty-title">Không tìm thấy gia sư nào</h3>
+							<p class="empty-desc">
+								Hiện chưa có gia sư nào trong danh sách. Hãy thử tìm kiếm với các tiêu chí khác hoặc quay lại sau nhé!
+							</p>
+						</div>
 					</div>
 				</div>
 			</section>
@@ -283,14 +333,16 @@
 				<div class="reviews-grid desktop-reviews">
 					<div v-for="review in reviews" :key="review.id" class="review-card">
 						<div class="rating">
-							<span v-for="star in review.rating" :key="star" class="star">★</span>
+							<svg v-for="star in review.rating" :key="star" class="icon-star" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+							</svg>
 						</div>
 						<p class="review-text">
 							"{{ review.comment }}"
 						</p>
 						<div class="reviewer-info">
 							<div class="reviewer-avatar">
-								<img :src="review.reviewer.avatar" alt=""></img>
+								<img :src="showImage(review.reviewer.avatar)" alt=""></img>
 							</div>
 							<div class="reviewer-details">
 								<h4 class="reviewer-name">{{ review.reviewer.full_name }}</h4>
@@ -301,32 +353,28 @@
 				</div>
 
 				<!-- Mobile Reviews -->
+				<!-- Mobile Reviews -->
 				<div class="mobile-reviews" v-if="reviews.length > 0">
-					<div class="review-card">
-						<div class="rating">
-							<span v-for="star in reviews[currentReviewIndex].rating" :key="star" class="star">★</span>
-						</div>
-						<p class="review-text">
-							"{{ reviews[currentReviewIndex].comment }}"
-						</p>
-						<div class="reviewer-info">
-							<div class="reviewer-avatar">
-								<img :src="reviews[currentReviewIndex].reviewer.avatar" alt=""></img>
+					<div class="mobile-reviews-list">
+						<div v-for="review in reviews" :key="review.id" class="review-card mobile-review-item">
+							<div class="rating">
+								<svg v-for="star in review.rating" :key="star" class="icon-star" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+								</svg>
 							</div>
-							<div class="reviewer-details">
-								<h4 class="reviewer-name">{{ reviews[currentReviewIndex].reviewer.full_name }}</h4>
-								<p class="reviewer-title">Học viên TutorFind</p>
+							<p class="review-text">
+								"{{ review.comment }}"
+							</p>
+							<div class="reviewer-info">
+								<div class="reviewer-avatar">
+									<img :src="showImage(review.reviewer.avatar)" alt=""></img>
+								</div>
+								<div class="reviewer-details">
+									<h4 class="reviewer-name">{{ review.reviewer.full_name }}</h4>
+									<p class="reviewer-title">Học viên TutorFind</p>
+								</div>
 							</div>
 						</div>
-					</div>
-					
-					<div class="mobile-review-controls">
-						<button class="btn-next-review" @click="nextReview">
-							<span>Xem đánh giá tiếp theo</span>
-							<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-							</svg>
-						</button>
 					</div>
 				</div>
 			</div>
@@ -433,12 +481,14 @@
 		:education-level-options="educationLevelOptions"
 		:experience-options="experienceOptions"
 		@close="showFilter = false"
-		@reset="filters = { provinces_id: '', subject: '', educationLevel: '', experience: '', rating: 0, minPrice: 50000, maxPrice: 1000000 }"
+		@reset="filters = { provinces_id: '', subject_ids: [], educationLevel: '', experience: '', rating: 0, minPrice: 50000, maxPrice: 1000000 }"
 		@apply="handleSearch"
 	/>
 </template>
 
 <script setup>
+import TutorCardFull from '../components/common/TutorCardFull.vue';
+
 definePageMeta({
 	middleware() {
 		useLayoutStore().setHiddenFooter(false)
@@ -448,10 +498,11 @@ definePageMeta({
 const configStore = useConfigStore();
 const { api } = useApi();
 const config = useRuntimeConfig();
+const { showImage } = useHelper();
 
 const filters = ref({
     provinces_id: '',
-    subject: '',
+    subject_ids: [],
     educationLevel: '',
     experience: '',
     rating: 0,
@@ -477,15 +528,41 @@ const selectCity = (id) => {
     activeDropdown.value = null;
 };
 
-const selectSubject = (id) => {
-    filters.value.subject = id;
-    activeDropdown.value = null;
+const selectLevel = (id) => {
+    filters.value.educationLevel = filters.value.educationLevel == id ? '' : id;
 };
 
-const selectLevel = (id) => {
-    filters.value.educationLevel = id;
-    activeDropdown.value = null;
+// Subject Multi-Select Logic
+const subjectSearch = ref('');
+const visibleSubjects = computed(() => {
+    if (!subjectSearch.value) return subjectOptions.value.slice(0, 50);
+    const lower = subjectSearch.value.toLowerCase();
+    return subjectOptions.value.filter(s => s.name.toLowerCase().includes(lower));
+});
+
+const isSubjectSelected = (id) => {
+    return filters.value.subject_ids && filters.value.subject_ids.includes(id);
 };
+
+const toggleSubject = (id) => {
+    if (!filters.value.subject_ids) filters.value.subject_ids = [];
+    const idx = filters.value.subject_ids.indexOf(id);
+    if (idx > -1) {
+        filters.value.subject_ids.splice(idx, 1);
+    } else {
+        filters.value.subject_ids.push(id);
+    }
+};
+
+const getSubjectSummary = computed(() => {
+    const ids = filters.value.subject_ids || [];
+    if (ids.length == 0) return 'Tất cả';
+    if (ids.length == 1) {
+        const sub = subjectOptions.value.find(s => s.id == ids[0]);
+        return sub ? sub.name : '1 môn học';
+    }
+    return `${ids.length} môn học`;
+});
 
 const selectExperience = (id) => {
     filters.value.experience = id;
@@ -560,7 +637,7 @@ const { data: homeData, pending: isLoading } = await useAsyncData(
 	async () => {
 		try {
 			const [tutorsResponse, reviewsResponse] = await Promise.all([
-				api.apiGet('tutors').catch(() => ({ data: [] })),
+				api.apiPost('tutors').catch(() => ({ data: [] })),
 				api.apiGet('reviews/featured').catch(() => ({ data: [] }))
 			]);
 
@@ -592,7 +669,7 @@ function goToSearch() {
 function handleSearch() {
 	const params = {
 		city: filters.value.provinces_id,
-		subject: filters.value.subject,
+		subject: filters.value.subject_ids,
 		level: filters.value.educationLevel,
 		experience: filters.value.experience,
         rating: filters.value.rating > 0 ? filters.value.rating : undefined,
@@ -621,13 +698,7 @@ const handleSubmit = () => {
     console.log('Form submitted:', form);
 };
 
-const currentReviewIndex = ref(0);
 
-const nextReview = () => {
-	if (reviews.value.length > 0) {
-		currentReviewIndex.value = (currentReviewIndex.value + 1) % reviews.value.length;
-	}
-};
 
 // SEO Meta
 const metaTitle = 'TutorFind - Nền tảng gia sư hàng đầu Việt Nam';
@@ -669,4 +740,69 @@ useHead({
 @import url('~/assets/css/tutorCard.css');
 @import url('~/assets/css/home.css');
 @import url('~/assets/css/search-bar.css');
+
+/* Empty State Styles */
+.tutors-empty {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 4rem 1rem;
+	min-height: 400px;
+}
+
+.empty-state-content {
+	text-align: center;
+	max-width: 400px;
+}
+
+.empty-icon-wrapper {
+	position: relative;
+	width: 80px;
+	height: 80px;
+	margin: 0 auto 1.5rem;
+	background: #fff;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.empty-icon {
+	width: 40px;
+	height: 40px;
+	color: #94a3b8;
+}
+
+.empty-icon-badge {
+	position: absolute;
+	bottom: -4px;
+	right: -4px;
+	background: #f1f5f9;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 3px solid #f8fafc;
+}
+
+.badge-icon {
+	width: 16px;
+	height: 16px;
+	color: #64748b;
+}
+
+.empty-title {
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: #1e293b;
+	margin-bottom: 0.5rem;
+}
+
+.empty-desc {
+	color: #64748b;
+	line-height: 1.5;
+}
 </style>

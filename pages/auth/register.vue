@@ -15,8 +15,8 @@ const { success, error: notifyError } = useNotification();
 
 const educationLevels = computed(() => configStore.configuration?.education_levels || []);
 
-const ROLE_STUDENT = 0;
-const ROLE_TUTOR = 1;
+const ROLE_STUDENT = 'user';
+const ROLE_TUTOR = 'tutor';
 
 const isLoading = ref(false);
 const registrationStep = ref(1); // 1: form, 2: OTP verification
@@ -41,7 +41,7 @@ const {
 } = useFormValidation();
 
 const formData = reactive({
-	role: 0,
+	role: 'user',
 	first_name: '',
 	last_name: '',
 	email: '',
@@ -207,7 +207,7 @@ const handleRegister = async () => {
 
 		await register(registerData);
 
-		navigateTo('/');
+		return navigateTo('/');
 	} catch (error) {
 		console.error(error);
 		handleValidationError(error, error.data?.message || 'Đăng ký thất bại');
@@ -240,7 +240,7 @@ const handleFacebookLogin = () => {
 };
 
 const openLoginModal = () => {
-	navigateTo('/auth/login');
+return navigateTo('/auth/login');
 };
 </script>
 
@@ -362,11 +362,11 @@ const openLoginModal = () => {
 
 						<div class="social-login">
 							<button type="button" class="btn-lg btn-white google w-100" @click="handleGoogleLogin">
-								<img src="/images/google.svg" alt="Google" class="social-icon">
+								<img src="/images/google.webp" alt="Google" class="social-icon">
 								Google
 							</button>
 							<button type="button" class="btn-lg btn-white facebook w-100" @click="handleFacebookLogin">
-								<img src="/images/facebook.svg" alt="Facebook" class="social-icon">
+								<img src="/images/facebook.webp" alt="Facebook" class="social-icon">
 								Facebook
 							</button>
 						</div>

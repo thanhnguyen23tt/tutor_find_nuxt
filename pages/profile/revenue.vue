@@ -21,8 +21,13 @@
 
 <script setup>
 definePageMeta({
-	middleware: 'auth',
-});
+	middleware: [
+		'auth', 
+		() => {
+		useLayoutStore().setHiddenFooter(true)
+		}
+	]
+})
 
 import WalletBalance from '~/components/profile/WalletBalance.vue';
 

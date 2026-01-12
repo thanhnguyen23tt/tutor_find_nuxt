@@ -1,13 +1,22 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
 
+const props = defineProps({
+    userProfileData: {
+        type: Object,
+        default: () => ({})
+    }
+});
+
+const emit = defineEmits(['update-profile']);
+
 const { api } = useApi();
 const { success, error: notifyError } = useNotification();
 const configStore = useConfigStore();
 
 // Form data
 const userProfile = ref({});
-const isLoading = ref(false);
+const gender_options = computed(() => configStore.configuration?.gender_types || []);
 
 // Form sections
 const basicInfoForm = reactive({
@@ -15,7 +24,6 @@ const basicInfoForm = reactive({
     last_name: '',
     phone: '',
     email: '',
-    cccd: '',
     sex: null,
     about_you: '',
     provinces_id: null
@@ -28,7 +36,8 @@ const editingForm = reactive({
     last_name: '',
     email: '',
     phone: '',
-    provinces_id: null
+    provinces_id: null,
+    sex: null
 });
 const isSaving = ref(false);
 const errors = ref({});
@@ -46,14 +55,20 @@ const maskedEmail = computed(() => {
 const provinceOptions = computed(() => {
     return configStore.configuration?.provinces?.map(p => ({
         value: p.id,
-        label: p.name
+        name: p.name
     })) || [];
 });
 
 const provinceName = computed(() => {
     if (!basicInfoForm.provinces_id) return 'Chưa cung cấp';
     const province = provinceOptions.value.find(p => p.value === basicInfoForm.provinces_id);
-    return province ? province.label : 'Chưa cung cấp';
+    return province ? province.name : 'Chưa cung cấp';
+});
+
+const genderLabel = computed(() => {
+    if (basicInfoForm.sex === null) return 'Chưa cung cấp';
+    const option = gender_options.value.find(opt => opt.id === basicInfoForm.sex);
+    return option ? option.name : 'Chưa cung cấp';
 });
 
 const modalTitle = computed(() => {
@@ -63,6 +78,7 @@ const modalTitle = computed(() => {
         case 'email': return 'Địa chỉ email';
         case 'phone': return 'Số điện thoại';
         case 'provinces_id': return 'Tỉnh/Thành phố';
+        case 'sex': return 'Giới tính';
         default: return '';
     }
 });
@@ -74,37 +90,30 @@ const modalDescription = computed(() => {
         case 'email': return 'Sử dụng địa chỉ email để đăng nhập và nhận thông báo.';
         case 'phone': return 'Thêm số điện thoại để khách đã xác nhận có thể liên hệ với bạn.';
         case 'provinces_id': return 'Chọn tỉnh/thành phố nơi bạn đang sinh sống.';
+        case 'sex': return 'Chọn giới tính của bạn.';
         default: return '';
     }
 });
 
 // Methods
-const loadUserProfile = async () => {
-    isLoading.value = true;
-    try {
-        const response = await api.apiGet('me/setting');
-        if (response.success !== false) {
-            userProfile.value = response.data;
-
-            // Populate forms with user data
-            Object.assign(basicInfoForm, {
-                first_name: response.data.first_name || '',
-                last_name: response.data.last_name || '',
-                phone: response.data.phone || '',
-                email: response.data.email || '',
-                cccd: response.data.cccd || '',
-                sex: response.data.sex || null,
-                about_you: response.data.about_you || '',
-                provinces_id: response.data.provinces_id || null
-            });
-        }
-    } catch (error) {
-        console.error('Error loading user profile:', error);
-        notifyError('Không thể tải thông tin hồ sơ');
-    } finally {
-        isLoading.value = false;
-    }
+const populateForm = (data) => {
+    if (!data) return;
+    userProfile.value = data;
+    Object.assign(basicInfoForm, {
+        first_name: data.first_name || '',
+        last_name: data.last_name || '',
+        phone: data.phone || '',
+        email: data.email || '',
+        sex: data.sex || null,
+        about_you: data.about_you || '',
+        provinces_id: data.provinces_id || null
+    });
 };
+
+watch(() => props.userProfileData, (newData) => {
+	console.log(newData)
+    populateForm(newData);
+}, { immediate: true, deep: true });
 
 const openModal = (field) => {
     activeModal.value = field;
@@ -134,10 +143,13 @@ const saveChanges = async () => {
 
         if (response.success !== false) {
             success('Cập nhật thành công!');
+            // Update local state immediately
             basicInfoForm[field] = editingForm[field];
             if (userProfile.value) {
                 userProfile.value[field] = editingForm[field];
             }
+            // Emit event to refresh parent data
+            emit('update-profile');
             closeModal();
         } else {
             if (response.errors) {
@@ -155,10 +167,6 @@ const saveChanges = async () => {
         isSaving.value = false;
     }
 };
-
-onMounted(() => {
-    loadUserProfile();
-});
 </script>
 
 <template>
@@ -216,6 +224,17 @@ onMounted(() => {
                 </div>
             </div>
 
+            <!-- Gender -->
+            <div class="info-item">
+                <div class="info-main">
+                    <div class="info-label">Giới tính</div>
+                    <div class="info-value">{{ genderLabel }}</div>
+                </div>
+                <div class="info-action">
+                    <button class="btn-link" @click="openModal('sex')">{{ basicInfoForm.sex !== null ? 'Chỉnh sửa' : 'Thêm' }}</button>
+                </div>
+            </div>
+
             <!-- Province/City -->
             <div class="info-item">
                 <div class="info-main">
@@ -227,16 +246,6 @@ onMounted(() => {
                 </div>
             </div>
 
-            <!-- Identity Verification -->
-            <div class="info-item">
-                <div class="info-main">
-                    <div class="info-label">Xác minh danh tính</div>
-                    <div class="info-value">Chưa bắt đầu</div>
-                </div>
-                <div class="info-action">
-                    <button class="btn-link">Bắt đầu</button>
-                </div>
-            </div>
         </div>
 
         <!-- Edit Modal -->
@@ -272,28 +281,36 @@ onMounted(() => {
                     />
                 </div>
 
+                <div v-if="activeModal === 'sex'">
+                    <base-select
+                        v-model="editingForm.sex"
+                        label="Giới tính"
+                        :options="gender_options"
+                        placeholder="Chọn giới tính"
+                        :error="errors.sex"
+                    />
+                </div>
+
                 <div class="modal-footer">
-                    <button class="btn-lg btn-black" @click="saveChanges" :disabled="isSaving">
+                    <button class="btn-md btn-black" @click="saveChanges" :disabled="isSaving">
                         {{ isSaving ? 'Đang lưu...' : 'Lưu' }}
                     </button>
                 </div>
             </div>
         </base-modal>
+
+
     </section>
 </template>
 
 <style scoped>
-.settings-content {
-    padding-top: 8px;
-}
-
 .content-header {
     margin-bottom: 24px;
 }
 
 .section-title {
-    font-size: 24px;
-    font-weight: 600;
+    font-size: var(--font-size-medium);
+    font-weight: 500;
     color: #222;
     margin: 0;
 }
@@ -321,19 +338,19 @@ onMounted(() => {
 }
 
 .info-label {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: var(--font-size-base);
+    font-weight: 500;
     color: #222;
     margin-bottom: 4px;
 }
 
 .info-value {
-    font-size: 14px;
+    font-size: var(--font-size-small);
     color: #717171;
 }
 
 .info-desc {
-    font-size: 14px;
+    font-size: var(--font-size-small);
     color: #717171;
     margin-top: 4px;
     line-height: 1.4;
@@ -347,8 +364,8 @@ onMounted(() => {
     background: none;
     border: none;
     color: #222;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: var(--font-size-mini);
+    font-weight: 500;
     text-decoration: underline;
     cursor: pointer;
     padding: 0;
@@ -356,32 +373,5 @@ onMounted(() => {
 
 .btn-link:hover {
     color: #717171;
-}
-
-/* Modal Styles */
-.modal-form {
-    padding: 1rem 0;
-}
-
-.btn-save {
-    background: #222;
-    color: white;
-    border: none;
-    padding: 14px 24px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background 0.2s;
-    width: 100%;
-}
-
-.btn-save:hover {
-    background: #000;
-}
-
-.btn-save:disabled {
-    background: #dddddd;
-    cursor: not-allowed;
 }
 </style>

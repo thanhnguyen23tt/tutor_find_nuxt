@@ -31,7 +31,10 @@ export const Notification: typeof import("../components/common/Notification.vue"
 export const NotificationPreview: typeof import("../components/common/NotificationPreview.vue")['default']
 export const SendMessage: typeof import("../components/common/SendMessage.vue")['default']
 export const TutorCard: typeof import("../components/common/TutorCard.vue")['default']
+export const TutorCardFull: typeof import("../components/common/TutorCardFull.vue")['default']
+export const BaseSpinner: typeof import("../components/common/baseSpinner.vue")['default']
 export const BookingCardList: typeof import("../components/booking/BookingCardList.vue")['default']
+export const BookingFailed: typeof import("../components/booking/BookingFailed.vue")['default']
 export const BookingListStudent: typeof import("../components/booking/BookingListStudent.vue")['default']
 export const BookingListTutor: typeof import("../components/booking/BookingListTutor.vue")['default']
 export const BookingSuccess: typeof import("../components/booking/BookingSuccess.vue")['default']
@@ -43,7 +46,10 @@ export const BookingRealBooking: typeof import("../components/booking/RealBookin
 export const BookingReviewModal: typeof import("../components/booking/ReviewModal.vue")['default']
 export const LayoutFooter: typeof import("../components/layout/Footer.vue")['default']
 export const LayoutHeader: typeof import("../components/layout/Header.vue")['default']
-export const LayoutMain: typeof import("../components/layout/Main.vue")['default']
+export const MessageConversationItemSkeleton: typeof import("../components/message/ConversationItemSkeleton.vue")['default']
+export const MessageDetail: typeof import("../components/message/MessageDetail.vue")['default']
+export const MessageSkeleton: typeof import("../components/message/MessageSkeleton.vue")['default']
+export const ProfileIdentityVerification: typeof import("../components/profile/IdentityVerification.vue")['default']
 export const ProfileOverviewNew: typeof import("../components/profile/OverviewNew.vue")['default']
 export const ProfileScheduleNew: typeof import("../components/profile/ScheduleNew.vue")['default']
 export const ProfileWalletBalance: typeof import("../components/profile/WalletBalance.vue")['default']
@@ -96,7 +102,10 @@ export const LazyNotification: LazyComponent<typeof import("../components/common
 export const LazyNotificationPreview: LazyComponent<typeof import("../components/common/NotificationPreview.vue")['default']>
 export const LazySendMessage: LazyComponent<typeof import("../components/common/SendMessage.vue")['default']>
 export const LazyTutorCard: LazyComponent<typeof import("../components/common/TutorCard.vue")['default']>
+export const LazyTutorCardFull: LazyComponent<typeof import("../components/common/TutorCardFull.vue")['default']>
+export const LazyBaseSpinner: LazyComponent<typeof import("../components/common/baseSpinner.vue")['default']>
 export const LazyBookingCardList: LazyComponent<typeof import("../components/booking/BookingCardList.vue")['default']>
+export const LazyBookingFailed: LazyComponent<typeof import("../components/booking/BookingFailed.vue")['default']>
 export const LazyBookingListStudent: LazyComponent<typeof import("../components/booking/BookingListStudent.vue")['default']>
 export const LazyBookingListTutor: LazyComponent<typeof import("../components/booking/BookingListTutor.vue")['default']>
 export const LazyBookingSuccess: LazyComponent<typeof import("../components/booking/BookingSuccess.vue")['default']>
@@ -108,7 +117,10 @@ export const LazyBookingRealBooking: LazyComponent<typeof import("../components/
 export const LazyBookingReviewModal: LazyComponent<typeof import("../components/booking/ReviewModal.vue")['default']>
 export const LazyLayoutFooter: LazyComponent<typeof import("../components/layout/Footer.vue")['default']>
 export const LazyLayoutHeader: LazyComponent<typeof import("../components/layout/Header.vue")['default']>
-export const LazyLayoutMain: LazyComponent<typeof import("../components/layout/Main.vue")['default']>
+export const LazyMessageConversationItemSkeleton: LazyComponent<typeof import("../components/message/ConversationItemSkeleton.vue")['default']>
+export const LazyMessageDetail: LazyComponent<typeof import("../components/message/MessageDetail.vue")['default']>
+export const LazyMessageSkeleton: LazyComponent<typeof import("../components/message/MessageSkeleton.vue")['default']>
+export const LazyProfileIdentityVerification: LazyComponent<typeof import("../components/profile/IdentityVerification.vue")['default']>
 export const LazyProfileOverviewNew: LazyComponent<typeof import("../components/profile/OverviewNew.vue")['default']>
 export const LazyProfileScheduleNew: LazyComponent<typeof import("../components/profile/ScheduleNew.vue")['default']>
 export const LazyProfileWalletBalance: LazyComponent<typeof import("../components/profile/WalletBalance.vue")['default']>

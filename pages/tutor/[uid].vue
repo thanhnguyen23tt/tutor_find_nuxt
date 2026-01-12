@@ -5,15 +5,15 @@ definePageMeta({
 	}
 })
 
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
-
 import OverviewTab from '~/components/userDetail/OverviewTab.vue';
 import ReviewsTab from '~/components/userDetail/ReviewsTab.vue';
 import SendMessage from '~/components/common/SendMessage.vue';
 
 const route = useRoute();
+const router = useRouter();
 const { api } = useApi();
-const { getPriceRange } = useHelper();
+const config = useRuntimeConfig();
+const { showImage, formatCurrency } = useHelper();
 const { success, error: notifyError, info: notifyInfo, warning: notifyWarning } = useNotification();
 
 const activeTab = ref('overview');
@@ -28,12 +28,12 @@ const tabs = [
 ];
 
 // Fetch data trên server bằng useAsyncData
-const { data: userData, pending: isLoading } = await useAsyncData(
+const { data: pagePayload, pending: isLoading } = await useAsyncData(
 	`tutor-${route.params.uid}`,
 	async () => {
 		try {
 			const response = await api.apiGet(`tutor/${route.params.uid}`);
-			return response?.data ?? response ?? {};
+			return response || {};
 		} catch (error) {
 			console.error('Error fetching user:', error);
 			return {};
@@ -44,6 +44,9 @@ const { data: userData, pending: isLoading } = await useAsyncData(
 		lazy: false,
 	}
 );
+
+const userData = computed(() => pagePayload.value?.data ?? {});
+const suggestedTutors = computed(() => Array(7).fill().flatMap(() => pagePayload.value?.suggested_tutors || []));
 
 const redirectToBooking = () => {
 	return navigateTo(`/booking/${route.params.uid}`);
@@ -56,7 +59,6 @@ const openSendMessageModal = () => {
 
 const handleMessageSent = () => {
 	showSendMessageModal.value = false;
-	success('Gửi tin nhắn thành công!');
 };
 
 const checkSavedStatus = async () => {
@@ -89,7 +91,7 @@ const handleShare = async () => {
             await navigator.share({
                 title: userData.value.full_name,
                 text: `Check out ${userData.value.full_name} on TutorFind!`,
-                url: window.location.href,
+                url: userData.value.referral_link || window.location.href,
             });
         } catch (error) {
             console.log('Error sharing:', error);
@@ -97,7 +99,7 @@ const handleShare = async () => {
     } else {
         // Fallback: Copy to clipboard
         try {
-            await navigator.clipboard.writeText(window.location.href);
+            await navigator.clipboard.writeText(userData.value.referral_link || window.location.href);
             success('Đã sao chép liên kết vào bộ nhớ tạm!');
         } catch (err) {
             notifyError('Không thể chia sẻ');
@@ -105,8 +107,18 @@ const handleShare = async () => {
     }
 };
 
+const copyReferralLink = async () => {
+    if (!userData.value?.referral_link) return;
+    try {
+        await navigator.clipboard.writeText(userData.value.referral_link);
+        success('Đã sao chép liên kết giới thiệu!');
+    } catch (err) {
+        notifyError('Không thể sao chép');
+    }
+};
+
 const metas = computed(() => {
-	const baseUrl = process.env.VITE_BASE_URL;
+	const baseUrl = config.public.baseUrl;
 
 	return {
 		title: userData.value?.title_meta || 'Chi tiết gia sư - TutorFind',
@@ -147,6 +159,8 @@ useHead({
 onMounted(async () => {
 	await checkSavedStatus();
 });
+
+
 </script>
 
 <template>
@@ -155,10 +169,18 @@ onMounted(async () => {
 	<BasePageError v-else-if="!userData || !userData.uid" message="Không tìm thấy gia sư" />
 
 	<div class="user-detail-header_mobile" v-else-if="userData && !isLoading">
+		<div class="mobile-nav-header">
+			<button class="nav-btn-back" @click="router.back()">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="m15 18-6-6 6-6" />
+				</svg>
+			</button>
+		</div>
 		<div class="container">
 			<div class="user-detail-content">
 				<div class="avatar-wrapper_mobile">
-					<img :src="userData.avatar" :alt="userData.full_name" />
+					<img :src="showImage(userData.avatar)" :alt="userData.full_name" />
 				</div>
 				<h1 class="user-name_mobile">
 					<span>{{ userData.full_name }}</span>
@@ -180,8 +202,8 @@ onMounted(async () => {
 					<p class="description-text">{{ userData.about_you }}</p>
 				</div>
 
-				<div class="language-tags">
-					<span class="language-tag">
+				<div class="content-tags">
+					<span class="content-tag">
 						<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
 							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<circle cx="12" cy="12" r="10"></circle>
@@ -192,8 +214,8 @@ onMounted(async () => {
 					</span>
 				</div>
 
-				<div class="subject-tags">
-					<span class="subject-tag" v-for="item in userData.user_subjects" :key="item.id">{{ item.subject_name
+				<div class="content-tags">
+					<span class="content-tag" v-for="item in userData.user_subjects" :key="item.id">{{ item.subject_name
 						}}</span>
 				</div>
 
@@ -218,7 +240,7 @@ onMounted(async () => {
 								<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
 								<path d="M12 17h.01"></path>
 							</svg>
-							{{ getPriceRange(userData.user_subjects) }}
+							{{ formatCurrency(userData.average_price) }}
 						</span>
 						<span>Trên giờ</span>
 					</div>
@@ -242,7 +264,7 @@ onMounted(async () => {
 		<div class="user-contact">
 			<div class="user-contact_info">
 				<div class="user-contact_avatar">
-					<img :src="userData.avatar" :alt="userData.full_name" />
+					<img :src="showImage(userData.avatar)" :alt="userData.full_name" />
 				</div>
 				<div class="user-contact_info_detail">
 					<div class="user-contact_details">
@@ -259,7 +281,7 @@ onMounted(async () => {
 								giá</span>)
 						</div>
 						<div class="user-contact_price">
-							<span>{{ getPriceRange(userData.user_subjects) }}</span>
+							<span>{{ formatCurrency(userData.average_price) }}</span>
 						</div>
 					</div>
                     <div class="user-contact_actions">
@@ -316,7 +338,7 @@ onMounted(async () => {
 				<div class="user-detail-header">
 					<div class="header-avatar-block">
 						<div class="avatar-wrapper">
-							<img :src="userData.avatar" :alt="userData.full_name" />
+							<img :src="showImage(userData.avatar)" :alt="userData.full_name" />
 						</div>
 					</div>
 					<div class="header-main-block">
@@ -364,8 +386,9 @@ onMounted(async () => {
 							</div>
 							<div class="stat-item">
 								<div class="stat-group">
-									<div class="stat-icon"><img class="icon-md" src="/images/location.svg"
-											alt="Location" /></div>
+									<div class="stat-icon">
+										<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+									</div>
 									<div class="stat-value">{{ userData.address_preview }}</div>
 								</div>
 								<div class="stat-label">Địa chỉ</div>
@@ -396,7 +419,7 @@ onMounted(async () => {
 							</svg>
 							<span class="btn-text">{{ isSaved ? 'Đã lưu' : 'Yêu thích' }}</span>
 						</button>
-						<button class="action-btn btn-secondary">
+						<button class="action-btn btn-secondary" @click="handleShare">
 							<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
 								stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								<circle cx="18" cy="5" r="3"></circle>
@@ -413,7 +436,7 @@ onMounted(async () => {
 				<div class="price-bar">
 					<div class="price-info">
 						<span class="price-label">Học phí:</span>
-						<span class="price-value">{{ getPriceRange(userData.user_subjects) }}</span>
+						<span class="price-value">{{ formatCurrency(userData.average_price) }}</span>
 						<span class="price-unit">VND/giờ</span>
 					</div>
 					<div class="action-group price-actions">
@@ -445,7 +468,7 @@ onMounted(async () => {
 				</div>
 
 				<div class="tab-content">
-					<OverviewTab v-if="activeTab === 'overview'" :user="userData" />
+					<OverviewTab v-if="activeTab === 'overview'" :user="userData" :suggestedTutors="suggestedTutors" />
 					<ReviewsTab v-if="activeTab === 'reviews'" :user="userData" />
 				</div>
 			</div>

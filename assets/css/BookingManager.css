@@ -62,26 +62,10 @@
     overflow: hidden;
 }
 
-.booking-card-wrapper::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 50%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
 .booking-card-wrapper:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
     border-color: #cbd5e1;
-}
-
-.booking-card-wrapper:hover::before {
-    opacity: 1;
 }
 
 .booking-card-left {
@@ -659,8 +643,8 @@
 }
 
 .marker-dot.status-confirmed {
-    background: #3b82f6;
-    box-shadow: 0 0 0 2px #3b82f6;
+    background: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary);
 }
 
 .marker-dot.status-completed {
@@ -901,8 +885,7 @@
     align-items: center;
     gap: 0.5rem;
     color: #dc2626;
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: var(--font-size-mini);
     padding: 0.75rem 1rem;
     background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
     border: 1px solid #fecaca;
@@ -918,8 +901,7 @@
 .notice-text {
     margin: 0;
     color: #6b7280;
-    font-size: 0.875rem;
-    line-height: 1.5;
+    font-size: var(--font-size-mini);
 }
 
 /* Confirmation Modal Styles */
@@ -975,13 +957,13 @@
 
 .refund-description {
     color: #6b7280;
-    font-size: 1rem;
+    font-size: var(--font-size-base);
     line-height: 1.5;
 }
 
 .refund-notice {
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-    border: 1px solid #3b82f6;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #cbd5e1;
     border-radius: 12px;
     padding: 1.5rem;
     margin: 2rem 0;
@@ -997,9 +979,9 @@
 
 .notice-header h4 {
     margin: 0;
-    color: #1e40af;
+    color: var(--color-primary);
     font-weight: 600;
-    font-size: 1rem;
+    font-size: var(--font-size-base);
 }
 
 .notice-content {
@@ -1010,7 +992,7 @@
 
 .notice-content p {
     margin: 0;
-    color: #1e40af;
+    color: var(--color-primary);
     font-size: 0.875rem;
     line-height: 1.5;
     gap: 0.5rem;
@@ -1244,7 +1226,7 @@
     }
 
     .subject-name {
-        font-size: 1rem;
+        font-size: var(--font-size-base);
     }
 
     .booking-time {
@@ -1298,10 +1280,6 @@
         justify-content: center;
         display: flex;
         flex-direction: column;
-    }
-
-    .booking-card-wrapper:hover {
-        transform: none;
     }
 
     .booking-card-center {

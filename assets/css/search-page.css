@@ -1,6 +1,5 @@
 .search-page {
     padding: 3rem 0;
-    background: var(--gray-50);
     position: relative;
 }
 
@@ -465,7 +464,30 @@
     }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+	.btn-filter-toggle {
+        padding: 0.75rem 1.5rem;
+        font-size: 14px;
+        gap: 0.5rem;
+    }
+
+    .filter-toggle-wrapper {
+        margin: 1rem 0;
+    }
+
+	.search-page {
+		padding: 2rem 0;
+	}
+
+    .section-subtitle {
+        padding-left: 0;
+    }
+    
+    .section-title-wrapper {
+        flex-direction: row;
+        align-items: center;
+    }
+
     .tutors-section {
         padding: 1rem;
     }
@@ -617,19 +639,6 @@
     }
 }
 
-/* Mobile responsive for toggle button */
-@media (max-width: 640px) {
-    .btn-filter-toggle {
-        padding: 0.75rem 1.5rem;
-        font-size: 14px;
-        gap: 0.5rem;
-    }
-
-    .filter-toggle-wrapper {
-        margin: 1rem 0;
-    }
-}
-
 /* Featured & Regular Sections */
 .featured-section,
 .regular-section {
@@ -648,25 +657,25 @@
     margin-bottom: 1.5rem;
 }
 
-.search-results .icon-wrapper {
+.featured-section .icon-wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 39px;
-    height: 39px;
+    min-width: 40px;
+    height: 40px;
     background: rgba(245, 158, 11, 0.1);
     border-radius: 12px;
     color: #f59e0b;
 }
 
-.search-results .section-title {
+.featured-section .section-title {
     font-size: var(--font-size-base);
     font-weight: 600;
     color: #1f2937;
     margin: 0;
 }
 
-.search-results .section-subtitle {
+.featured-section .section-subtitle {
     font-size: var(--font-size-small);
     color: #6b7280;
     margin: 0;
@@ -693,8 +702,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 80px;
-    height: 80px;
+    width: 3rem;
+    height: 3rem;
     background: #f3f4f6;
     border-radius: 50%;
     color: #9ca3af;
@@ -702,30 +711,18 @@
 }
 
 .no-results-title {
-    font-size: 1.5rem;
+    font-size: var(--font-size-heading-4);
     font-weight: 700;
     color: #1f2937;
     margin-bottom: 0.75rem;
 }
 
 .no-results-desc {
-    font-size: 1rem;
+    font-size: var(--font-size-base);
     color: #6b7280;
     line-height: 1.6;
     margin-bottom: 2rem;
 }
-
-@media (max-width: 640px) {
-    .section-subtitle {
-        padding-left: 0;
-    }
-    
-    .section-title-wrapper {
-        flex-direction: row;
-        align-items: center;
-    }
-}
-
 /* Advanced Filter Modal Styles */
 
 /* Custom Select */

@@ -2,8 +2,8 @@
 	<div v-if="isOpen" class="modal-overlay" @click="noClose ? null : emit('close')">
 		<div class="modal-container" :class="sizeClass" @click.stop>
 			<div class="modal-content-wrapper format-scrollbar">
-				<div class="modal-header">
-					<button class="close-button" @click="emit('close')" v-if="!noClose">
+				<div class="modal-header" v-if="header && !noClose">
+					<button class="close-button" @click="emit('close')">
 						<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
 								d="M6 18L18 6M6 6l12 12" />
@@ -13,6 +13,15 @@
 						<h2 class="modal-title" v-if="title">{{ title }}</h2>
 						<p v-if="description" class="modal-description">{{ description }}</p>
 					</div>
+				</div>
+
+				<div class="modal-header" v-else>
+					<button class="close-button" @click="emit('close')">
+						<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+								d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
 				</div>
 				<!-- <div class="separation"></div> -->
 				<div class="modal-content" :class="{ 'padding-body': paddingBody }">
@@ -88,8 +97,8 @@ const sizeClass = computed(() => {
 }
 
 .modal-container {
-	background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-	border-radius: 24px;
+	background: white;
+	border-radius: 30px;
 	width: 100%;
 	max-width: 480px;
 	margin: 16px;
@@ -128,13 +137,13 @@ const sizeClass = computed(() => {
 	position: relative;
 	background: #ffffff;
 	border-bottom: none;
-	padding-bottom: 0.5rem;
+	padding-bottom: 0 !important;
 }
 
 .modal-title-container {
 	text-align: left;
 	width: 100%;
-	margin-top: 1rem;
+	margin-top: 0.5rem;
 }
 
 .modal-title {
@@ -211,8 +220,8 @@ const sizeClass = computed(() => {
 
 	.modal-container {
 		padding: 0;
-		margin: 8px;
-		max-height: calc(100vh - 16px);
+		margin: 16px; /* Keep margin on tablets */
+		max-height: calc(100vh - 32px);
 		border-radius: 20px;
 	}
 
@@ -223,17 +232,22 @@ const sizeClass = computed(() => {
 }
 
 @media (max-width: 640px) {
+	.modal-overlay {
+		align-items: flex-end; /* Align modal to bottom */
+	}
+
 	.modal-container {
 		padding: 0;
 		margin: 0;
-		max-height: 100vh;
+		max-height: 85vh; /* Limit height for bottom sheet feel */
 		width: 100%;
-		height: 100%;
-		border-radius: 0;
+		height: auto;
+		border-radius: 20px 20px 0 0; /* Round top corners only */
+		animation: modalSlideUpMobile 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncier slide up */
 	}
 
 	.modal-container::before {
-		border-radius: 0;
+		border-radius: 20px 20px 0 0;
 	}
 
 	.modal-header,
@@ -267,6 +281,16 @@ const sizeClass = computed(() => {
 	to {
 		transform: translateY(0) scale(1);
 		opacity: 1;
+	}
+}
+
+@keyframes modalSlideUpMobile {
+	from {
+		transform: translateY(100%);
+	}
+
+	to {
+		transform: translateY(0);
 	}
 }
 

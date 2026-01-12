@@ -31,7 +31,10 @@ interface _GlobalComponents {
   'NotificationPreview': typeof import("../../components/common/NotificationPreview.vue")['default']
   'SendMessage': typeof import("../../components/common/SendMessage.vue")['default']
   'TutorCard': typeof import("../../components/common/TutorCard.vue")['default']
+  'TutorCardFull': typeof import("../../components/common/TutorCardFull.vue")['default']
+  'BaseSpinner': typeof import("../../components/common/baseSpinner.vue")['default']
   'BookingCardList': typeof import("../../components/booking/BookingCardList.vue")['default']
+  'BookingFailed': typeof import("../../components/booking/BookingFailed.vue")['default']
   'BookingListStudent': typeof import("../../components/booking/BookingListStudent.vue")['default']
   'BookingListTutor': typeof import("../../components/booking/BookingListTutor.vue")['default']
   'BookingSuccess': typeof import("../../components/booking/BookingSuccess.vue")['default']
@@ -43,7 +46,10 @@ interface _GlobalComponents {
   'BookingReviewModal': typeof import("../../components/booking/ReviewModal.vue")['default']
   'LayoutFooter': typeof import("../../components/layout/Footer.vue")['default']
   'LayoutHeader': typeof import("../../components/layout/Header.vue")['default']
-  'LayoutMain': typeof import("../../components/layout/Main.vue")['default']
+  'MessageConversationItemSkeleton': typeof import("../../components/message/ConversationItemSkeleton.vue")['default']
+  'MessageDetail': typeof import("../../components/message/MessageDetail.vue")['default']
+  'MessageSkeleton': typeof import("../../components/message/MessageSkeleton.vue")['default']
+  'ProfileIdentityVerification': typeof import("../../components/profile/IdentityVerification.vue")['default']
   'ProfileOverviewNew': typeof import("../../components/profile/OverviewNew.vue")['default']
   'ProfileScheduleNew': typeof import("../../components/profile/ScheduleNew.vue")['default']
   'ProfileWalletBalance': typeof import("../../components/profile/WalletBalance.vue")['default']
@@ -96,7 +102,10 @@ interface _GlobalComponents {
   'LazyNotificationPreview': LazyComponent<typeof import("../../components/common/NotificationPreview.vue")['default']>
   'LazySendMessage': LazyComponent<typeof import("../../components/common/SendMessage.vue")['default']>
   'LazyTutorCard': LazyComponent<typeof import("../../components/common/TutorCard.vue")['default']>
+  'LazyTutorCardFull': LazyComponent<typeof import("../../components/common/TutorCardFull.vue")['default']>
+  'LazyBaseSpinner': LazyComponent<typeof import("../../components/common/baseSpinner.vue")['default']>
   'LazyBookingCardList': LazyComponent<typeof import("../../components/booking/BookingCardList.vue")['default']>
+  'LazyBookingFailed': LazyComponent<typeof import("../../components/booking/BookingFailed.vue")['default']>
   'LazyBookingListStudent': LazyComponent<typeof import("../../components/booking/BookingListStudent.vue")['default']>
   'LazyBookingListTutor': LazyComponent<typeof import("../../components/booking/BookingListTutor.vue")['default']>
   'LazyBookingSuccess': LazyComponent<typeof import("../../components/booking/BookingSuccess.vue")['default']>
@@ -108,7 +117,10 @@ interface _GlobalComponents {
   'LazyBookingReviewModal': LazyComponent<typeof import("../../components/booking/ReviewModal.vue")['default']>
   'LazyLayoutFooter': LazyComponent<typeof import("../../components/layout/Footer.vue")['default']>
   'LazyLayoutHeader': LazyComponent<typeof import("../../components/layout/Header.vue")['default']>
-  'LazyLayoutMain': LazyComponent<typeof import("../../components/layout/Main.vue")['default']>
+  'LazyMessageConversationItemSkeleton': LazyComponent<typeof import("../../components/message/ConversationItemSkeleton.vue")['default']>
+  'LazyMessageDetail': LazyComponent<typeof import("../../components/message/MessageDetail.vue")['default']>
+  'LazyMessageSkeleton': LazyComponent<typeof import("../../components/message/MessageSkeleton.vue")['default']>
+  'LazyProfileIdentityVerification': LazyComponent<typeof import("../../components/profile/IdentityVerification.vue")['default']>
   'LazyProfileOverviewNew': LazyComponent<typeof import("../../components/profile/OverviewNew.vue")['default']>
   'LazyProfileScheduleNew': LazyComponent<typeof import("../../components/profile/ScheduleNew.vue")['default']>
   'LazyProfileWalletBalance': LazyComponent<typeof import("../../components/profile/WalletBalance.vue")['default']>

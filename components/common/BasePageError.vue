@@ -73,7 +73,7 @@ const props = defineProps({
 });
 
 const goHome = () => {
-    navigateTo('/');
+return navigateTo('/');
 };
 </script>
 
@@ -115,7 +115,7 @@ const goHome = () => {
     border: none;
     border-radius: 12px;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: var(--font-size-base);
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);

@@ -247,8 +247,8 @@
 
 <script setup>
 definePageMeta({
-  middleware: 'auth',
-  layout: 'empty'
+	middleware: 'auth',
+	layout: 'empty'
 });
 
 const userStore = useUserStore();
@@ -260,22 +260,22 @@ const handleRegister = async () => {
     try {
         isLoading.value = true;
 
-        // Call API to update user role to Tutor (1)
+        // Call API to update user role to Tutor
         const response = await api.apiPut('me/setting', {
-            role: 1
+            role: 'tutor'
         });
 
         // Update user in store
         const currentUser = userStore.getUserData;
         if (currentUser) {
-            userStore.setUserData({ ...currentUser, role: 1 });
+            userStore.setUserData({ ...currentUser, role: 'tutor' });
         }
 
         // Show success message
         success('Chúc mừng! Bạn đã đăng ký trở thành gia sư thành công.');
 
         // Redirect to profile detail
-        navigateTo('/profile/detail');
+    return navigateTo('/profile/detail');
 
     } catch (error) {
         console.error('Error updating role:', error);
@@ -622,7 +622,7 @@ const handleRegister = async () => {
 }
 
 .illustration-text p {
-    font-size: 1rem;
+    font-size: var(--font-size-base);
     opacity: 0.9;
 }
 

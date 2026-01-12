@@ -1,6 +1,4 @@
 <template>
-	<!-- Loading overlay -->
-	<base-loading v-if="isLoading" />
 
 	<!-- About You Section -->
 	<div class="section-card heading-card" @click="showProfileDescriptionModal = true" v-if="!isLoading">
@@ -34,7 +32,7 @@
 	</div>
 
 	<!-- Personal Info Section -->
-	<div class="section-card infomation-user" @click="showPersonalInfoModal = true" v-if="!isLoading">
+	<div class="section-card infomation-user" v-if="!isLoading">
 		<div class="header-wrapper">
 			<div class="header-left">
 				<div class="icon-wrapper">
@@ -50,18 +48,141 @@
 					<span class="sub-title">Tối ưu hồ sơ để thu hút sự lựa chọn từ học sinh</span>
 				</div>
 			</div>
+			<div class="header-right">
+				<button class="btn-sm btn-secondary" @click="navigateTo('/setting')">
+					<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+						stroke-linejoin="round">
+						<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+						<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+					</svg>
+					<span>Chỉnh sửa</span>
+				</button>
+			</div>
 		</div>
-		<div class="section-content_preview section-card_detail">
-			<span>{{ form.first_name || form.last_name ? (form.first_name + ' ' + form.last_name) : 'Vui lòng click để nhập thông tin cá nhân' }}</span>
-			<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-				fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-			</svg>
+		<div class="main-content">
+			<div class="info-grid" v-if="userDataDetail.first_name || userDataDetail.last_name">
+				<div class="info-item">
+					<div class="info-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+							<circle cx="12" cy="7" r="4"></circle>
+						</svg>
+					</div>
+					<div class="info-content">
+						<span class="label">Họ và tên</span>
+						<span class="value">{{ userDataDetail.first_name }} {{ userDataDetail.last_name }}</span>
+					</div>
+				</div>
+				<div class="info-item">
+					<div class="info-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+							<polyline points="22,6 12,13 2,6"></polyline>
+						</svg>
+					</div>
+					<div class="info-content">
+						<span class="label">Email</span>
+						<span class="value">{{ userDataDetail.email }}</span>
+					</div>
+				</div>
+			</div>
+			<div class="add-new-item" @click="navigateTo('/setting')" v-else>
+				<div class="icon-wrapper">
+					<svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+						stroke-linejoin="round">
+						<path d="M5 12h14"></path>
+						<path d="M12 5v14"></path>
+					</svg>
+				</div>
+				<span class="title">Cập nhật thông tin</span>
+				<span class="sub-title">Hoàn thiện hồ sơ của bạn</span>
+			</div>
+		</div>
+	</div>
+
+	<!-- Identity Verification Section -->
+	<div class="section-card identity-verification" v-if="!isLoading">
+		<div class="header-wrapper">
+			<div class="header-left">
+				<div class="icon-wrapper">
+					<svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+						stroke-linejoin="round">
+						<rect x="3" y="4" width="18" height="16" rx="2"></rect>
+						<circle cx="9" cy="10" r="2"></circle>
+						<line x1="15" y1="8" x2="17" y2="8"></line>
+						<line x1="15" y1="12" x2="17" y2="12"></line>
+						<line x1="7" y1="16" x2="17" y2="16"></line>
+					</svg>
+				</div>
+				<div class="title-wrapper">
+					<span class="title-main">Xác minh danh tính</span>
+					<span class="sub-title">Xác minh để tăng độ tin cậy với học sinh</span>
+				</div>
+			</div>
+			<div class="header-right">
+				<button class="btn-sm btn-secondary" @click="showIdentityVerificationModal = true">
+					<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+						stroke-linejoin="round">
+						<path d="M5 12h14"></path>
+						<path d="M12 5v14"></path>
+					</svg>
+					<span>{{ userDataDetail.identity_document_images?.length > 0 ? 'Cập nhật' : 'Thêm mới' }}</span>
+				</button>
+			</div>
+		</div>
+		<div class="main-content">
+			<div class="identity-list" v-if="userDataDetail.identity_document_images?.length > 0">
+				<div class="identity-card section-card_detail" v-for="doc in userDataDetail.identity_document_images" :key="doc.id"
+					@click="showIdentityVerificationModal = true">
+					<div class="identity-header">
+						<div class="identity-left">
+							<div class="icon-wrapper">
+								<svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+									fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+									stroke-linejoin="round">
+									<rect x="3" y="4" width="18" height="16" rx="2"></rect>
+									<circle cx="9" cy="10" r="2"></circle>
+									<line x1="15" y1="8" x2="17" y2="8"></line>
+									<line x1="15" y1="12" x2="17" y2="12"></line>
+									<line x1="7" y1="16" x2="17" y2="16"></line>
+								</svg>
+							</div>
+							<div class="identity-info">
+								<span class="identity-name">{{ doc.identity_document_type?.name }}</span>
+								<span class="identity-side">{{ doc.side_label }}</span>
+							</div>
+						</div>
+					</div>
+					<div class="identity-image" v-if="doc.image_url" style="margin-top: 12px;">
+						<img :src="doc.image_url" alt="Document" style="height: 120px; width: auto; object-fit: contain; border-radius: 8px; border: 1px solid #eee;">
+					</div>
+				</div>
+			</div>
+
+			<div class="add-new-item" @click="showIdentityVerificationModal = true"
+				v-if="!userDataDetail.identity_document_images || userDataDetail.identity_document_images.length == 0">
+				<div class="icon-wrapper">
+					<svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+						stroke-linejoin="round">
+						<path d="M5 12h14"></path>
+						<path d="M12 5v14"></path>
+					</svg>
+				</div>
+				<span class="title">Thêm giấy tờ xác minh</span>
+				<span class="sub-title">Tăng độ tin cậy cho hồ sơ của bạn</span>
+			</div>
 		</div>
 	</div>
 
 	<!-- Video Intro Section -->
-	<div class="section-card video-intro" @click="showVideoModal = true" v-if="!isLoading">
+	<div class="section-card video-intro" v-if="!isLoading">
 		<div class="header-wrapper">
 			<div class="header-left">
 				<div class="icon-wrapper">
@@ -77,13 +198,35 @@
 					<span class="sub-title">Link video YouTube giới thiệu bản thân</span>
 				</div>
 			</div>
+			<div class="header-right">
+				<button class="btn-sm btn-secondary" @click="showVideoModal = true">
+					<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+						stroke-linejoin="round">
+						<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+						<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+					</svg>
+					<span>{{ userDataDetail.referral_link ? 'Cập nhật' : 'Thêm mới' }}</span>
+				</button>
+			</div>
 		</div>
-		<div class="section-content_preview section-card_detail">
-			<span>{{ form.referral_link ? form.referral_link : 'Vui lòng click để nhập link video' }}</span>
-			<svg class="icon-sm" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-				fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-			</svg>
+		<div class="main-content">
+			<div class="video-preview-container" v-if="userDataDetail.referral_link">
+				<iframe :src="getEmbedUrl(userDataDetail.referral_link)" width="100%" height="315" frameborder="0"
+					allowfullscreen style="border-radius: 12px;"></iframe>
+			</div>
+			<div class="add-new-item" @click="showVideoModal = true" v-else>
+				<div class="icon-wrapper">
+					<svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+						stroke-linejoin="round">
+						<path d="M5 12h14"></path>
+						<path d="M12 5v14"></path>
+					</svg>
+				</div>
+				<span class="title">Thêm video giới thiệu</span>
+				<span class="sub-title">Thu hút học viên bằng video</span>
+			</div>
 		</div>
 	</div>
 
@@ -624,14 +767,14 @@
 					</svg>
 					<span>Hủy</span>
 				</button>
-				<button class="btn-md btn-primary" @click="addNewEducation" :disabled="!isValidAddEducationInput">
+				<button :class="['btn-md', 'btn-primary', { 'btn-loading': isAddingEducation }]" @click="addNewEducation" :disabled="!isValidAddEducationInput || isAddingEducation">
 					<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
 						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
 						stroke-linejoin="round">
 						<path d="M5 12h14"></path>
 						<path d="M12 5v14"></path>
 					</svg>
-					<span>Thêm</span>
+					<span>{{ isAddingEducation ? 'Đang thêm...' : 'Thêm' }}</span>
 				</button>
 			</div>
 		</div>
@@ -654,7 +797,7 @@
 				<label class="file-label-top text-base">Ảnh bằng cấp *</label>
 				<div class="up-file-wrapper">
 					<div v-if="editEducationCertificatePreview" class="preview-image">
-						<img :src="editEducationCertificatePreview" alt="Preview bằng cấp">
+						<img :src="showImage(editEducationCertificatePreview)" alt="Preview bằng cấp">
 						<div class="actions-wrapper">
 							<div class="actions">
 								<button type="button" @click.prevent="triggerFile('editEducationCertificate')">
@@ -707,12 +850,22 @@
 					</svg>
 					<span>Hủy</span>
 				</button>
-				<button class="btn-md btn-primary" @click="updateEducation" :disabled="!isValidEditEducationInput">
+				<button :class="['btn-md', 'btn-danger', { 'btn-loading': isDeletingEducation }]" @click="deleteEducation(userDataAction.education.id)" :disabled="isDeletingEducation">
+					<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+						viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+						stroke-linecap="round" stroke-linejoin="round">
+						<path d="M3 6h18"></path>
+						<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+						<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+					</svg>
+					<span>{{ isDeletingEducation ? 'Đang xóa...' : 'Xóa' }}</span>
+				</button>
+				<button :class="['btn-md', 'btn-primary', { 'btn-loading': isUpdatingEducation }]" @click="updateEducation" :disabled="!isValidEditEducationInput || isUpdatingEducation">
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
 						stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<polyline points="20,6 9,17 4,12"></polyline>
 					</svg>
-					<span>Lưu thay đổi</span>
+					<span>{{ isUpdatingEducation ? 'Đang lưu...' : 'Lưu thay đổi' }}</span>
 				</button>
 			</div>
 		</div>
@@ -741,14 +894,14 @@
 					</svg>
 					<span>Hủy</span>
 				</button>
-				<button class="btn-md btn-primary" @click="addNewExperience" :disabled="!isValidAddExperienceInput">
+				<button :class="['btn-md', 'btn-primary', { 'btn-loading': isAddingExperience }]" @click="addNewExperience" :disabled="!isValidAddExperienceInput || isAddingExperience">
 					<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
 						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
 						stroke-linejoin="round">
 						<path d="M5 12h14"></path>
 						<path d="M12 5v14"></path>
 					</svg>
-					<span>Thêm</span>
+					<span>{{ isAddingExperience ? 'Đang thêm...' : 'Thêm' }}</span>
 				</button>
 			</div>
 		</div>
@@ -777,12 +930,22 @@
 					</svg>
 					<span>Hủy</span>
 				</button>
-				<button class="btn-md btn-primary" @click="updateExperience" :disabled="!isValidEditExperienceInput">
+				<button :class="['btn-md', 'btn-danger', { 'btn-loading': isDeletingExperience }]" @click="deleteExperience(userDataAction.experience.id)" :disabled="isDeletingExperience">
+					<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+						viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+						stroke-linecap="round" stroke-linejoin="round">
+						<path d="M3 6h18"></path>
+						<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+						<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+					</svg>
+					<span>{{ isDeletingExperience ? 'Đang xóa...' : 'Xóa' }}</span>
+				</button>
+				<button :class="['btn-md', 'btn-primary', { 'btn-loading': isUpdatingExperience }]" @click="updateExperience" :disabled="!isValidEditExperienceInput || isUpdatingExperience">
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
 						stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<polyline points="20,6 9,17 4,12"></polyline>
 					</svg>
-					<span>Lưu thay đổi</span>
+					<span>{{ isUpdatingExperience ? 'Đang lưu...' : 'Lưu thay đổi' }}</span>
 				</button>
 			</div>
 		</div>
@@ -827,15 +990,15 @@
 					</svg>
 					<span>Hủy</span>
 				</button>
-				<button class="btn-md btn-primary" @click="addNewSubject"
-					:disabled="!isValidAddSubjectInput || isLoading">
+				<button :class="['btn-md', 'btn-primary', { 'btn-loading': isAddingSubject }]" @click="addNewSubject"
+					:disabled="!isValidAddSubjectInput || isAddingSubject">
 					<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
 						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
 						stroke-linejoin="round">
 						<path d="M5 12h14"></path>
 						<path d="M12 5v14"></path>
 					</svg>
-					<span>Thêm</span>
+					<span>{{ isAddingSubject ? 'Đang thêm...' : 'Thêm' }}</span>
 				</button>
 			</div>
 		</div>
@@ -878,7 +1041,17 @@
 					</svg>
 					<span>Hủy</span>
 				</button>
-				<button class="btn-md btn-primary" @click="updateSubject" :disabled="!isValidEditSubjectInput">
+				<button :class="['btn-md', 'btn-danger', { 'btn-loading': isDeletingSubject }]" @click="deleteSubject(userDataAction.subject.id)" :disabled="isDeletingSubject">
+					<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+						viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+						stroke-linecap="round" stroke-linejoin="round">
+						<path d="M3 6h18"></path>
+						<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+						<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+					</svg>
+					<span>{{ isDeletingSubject ? 'Đang xóa...' : 'Xóa' }}</span>
+				</button>
+				<button :class="['btn-md', 'btn-primary', { 'btn-loading': isUpdatingSubject }]" @click="updateSubject" :disabled="!isValidEditSubjectInput || isUpdatingSubject">
 					<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
 						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
 						stroke-linejoin="round">
@@ -886,7 +1059,7 @@
 						<polyline points="17,21 17,13 7,13 7,21"></polyline>
 						<polyline points="7,3 7,8 15,8"></polyline>
 					</svg>
-					<span>Cập nhật</span>
+					<span>{{ isUpdatingSubject ? 'Đang cập nhật...' : 'Cập nhật' }}</span>
 				</button>
 			</div>
 		</div>
@@ -918,15 +1091,15 @@
 					</svg>
 					<span>Hủy</span>
 				</button>
-				<button class="btn-md btn-primary" @click="addNewLanguage"
-					:disabled="!isValidAddLanguageInput || isLoading">
+				<button :class="['btn-md', 'btn-primary', { 'btn-loading': isAddingLanguage }]" @click="addNewLanguage"
+					:disabled="!isValidAddLanguageInput || isAddingLanguage">
 					<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
 						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
 						stroke-linejoin="round">
 						<path d="M5 12h14"></path>
 						<path d="M12 5v14"></path>
 					</svg>
-					<span>Thêm</span>
+					<span>{{ isAddingLanguage ? 'Đang thêm...' : 'Thêm' }}</span>
 				</button>
 			</div>
 		</div>
@@ -958,8 +1131,18 @@
 					</svg>
 					<span>Hủy</span>
 				</button>
-				<button class="btn-md btn-primary" @click="updateLanguage"
-					:disabled="!isValidEditLanguageInput || isLoading">
+				<button :class="['btn-md', 'btn-danger', { 'btn-loading': isDeletingLanguage }]" @click="handleDeleteLanguage(selectedLanguageId)" :disabled="isDeletingLanguage">
+					<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+						viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+						stroke-linecap="round" stroke-linejoin="round">
+						<path d="M3 6h18"></path>
+						<path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+						<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+					</svg>
+					<span>{{ isDeletingLanguage ? 'Đang xóa...' : 'Xóa' }}</span>
+				</button>
+				<button :class="['btn-md', 'btn-primary', { 'btn-loading': isUpdatingLanguage }]" @click="updateLanguage"
+					:disabled="!isValidEditLanguageInput || isUpdatingLanguage">
 					<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
 						fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
 						stroke-linejoin="round">
@@ -967,7 +1150,7 @@
 						<polyline points="17,21 17,13 7,13 7,21"></polyline>
 						<polyline points="7,3 7,8 15,8"></polyline>
 					</svg>
-					<span>Cập nhật</span>
+					<span>{{ isUpdatingLanguage ? 'Đang cập nhật...' : 'Cập nhật' }}</span>
 				</button>
 			</div>
 		</div>
@@ -1024,93 +1207,12 @@
 		</div>
 
 		<div class="modal-footer">
-			<button class="btn-md btn-primary" @click="saveProfile" :disabled="!isProfileDescriptionValid">
+			<button :class="['btn-md', 'btn-primary', { 'btn-loading': isSavingProfile }]" @click="saveProfile" :disabled="!isProfileDescriptionValid || isSavingProfile">
 				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
 					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<polyline points="20,6 9,17 4,12"></polyline>
 				</svg>
-				<span>Lưu thay đổi</span>
-			</button>
-		</div>
-	</base-modal>
-
-	<!-- Modal: Thông Tin Cá Nhân -->
-	<base-modal :is-open="showPersonalInfoModal" title="Thông Tin Cá Nhân"
-		description="Thông tin cá nhân là thông tin chính xác nhất về bạn, giúp khách hàng hiểu rõ hơn về bạn và chọn bạn để dạy con của họ"
-		@close="showPersonalInfoModal = false">
-		<div class="form-grid">
-			<div class="form-group">
-				<base-input v-model="form.first_name" required="true" label="Họ" placeholder="Nguyễn"
-					:error="formErrors.first_name" @update:modelValue="clearError('first_name')"></base-input>
-			</div>
-			<div class="form-group">
-				<base-input v-model="form.last_name" required="true" label="Tên" placeholder="Văn A"
-					:error="formErrors.last_name" @update:modelValue="clearError('last_name')"></base-input>
-			</div>
-			<div class="form-group">
-				<base-select v-model="form.sex" required="true" :options="genderOptions" label="Giới tính"
-					placeholder="Chọn giới tính" :error="formErrors.sex"
-					@update:modelValue="clearError('sex')"></base-select>
-			</div>
-			<div class="form-group">
-				<base-input v-model="form.phone" required="true" label="Số điện thoại" placeholder="0123456789"
-					:error="formErrors.phone" @update:modelValue="clearError('phone')"></base-input>
-			</div>
-			<div class="form-group">
-				<base-input v-model="form.email" required="true" label="Email" placeholder="example@email.com"
-					type="email" :error="formErrors.email" @update:modelValue="clearError('email')"></base-input>
-			</div>
-			<div class="form-group">
-				<base-input v-model="form.cccd" label="Số CCCD" placeholder="001234567890" :error="formErrors.cccd"
-					@update:modelValue="clearError('cccd')"></base-input>
-			</div>
-			<div class="form-group">
-				<base-select v-model="form.provinces_id" :options="provinceOptions" label="Tỉnh/Thành phố"
-					placeholder="Chọn tỉnh/thành phố" :error="formErrors.provinces_id"
-					@update:modelValue="clearError('provinces_id')">
-				</base-select>
-			</div>
-
-		</div>
-		<div class="note-group">
-			<div class="note-wrapper">
-				<div class="note-wrapper_header">
-					<i class="feather feather-check">
-						<svg class="icon-mini" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-							viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-							stroke-linecap="round" stroke-linejoin="round">
-							<polyline points="20 6 9 17 4 12"></polyline>
-						</svg>
-					</i>
-					<span>Nên làm</span>
-				</div>
-				<span>Ghi rõ địa chỉ (khu vực dạy), có thể kèm hình thức linh hoạt → Ví dụ: Nhận dạy tại Q.3, Q.10
-					(TP.HCM)</span>
-			</div>
-
-			<div class="note-wrapper">
-				<div class="note-wrapper_header">
-					<i class="feather feather-x">
-						<svg class="icon-mini" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-							viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-							stroke-linecap="round" stroke-linejoin="round">
-							<line x1="18" y1="6" x2="6" y2="18"></line>
-							<line x1="6" y1="6" x2="18" y2="18"></line>
-						</svg>
-					</i>
-					<span>Không nên làm</span>
-				</div>
-				<span>Ghi mơ hồ, không rõ khu vực: “ở gần trung tâm”, “ở xa thì tùy”. Viết thiếu nghiêm túc: “dạy đâu
-					cũng được miễn có tiền”, “nhà ở đâu thì dạy đó”</span>
-			</div>
-		</div>
-		<div class="modal-footer">
-			<button class="btn-md btn-primary" @click="saveProfile" :disabled="!isPersonalInfoValid">
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<polyline points="20,6 9,17 4,12"></polyline>
-				</svg>
-				<span>Lưu thay đổi</span>
+				<span>{{ isSavingProfile ? 'Đang lưu...' : 'Lưu thay đổi' }}</span>
 			</button>
 		</div>
 	</base-modal>
@@ -1162,20 +1264,28 @@
 		</div>
 
 		<div class="modal-footer">
-			<button class="btn-md btn-primary" @click="saveProfile" :disabled="!isVideoIntroValid">
+			<button :class="['btn-md', 'btn-primary', { 'btn-loading': isSavingProfile }]" @click="saveProfile" :disabled="!isVideoIntroValid || isSavingProfile">
 				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
 					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<polyline points="20,6 9,17 4,12"></polyline>
 				</svg>
-				<span>Lưu thay đổi</span>
+				<span>{{ isSavingProfile ? 'Đang lưu...' : 'Lưu thay đổi' }}</span>
 			</button>
 		</div>
+	</base-modal>
+
+	<!-- Modal: Identity Verification -->
+	<base-modal :is-open="showIdentityVerificationModal" :header="false" size="large"
+		@close="showIdentityVerificationModal = false">
+		<IdentityVerification :existing-documents="userDataDetail.identity_document_images || []"
+			@close="showIdentityVerificationModal = false" @success="handleIdentitySuccess" />
 	</base-modal>
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
 import { useFormValidation } from '@/composables/useFormValidation';
+import IdentityVerification from '@/components/profile/IdentityVerification.vue';
 
 // ============================================
 // SETUP
@@ -1183,8 +1293,8 @@ import { useFormValidation } from '@/composables/useFormValidation';
 const { api } = useApi();
 const { success, error: notifyError } = useNotification();
 const configStore = useConfigStore();
-const { genderOptions } = useConfig();
 const { formErrors, handleValidationError, clearError, clearAllErrors } = useFormValidation();
+const { showImage } = useHelper();
 
 const props = defineProps({
 	userDataDetail: {
@@ -1199,8 +1309,8 @@ const emit = defineEmits(['update-data']);
 // STATE FOR PROFILE INFO
 // ============================================
 const showProfileDescriptionModal = ref(false);
-const showPersonalInfoModal = ref(false);
 const showVideoModal = ref(false);
+const showIdentityVerificationModal = ref(false);
 
 const form = ref({
 	about_you: '',
@@ -1210,7 +1320,6 @@ const form = ref({
 	sex: '',
 	phone: '',
 	email: '',
-	cccd: '',
 	provinces_id: '',
 });
 
@@ -1225,7 +1334,6 @@ const loadProfileInfo = () => {
 		sex: userData.sex ?? '',
 		phone: userData.phone || '',
 		email: userData.email || '',
-		cccd: userData.cccd || '',
 		provinces_id: userData.provinces_id || '',
 	};
 };
@@ -1238,16 +1346,6 @@ watch(() => props.userDataDetail, () => {
 // Computed for validation
 const isProfileDescriptionValid = computed(() => {
 	return !!form.value.about_you && form.value.about_you.trim().length > 0;
-});
-
-const isPersonalInfoValid = computed(() => {
-	return (
-		!!form.value.first_name &&
-		!!form.value.last_name &&
-		form.value.sex !== '' &&
-		!!form.value.phone &&
-		!!form.value.email
-	);
 });
 
 const isVideoIntroValid = computed(() => {
@@ -1266,21 +1364,11 @@ const youtubeEmbedUrl = computed(() => {
 
 // Save Profile Info
 const saveProfile = async () => {
-	isLoading.value = true;
+	isSavingProfile.value = true;
 	clearAllErrors();
 
 	try {
 		const formData = new FormData();
-
-		const userData = props.userDataDetail || {};
-
-		formData.append('first_name', form.value.first_name);
-		formData.append('last_name', form.value.last_name);
-		formData.append('phone', form.value.phone);
-		formData.append('email', form.value.email);
-		formData.append('cccd', form.value.cccd);
-		formData.append('sex', form.value.sex ? 1 : 0);
-		formData.append('provinces_id', form.value.provinces_id);
 
 		// Updated fields
 		formData.append('about_you', form.value.about_you);
@@ -1291,7 +1379,6 @@ const saveProfile = async () => {
 			emit('update-data', response.data);
 			success('Cập nhật hồ sơ thành công!');
 			showProfileDescriptionModal.value = false;
-			showPersonalInfoModal.value = false;
 			showVideoModal.value = false;
 		} else {
 			notifyError('Cập nhật hồ sơ thất bại!');
@@ -1299,14 +1386,26 @@ const saveProfile = async () => {
 	} catch (error) {
 		handleValidationError(error, 'Có lỗi xảy ra khi lưu hồ sơ!');
 	} finally {
-		isLoading.value = false;
+		isSavingProfile.value = false;
+	}
+};
+
+const handleIdentitySuccess = (newDocuments) => {
+	showIdentityVerificationModal.value = false;
+	if (newDocuments && newDocuments.length > 0) {
+		const currentDocs = props.userDataDetail.identity_document_images || [];
+		const updatedDocs = [...currentDocs, ...newDocuments];
+		
+		emit('update-data', {
+			...props.userDataDetail,
+			identity_document_images: updatedDocs
+		});
 	}
 };
 
 // ============================================
 // COMPUTED
 // ============================================
-const provinceOptions = computed(() => configStore.configuration?.provinces || []);
 const educationLevels = ref([]);
 
 watch(
@@ -1328,7 +1427,6 @@ const selectedLanguage = ref({
 const subjectsConfig = computed(() => configStore.configuration?.subjects || []);
 const languagesConfig = computed(() => configStore.configuration?.languages || []);
 const levelOptions = computed(() => configStore.configuration?.level_languages || []);
-const userSubjects = computed(() => props.userDataDetail?.user_subjects || []);
 
 const listSubjects = computed(() => {
 	const addedIds = (props.userDataDetail.user_subjects || []).map((s) => s.subject_id);
@@ -1375,6 +1473,19 @@ const isValidEditSubjectInput = computed(() => {
 // STATE
 // ============================================
 const isLoading = ref(false);
+const isSavingProfile = ref(false);
+const isAddingEducation = ref(false);
+const isUpdatingEducation = ref(false);
+const isDeletingEducation = ref(false);
+const isAddingExperience = ref(false);
+const isUpdatingExperience = ref(false);
+const isDeletingExperience = ref(false);
+const isAddingSubject = ref(false);
+const isUpdatingSubject = ref(false);
+const isDeletingSubject = ref(false);
+const isAddingLanguage = ref(false);
+const isUpdatingLanguage = ref(false);
+const isDeletingLanguage = ref(false);
 
 // Modal states
 const modals = reactive({
@@ -1487,12 +1598,6 @@ const userDataAction = reactive({
 // HELPER FUNCTIONS
 // ============================================
 
-// Ensure array helper
-const ensureArray = (data) => {
-	if (!data) return [];
-	return Array.isArray(data) ? data : Object.values(data);
-};
-
 // Update helper
 const updateUserData = async (key, updater) => {
 	isLoading.value = true;
@@ -1551,6 +1656,16 @@ const revokePreview = (preview) => {
 	if (preview) URL.revokeObjectURL(preview);
 };
 
+const getEmbedUrl = (url) => {
+	if (!url) return '';
+	const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+	const match = url.match(regex);
+	if (match && match[1]) {
+		return `https://www.youtube.com/embed/${match[1]}`;
+	}
+	return '';
+};
+
 // ============================================
 // EDUCATION HANDLERS
 // ============================================
@@ -1561,28 +1676,33 @@ const showEditEducation = (data) => {
 };
 
 const addNewEducation = async () => {
-	const formData = new FormData();
-	Object.entries(newEducation).forEach(([key, value]) => {
-		if (value) formData.append(key, value);
-	});
+	isAddingEducation.value = true;
+	try {
+		const formData = new FormData();
+		Object.entries(newEducation).forEach(([key, value]) => {
+			if (value) formData.append(key, value);
+		});
 
-	const response = await apiCall(
-		'apiPostFormData',
-		'me/education',
-		formData,
-		'Thêm học vấn thành công!',
-		'Thêm học vấn thất bại!'
-	);
+		const response = await apiCall(
+			'apiPostFormData',
+			'me/education',
+			formData,
+			'Thêm học vấn thành công!',
+			'Thêm học vấn thất bại!'
+		);
 
-	updateUserData('user_educations', (items) => [...items, response.data]);
-	modals.addEducation = false;
-	Object.assign(newEducation, { school_name: '', major: '', time: '', description: '', certificate: null });
-	revokePreview(educationCertificatePreview.value);
-	educationCertificatePreview.value = null;
+		updateUserData('user_educations', (items) => [...items, response.data]);
+		modals.addEducation = false;
+		Object.assign(newEducation, { school_name: '', major: '', time: '', description: '', certificate: null });
+		revokePreview(educationCertificatePreview.value);
+		educationCertificatePreview.value = null;
+	} finally {
+		isAddingEducation.value = false;
+	}
 };
 
 const updateEducation = async () => {
-	isLoading.value = true;
+	isUpdatingEducation.value = true;
 	try {
 		const formData = new FormData();
 		Object.entries(userDataAction.education).forEach(([key, value]) => {
@@ -1605,17 +1725,17 @@ const updateEducation = async () => {
 		revokePreview(editEducationCertificatePreview.value);
 		editEducationCertificatePreview.value = null;
 	} finally {
-		isLoading.value = false;
+		isUpdatingEducation.value = false;
 	}
 };
 
 const deleteEducation = async (id) => {
-	isLoading.value = true;
+	isDeletingEducation.value = true;
 	try {
 		await apiCall('apiDelete', `me/education/${id}`, null, 'Xóa học vấn thành công!', 'Xóa học vấn thất bại!');
 		updateUserData('user_educations', (items) => items.filter(item => item.id !== id));
 	} finally {
-		isLoading.value = false;
+		isDeletingEducation.value = false;
 	}
 };
 
@@ -1628,41 +1748,51 @@ const showEditExperience = (data) => {
 };
 
 const addNewExperience = async () => {
-	const response = await apiCall(
-		'apiPost',
-		'me/experience',
-		newExperience,
-		'Thêm kinh nghiệm thành công!',
-		'Thêm kinh nghiệm thất bại!'
-	);
+	isAddingExperience.value = true;
+	try {
+		const response = await apiCall(
+			'apiPost',
+			'me/experience',
+			newExperience,
+			'Thêm kinh nghiệm thành công!',
+			'Thêm kinh nghiệm thất bại!'
+		);
 
-	updateUserData('user_experiences', (items) => [...items, response.data]);
-	modals.addExperience = false;
-	Object.assign(newExperience, { name: '', position: '', time: '', description: '' });
+		updateUserData('user_experiences', (items) => [...items, response.data]);
+		modals.addExperience = false;
+		Object.assign(newExperience, { name: '', position: '', time: '', description: '' });
+	} finally {
+		isAddingExperience.value = false;
+	}
 };
 
 const updateExperience = async () => {
-	const response = await apiCall(
-		'apiPut',
-		'me/experience',
-		userDataAction.experience,
-		'Cập nhật kinh nghiệm thành công!',
-		'Cập nhật kinh nghiệm thất bại!'
-	);
+	isUpdatingExperience.value = true;
+	try {
+		const response = await apiCall(
+			'apiPut',
+			'me/experience',
+			userDataAction.experience,
+			'Cập nhật kinh nghiệm thành công!',
+			'Cập nhật kinh nghiệm thất bại!'
+		);
 
-	updateUserData('user_experiences', (items) =>
-		items.map(item => item.id === response.data.id ? response.data : item)
-	);
-	modals.editExperience = false;
+		updateUserData('user_experiences', (items) =>
+			items.map(item => item.id === response.data.id ? response.data : item)
+		);
+		modals.editExperience = false;
+	} finally {
+		isUpdatingExperience.value = false;
+	}
 };
 
 const deleteExperience = async (id) => {
-	isLoading.value = true;
+	isDeletingExperience.value = true;
 	try {
 		await apiCall('apiDelete', `me/experience/${id}`, null, 'Xóa kinh nghiệm thành công!', 'Xóa kinh nghiệm thất bại!');
 		updateUserData('user_experiences', (items) => items.filter(item => item.id !== id));
 	} finally {
-		isLoading.value = false;
+		isDeletingExperience.value = false;
 	}
 };
 
@@ -1701,53 +1831,68 @@ const toggleLevelSelection = (level) => {
 };
 
 const addNewSubject = async () => {
-	const levels = selectedLevelsOfSubject.value.map(levelId => ({
-		level_id: levelId,
-		price: educationLevels.value.find(l => l.id === levelId).price
-	}));
+	isAddingSubject.value = true;
+	try {
+		const levels = selectedLevelsOfSubject.value.map(levelId => ({
+			level_id: levelId,
+			price: educationLevels.value.find(l => l.id === levelId).price
+		}));
 
-	const response = await apiCall(
-		'apiPost',
-		'me/subject',
-		{ subject_id: newSubject.id, years_of_experience: newSubject.years_of_experience, levels },
-		'Thêm môn học thành công!',
-		'Thêm môn học thất bại!'
-	);
+		const response = await apiCall(
+			'apiPost',
+			'me/subject',
+			{ subject_id: newSubject.id, years_of_experience: newSubject.years_of_experience, levels },
+			'Thêm môn học thành công!',
+			'Thêm môn học thất bại!'
+		);
 
-	updateUserData('user_subjects', (items) => [...items, response.data]);
-	modals.addSubject = false;
-	Object.assign(newSubject, { id: '', name: '', years_of_experience: '', levels: [] });
-	selectedLevelsOfSubject.value = [];
+		updateUserData('user_subjects', (items) => [...items, response.data]);
+		modals.addSubject = false;
+		Object.assign(newSubject, { id: '', name: '', years_of_experience: '', levels: [] });
+		selectedLevelsOfSubject.value = [];
+	} finally {
+		isAddingSubject.value = false;
+	}
 };
 
 const updateSubject = async () => {
-	const levels = selectedLevelsOfSubject.value.map(levelId => ({
-		level_id: levelId,
-		price: educationLevels.value.find(l => l.id === levelId).price
-	}));
+	isUpdatingSubject.value = true;
+	try {
+		const levels = selectedLevelsOfSubject.value.map(levelId => ({
+			level_id: levelId,
+			price: educationLevels.value.find(l => l.id === levelId).price
+		}));
 
-	const response = await apiCall(
-		'apiPut',
-		'me/subject',
-		{
-			user_subject_id: userDataAction.subject.id,
-			subject_id: userDataAction.subject.subject_id,
-			years_of_experience: userDataAction.subject.years_of_experience,
-			levels
-		},
-		'Cập nhật môn học thành công!',
-		'Cập nhật môn học thất bại!'
-	);
+		const response = await apiCall(
+			'apiPut',
+			'me/subject',
+			{
+				user_subject_id: userDataAction.subject.id,
+				subject_id: userDataAction.subject.subject_id,
+				years_of_experience: userDataAction.subject.years_of_experience,
+				levels
+			},
+			'Cập nhật môn học thành công!',
+			'Cập nhật môn học thất bại!'
+		);
 
-	updateUserData('user_subjects', (items) =>
-		items.map(item => item.id === response.data.id ? response.data : item)
-	);
-	modals.editSubject = false;
+		updateUserData('user_subjects', (items) =>
+			items.map(item => item.id === response.data.id ? response.data : item)
+		);
+		modals.editSubject = false;
+	} finally {
+		isUpdatingSubject.value = false;
+	}
 };
 
 const deleteSubject = async (id) => {
-	await apiCall('apiDelete', `me/subject/${id}`, null, 'Xóa môn học thành công!', 'Xóa môn học thất bại!');
-	updateUserData('user_subjects', (items) => items.filter(item => item.id !== id));
+	isDeletingSubject.value = true;
+	try {
+		await apiCall('apiDelete', `me/subject/${id}`, null, 'Xóa môn học thành công!', 'Xóa môn học thất bại!');
+		updateUserData('user_subjects', (items) => items.filter(item => item.id !== id));
+	} finally {
+		isDeletingSubject.value = false;
+	}
 };
 
 // ============================================
@@ -1765,37 +1910,52 @@ const handleEditLanguage = (language) => {
 };
 
 const addNewLanguage = async () => {
-	const response = await apiCall(
-		'apiPost',
-		'me/languages',
-		newLanguage.value,
-		'Thêm ngôn ngữ thành công!',
-		'Thêm ngôn ngữ thất bại!'
-	);
+	isAddingLanguage.value = true;
+	try {
+		const response = await apiCall(
+			'apiPost',
+			'me/languages',
+			newLanguage.value,
+			'Thêm ngôn ngữ thành công!',
+			'Thêm ngôn ngữ thất bại!'
+		);
 
-	updateUserData('user_languages', (items) => [...items, response.data]);
-	modals.addLanguage = false;
-	newLanguage.value = { language_id: '', level_language_id: '', is_native: false };
+		updateUserData('user_languages', (items) => [...items, response.data]);
+		modals.addLanguage = false;
+		newLanguage.value = { language_id: '', level_language_id: '', is_native: false };
+	} finally {
+		isAddingLanguage.value = false;
+	}
 };
 
 const updateLanguage = async () => {
-	const response = await apiCall(
-		'apiPut',
-		`me/languages/${selectedLanguageId.value}`,
-		selectedLanguage.value,
-		'Cập nhật ngôn ngữ thành công!',
-		'Cập nhật ngôn ngữ thất bại!'
-	);
+	isUpdatingLanguage.value = true;
+	try {
+		const response = await apiCall(
+			'apiPut',
+			`me/languages/${selectedLanguageId.value}`,
+			selectedLanguage.value,
+			'Cập nhật ngôn ngữ thành công!',
+			'Cập nhật ngôn ngữ thất bại!'
+		);
 
-	updateUserData('user_languages', (items) =>
-		items.map(item => item.id === selectedLanguageId.value ? response.data : item)
-	);
-	modals.editLanguage = false;
+		updateUserData('user_languages', (items) =>
+			items.map(item => item.id === selectedLanguageId.value ? response.data : item)
+		);
+		modals.editLanguage = false;
+	} finally {
+		isUpdatingLanguage.value = false;
+	}
 };
 
 const handleDeleteLanguage = async (id) => {
-	await apiCall('apiDelete', `me/languages/${id}`, null, 'Xóa ngôn ngữ thành công!', 'Xóa ngôn ngữ thất bại!');
-	updateUserData('user_languages', (items) => items.filter(item => item.id !== id));
+	isDeletingLanguage.value = true;
+	try {
+		await apiCall('apiDelete', `me/languages/${id}`, null, 'Xóa ngôn ngữ thành công!', 'Xóa ngôn ngữ thất bại!');
+		updateUserData('user_languages', (items) => items.filter(item => item.id !== id));
+	} finally {
+		isDeletingLanguage.value = false;
+	}
 };
 
 // ============================================
@@ -1899,4 +2059,167 @@ watch(() => userDataAction.education.certificate, (file) => {
 
 <style scoped>
 @import url('~/assets/css/profileNew.css');
+
+.verification-status-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.verification-status-main {
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.verification-status-sub {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+/* Identity Verification Styles */
+.identity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.identity-card {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.identity-card:hover {
+    border-color: var(--color-primary);
+}
+
+.identity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.identity-left {
+    display: flex;
+    gap: 12px;
+}
+
+.identity-right {
+    display: flex;
+    align-items: center;
+}
+
+.identity-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.identity-name {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: var(--font-size-base);
+}
+
+.identity-side {
+    font-size: var(--font-size-mini);
+    color: #6b7280;
+}
+
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: var(--font-size-mini);
+    font-weight: 600;
+}
+
+.status-badge.approved {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-badge.pending {
+    background-color: #fef9c3;
+    color: #854d0e;
+}
+
+.status-badge.rejected {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.identity-image img {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    transition: transform 0.2s;
+}
+
+.identity-image img:hover {
+    transform: scale(1.05);
+}
+
+/* Info Grid Styles */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s;
+}
+
+.info-item:hover {
+    background: #fff;
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.info-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--color-primary);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.info-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.info-item .label {
+    font-size: var(--font-size-mini);
+    color: #6b7280;
+}
+
+.info-item .value {
+    font-weight: 500;
+    color: #1f2937;
+	font-size: var(--font-size-small);
+}
+
+@media (max-width: 640px) {
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Video Preview Styles */
+.video-preview-container {
+    margin-top: 12px;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #000;
+}
 </style>

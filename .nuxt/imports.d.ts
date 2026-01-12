@@ -32,6 +32,7 @@ export { definePageMeta } from '../node_modules/nuxt/dist/pages/runtime/composab
 export { defineLazyHydrationComponent } from '#app/composables/lazy-hydration';
 export { useApi } from '../composables/useApi';
 export { useAuth } from '../composables/useAuth';
+export { useAuthApi } from '../composables/useAuthApi';
 export { useAuthCookie } from '../composables/useAuthCookie';
 export { useBookingSession } from '../composables/useBookingSession';
 export { useBrowserDetection } from '../composables/useBrowserDetection';
@@ -41,7 +42,9 @@ export { useFormValidation } from '../composables/useFormValidation';
 export { useHelper } from '../composables/useHelper';
 export { useNotification } from '../composables/useNotification';
 export { usePay } from '../composables/usePay';
+export { useReverb, useDualWebSocket } from '../composables/useReverb';
 export { useSessionService } from '../composables/useSessionService';
+export { default as useSocket, initSocket, getSocket, disconnectSocket, subscribe, unsubscribe } from '../composables/useSocket';
 export { useWebRTCAdapter } from '../composables/useWebRTCAdapter';
 export { useWebRTCChrome } from '../composables/useWebRTCChrome';
 export { useWebRTCEdge } from '../composables/useWebRTCEdge';

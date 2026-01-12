@@ -25,16 +25,23 @@ export default defineNuxtConfig({
 	],
 
 	runtimeConfig: {
-		// Private keys (only available on server-side)
-		// Public keys (exposed to client-side)
 		public: {
-			apiUrl: process.env.NUXT_PUBLIC_API_URL || process.env.VITE_API_URL,
-			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || process.env.VITE_API_BASE_URL,
-			pusherAppKey: process.env.NUXT_PUBLIC_PUSHER_APP_KEY || process.env.VITE_PUSHER_APP_KEY || '',
-			pusherAppCluster: process.env.NUXT_PUBLIC_PUSHER_APP_CLUSTER || process.env.VITE_PUSHER_APP_CLUSTER || '',
-			pusherHost: process.env.NUXT_PUBLIC_PUSHER_HOST || process.env.VITE_PUSHER_HOST,
-			pusherPort: process.env.NUXT_PUBLIC_PUSHER_PORT || process.env.VITE_PUSHER_PORT,
-			baseUrl: process.env.VITE_BASE_URL
+			apiUrl: process.env.API_URL || process.env.API_URL,
+			baseUrl: process.env.BASE_URL,
+			realtimeUrl: process.env.REALTIME_URL || process.env.VITE_REALTIME_URL,
+			
+			apiBaseUrl: process.env.API_URL || process.env.VITE_API_BASE_URL,
+			pusherAppKey: process.env.PUSHER_APP_KEY || process.env.VITE_PUSHER_APP_KEY || '',
+			pusherAppCluster: process.env.PUSHER_APP_CLUSTER || process.env.VITE_PUSHER_APP_CLUSTER || '',
+			pusherHost: process.env.PUSHER_HOST || process.env.VITE_PUSHER_HOST,
+			pusherPort: process.env.PUSHER_PORT || process.env.VITE_PUSHER_PORT,
+
+			reverbAppId: process.env.REVERB_APP_ID || process.env.VITE_REVERB_APP_ID,
+			reverbAppKey: process.env.REVERB_APP_KEY || process.env.VITE_REVERB_APP_KEY,
+			reverbAppSecret: process.env.REVERB_APP_SECRET || process.env.VITE_REVERB_APP_SECRET,
+			reverbHost: process.env.REVERB_HOST || process.env.VITE_REVERB_HOST,
+			reverbPort: process.env.REVERB_PORT || process.env.VITE_REVERB_PORT,
+			reverbScheme: process.env.REVERB_SCHEME || process.env.VITE_REVERB_SCHEME,
 		},
 	},
 

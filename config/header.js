@@ -26,19 +26,6 @@ export const navigationLinks = [
 
 export const userMenuItems = [
 	{
-		id: 1,
-		name: 'Hồ sơ',
-		path: '/profile',
-		icon: [
-			'M16 7a4 4 0 11-8 0 4 4 0 018 0z',
-			'M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
-		],
-		iconViewBox: '0 0 24 24',
-		is_tutor: true,
-		requiresAuth: true,
-		priority: 5
-	},
-	{
 		id: 2,
 		name: 'Xem hồ sơ gia sư',
 		path: '/profile/detail?tab=overview',
@@ -148,13 +135,14 @@ export const headerActionButtons = [
 		badgeKey: 'notifications',
 		action: 'toggleNotifications',
 		requiresAuth: true,
-		priority: 15
+		priority: 15,
+		path: '/notification'
 	},
 	{
 		id: 'login',
 		type: 'action',
 		label: 'Đăng nhập',
-		className: 'btn-sm btn-primary card-item border-r-2 header-cta',
+		className: 'btn-sm btn-no-bg card-item border-r-2 header-cta',
 		action: 'openLoginModal',
 		requiresAuth: false,
 		priority: 1
@@ -168,3 +156,46 @@ export const headerActionButtons = [
 	// 	requiresAuth: false,
 	// },
 ];
+
+export const convertRangeToTimeSlots = (ranges) => {
+    if (!ranges || !ranges.length) return [];
+    
+    const slots = [];
+    const seen = new Set();
+    const STEP = 60; // 1 hour step
+
+    const toMinutes = (str) => {
+        if (!str) return 0;
+        const [h, m] = str.split(':').map(Number);
+        return h * 60 + (m || 0);
+    };
+
+    const toTimeStr = (mins) => {
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+    
+    ranges.forEach(range => {
+        const startMins = toMinutes(range.start_time);
+        const endMins = toMinutes(range.end_time);
+        
+        // Generate slots
+        for (let time = startMins; time < endMins; time += STEP) {
+            const timeStr = toTimeStr(time);
+            const fullTime = timeStr; // Keep HH:mm format without :00
+            
+            if (!seen.has(fullTime)) {
+                slots.push({
+                    id: fullTime,
+                    time: fullTime,
+                    name: timeStr,
+                    source_id: range.id
+                });
+                seen.add(fullTime);
+            }
+        }
+    });
+    
+    return slots.sort((a, b) => a.time.localeCompare(b.time));
+};

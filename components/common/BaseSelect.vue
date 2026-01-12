@@ -1,6 +1,5 @@
 <template>
     <div class="base-select" :class="{ 'is-open': isOpen, 'width-full': widthFull }" ref="selectContainer">
-
         <div
             class="select-button"
             :class="[customClass, sizeClass, { 'error': showError, 'has-floating-label': !!label, 'with-icon': $slots.icon }]"
@@ -149,7 +148,7 @@ const showError = computed(() => {
     if (props.error) return true;
     // Nếu có required và đã touched thì validate
     if (props.required && isTouched.value) {
-        return !props.modelValue || props.modelValue === '';
+        return props.modelValue === null || props.modelValue === '' || props.modelValue === undefined;
     }
     return false;
 });
@@ -158,7 +157,7 @@ const errorMessageComputed = computed(() => {
     // Ưu tiên error message từ props
     if (props.error) return props.error;
     // Nếu required và rỗng thì hiển thị message mặc định
-    if (props.required && isTouched.value && (!props.modelValue || props.modelValue === '')) {
+    if (props.required && isTouched.value && (props.modelValue === null || props.modelValue === '')) {
         return 'Trường này là bắt buộc';
     }
     return '';
@@ -176,7 +175,6 @@ const updateDropdownPosition = async () => {
     const openUpward = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
 
     if (props.widthFull) {
-        // If widthFull, dropdown matches button width
         dropdownStyle.value = {
             position: 'fixed',
             left: `${rect.left}px`,
@@ -190,44 +188,45 @@ const updateDropdownPosition = async () => {
                 transformOrigin: 'top'
             })
         };
-    } else {
-        // First render dropdown to calculate its width
+        return;
+    }
+
+    // Always render dropdown with max-content width first
+    dropdownStyle.value = {
+        position: 'fixed',
+        left: `${rect.left}px`,
+        width: 'max-content',
+        maxWidth: '400px',
+        zIndex: '99999',
+        visibility: 'hidden', // Hide temporarily while calculating
+        ...(openUpward ? {
+            bottom: `${window.innerHeight - rect.top + 8}px`,
+            transformOrigin: 'bottom'
+        } : {
+            top: `${rect.bottom + 8}px`,
+            transformOrigin: 'top'
+        })
+    };
+
+    // Wait for dropdown to render
+    await nextTick();
+
+    // Get actual dropdown width
+    const dropdown = document.querySelector('.select-dropdown');
+    if (dropdown && selectContainer.value) {
+        const dropdownWidth = dropdown.offsetWidth;
+
+        // Update container and button width to match dropdown
+        selectContainer.value.style.width = `${dropdownWidth}px`;
+
+        // Update dropdown position with correct left alignment
+        const newRect = buttonRef.value.getBoundingClientRect();
         dropdownStyle.value = {
-            position: 'fixed',
-            left: `${rect.left}px`,
-            width: 'max-content',
-            maxWidth: '400px',
-            zIndex: '99999',
-            visibility: 'hidden', // Hide temporarily while calculating
-            ...(openUpward ? {
-                bottom: `${window.innerHeight - rect.top + 8}px`,
-                transformOrigin: 'bottom'
-            } : {
-                top: `${rect.bottom + 8}px`,
-                transformOrigin: 'top'
-            })
+            ...dropdownStyle.value,
+            left: `${newRect.left}px`,
+            width: `${dropdownWidth}px`,
+            visibility: 'visible' // Show it now
         };
-
-        // Wait for dropdown to render
-        await nextTick();
-
-        // Get actual dropdown width
-        const dropdown = document.querySelector('.select-dropdown');
-        if (dropdown && selectContainer.value) {
-            const dropdownWidth = dropdown.offsetWidth;
-
-            // Update container and button width to match dropdown
-            selectContainer.value.style.width = `${dropdownWidth}px`;
-
-            // Update dropdown position with correct left alignment
-            const newRect = buttonRef.value.getBoundingClientRect();
-            dropdownStyle.value = {
-                ...dropdownStyle.value,
-                left: `${newRect.left}px`,
-                width: `${dropdownWidth}px`,
-                visibility: 'visible' // Show it now
-            };
-        }
     }
 };
 
@@ -283,10 +282,50 @@ watch(isOpen, (newVal) => {
     }
 });
 
-onMounted(() => {
+const calculateInitialWidth = async () => {
+    if (!selectContainer.value || props.widthFull) return;
+
+    // Temporarily open dropdown in hidden state to calculate width
+    const wasOpen = isOpen.value;
+    
+    // Set dropdown position off-screen and hidden
+    dropdownStyle.value = {
+        position: 'fixed',
+        left: '-9999px',
+        top: '-9999px',
+        width: 'max-content',
+        maxWidth: '400px',
+        visibility: 'hidden',
+        zIndex: '-1'
+    };
+
+    // Temporarily open dropdown
+    isOpen.value = true;
+
+    // Wait for dropdown to render
+    await nextTick();
+    await nextTick(); // Double nextTick to ensure teleport completes
+
+    // Get actual dropdown width
+    const dropdown = document.querySelector('.select-dropdown');
+    if (dropdown) {
+        const dropdownWidth = dropdown.offsetWidth;
+        
+        // Set container width to match dropdown
+        selectContainer.value.style.width = `${dropdownWidth}px`;
+    }
+
+    // Restore original state
+    isOpen.value = wasOpen;
+};
+
+onMounted(async () => {
     document.addEventListener('click', handleClickOutside);
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleResize);
+
+    // Calculate initial width based on dropdown content
+    await calculateInitialWidth();
 });
 
 onUnmounted(() => {
@@ -298,10 +337,8 @@ onUnmounted(() => {
 
 <style scoped>
 .width-full {
-    width: 100%;
+    width: 100% !important;
 }
-
-
 
 .required {
     color: #ef4444;
@@ -564,8 +601,8 @@ onUnmounted(() => {
 }
 
 .checkbox {
-    width: 20px;
-    height: 20px;
+    width: 1rem;
+    height: 1rem;
     border: 2px solid #e5e7eb;
     border-radius: 6px;
     display: flex;

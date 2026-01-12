@@ -1,6 +1,4 @@
 <template>
-	<base-loading v-if="isLoading" />
-
 	<div class="chat-app">
 		<!-- Sidebar -->
 		<div class="sidebar" v-show="!isMobile || showSidebar">
@@ -38,7 +36,13 @@
 			</div>
 
 			<div class="conversation-list">
-				<div v-for="conv in filteredConversations" :key="conv.id"
+				<!-- Loading skeletons -->
+				<template v-if="isLoading">
+					<conversation-item-skeleton v-for="i in 3" :key="`skeleton-${i}`" />
+				</template>
+
+				<!-- Actual conversations -->
+				<div v-else v-for="conv in filteredConversations" :key="conv.id"
 					:class="['conversation-item', { selected: selectedConversation && selectedConversation.id === conv.id }]"
 					@click="selectConversation(conv)">
 					<div class="avatar-container">
@@ -47,7 +51,6 @@
 							<div v-else class="avatar">
 								{{ getFirstCharacterOfLastName(conv.name) }}
 							</div>
-							<div v-if="conv.is_online" class="online-indicator"></div>
 						</template>
 						<template v-else>
 							<div class="avatar group-avatar">
@@ -77,98 +80,30 @@
 		</div>
 
 		<!-- Chat Main Area -->
-		<div class="chat-main" v-show="!isMobile || !showSidebar">
-			<template v-if="selectedConversation">
-				<div class="chat-header">
-					<div class="header-left">
-						<button v-if="isMobile" class="btn-back" @click="backToSidebar">
-							<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
-								stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-								<path d="M15 18l-6-6 6-6" />
-							</svg>
-						</button>
-						<div class="header-avatar-wrapper">
-							<img v-if="selectedConversation.avatar" :src="selectedConversation.avatar"
-								class="header-avatar" />
-							<div v-else class="header-avatar">
-								{{ getFirstCharacterOfLastName(selectedConversation.name) }}
-							</div>
-						</div>
-						<div class="header-details">
-							<div class="header-name">{{ selectedConversation.name }}</div>
-						</div>
-					</div>
-				</div>
-
-				<div class="message-list">
-					<div class="message-container">
-						<template v-for="item in groupedMessages" :key="item.id">
-							<!-- Date Separator -->
-							<div v-if="item.type === 'date'" class="date-separator">
-								<span>{{ formatTime(item.content) }}</span>
-							</div>
-
-							<!-- Message Bubble -->
-							<div v-else class="message-row" :class="{ me: item.data.is_sent }">
-								<div class="message-wrapper">
-									<div class="message-meta" v-if="!item.data.is_sent">
-										<span class="msg-sender-name">{{ selectedConversation.name }}</span>
-										<span class="msg-time">{{ formatTime(item.data.created_at) }}</span>
-									</div>
-									<div class="msg-bubble">
-										<div class="msg-content">{{ item.data.content }}</div>
-									</div>
-									<div class="message-meta-me" v-if="item.data.is_sent">
-										<span class="msg-time">{{ formatTime(item.data.created_at) }}</span>
-									</div>
-								</div>
-							</div>
-						</template>
-					</div>
-				</div>
-
-				<div class="message-input-area">
-					<div class="input-wrapper">
-						<button class="btn-attach">
-							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-								fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-								stroke-linejoin="round">
-								<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-								<circle cx="8.5" cy="8.5" r="1.5"></circle>
-								<polyline points="21 15 16 10 5 21"></polyline>
-							</svg>
-						</button>
-						<input type="text" v-model="newMessage" @keyup.enter="sendMessage"
-							placeholder="Soạn tin nhắn..." />
-						<button class="btn-send" @click="sendMessage" v-if="newMessage.trim()">
-							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-								fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-								stroke-linejoin="round">
-								<line x1="12" y1="19" x2="12" y2="5"></line>
-								<polyline points="5 12 12 5 19 12"></polyline>
-							</svg>
-						</button>
-					</div>
-				</div>
-			</template>
-			<div v-else class="empty-state">
-				<div class="empty-content">
-					<h3>Chọn một cuộc trò chuyện</h3>
-					<p>Bắt đầu trò chuyện với gia sư hoặc học viên của bạn</p>
-				</div>
-			</div>
-		</div>
+		<message-detail 
+			:selected-conversation="selectedConversation"
+			:is-mobile="isMobile"
+			:show-sidebar="showSidebar"
+			@back-to-sidebar="backToSidebar"
+			@message-sent="handleMessageSent"
+		/>
 	</div>
 </template>
 
 <script setup>
+import { onMounted, onUnmounted, ref, computed } from 'vue';
+import MessageDetail from '~/components/message/MessageDetail.vue';
+import ConversationItemSkeleton from '~/components/message/ConversationItemSkeleton.vue';
+import { initSocket, getSocket } from '~/composables/useSocket';
+
 definePageMeta({
 	middleware: [
 		'auth', 
 		() => {
-		useLayoutStore().setHiddenFooter(true)
+			useLayoutStore().setHiddenFooter(true)
 		}
-	]
+	],
+	layout: 'chat'
 })
 
 const userStore = useUserStore();
@@ -179,75 +114,36 @@ const { getFirstCharacterOfLastName, formatRelativeTime, formatTime } = useHelpe
 const search = ref('');
 const conversations = ref([]);
 const selectedConversation = ref(null);
-const newMessage = ref('');
-const currentUserUid = ref(userStore.getUserData?.uid || '');
 const isLoading = ref(false);
+const userData = ref(userStore.getUserData);
 
 // Mobile sidebar/chat detail state
 const showSidebar = ref(false);
 const isMobile = ref(false);
 
-// const = (dateString) => {
-// 	const date = new Date(dateString);
-// 	const today = new Date();
-// 	const yesterday = new Date(today);
-// 	yesterday.setDate(yesterday.getDate() - 1);
-
-// 	if (date.toDateString() === today.toDateString()) {
-// 		return 'Hôm nay';
-// 	} else if (date.toDateString() === yesterday.toDateString()) {
-// 		return 'Hôm qua';
-// 	} else {
-// 		// Format: Thứ Hai, 20/11
-// 		const options = { weekday: 'long', day: 'numeric', month: 'numeric' };
-// 		return date.toLocaleDateString('vi-VN', options);
-// 	}
-// };
-
-const groupedMessages = computed(() => {
-	if (!selectedConversation.value?.messages) return [];
-
-	const groups = [];
-	let lastDate = null;
-
-	selectedConversation.value.messages.forEach(msg => {
-		const date = new Date(msg.created_at).toDateString();
-		if (date !== lastDate) {
-			groups.push({ type: 'date', content: msg.created_at, id: `date-${date}` });
-			lastDate = date;
-		}
-		groups.push({ type: 'message', data: msg, id: msg.id });
-	});
-
-	return groups;
-});
 
 function handleResize() {
 	if (process.client) {
 		isMobile.value = window.innerWidth <= 1024;
 		if (isMobile.value) {
-			// Nếu đang ở mobile, mặc định chỉ hiện sidebar
 			if (!showSidebar.value && !selectedConversation.value) {
 				showSidebar.value = true;
 			}
 		} else {
-			// Desktop: luôn hiện cả 2
 			showSidebar.value = false;
 		}
 	}
 }
 
-const activeTab = ref('all'); // 'all' | 'unread'
+const activeTab = ref('all');
 
 const filteredConversations = computed(() => {
 	let result = conversations.value;
 
-	// Filter by tab
 	if (activeTab.value === 'unread') {
 		result = result.filter(c => c.unread_count > 0);
 	}
 
-	// Filter by search
 	if (search.value) {
 		result = result.filter(c => c.name.toLowerCase().includes(search.value.toLowerCase()));
 	}
@@ -270,110 +166,55 @@ function backToSidebar() {
 	}
 }
 
-const sendMessage = async () => {
-	if (!newMessage.value.trim() || !selectedConversation.value) return;
-
-	// Chỉ private chat mới có receiver_id
-	if (selectedConversation.value.type !== 'private') {
-		return;
+// Handle message sent from ContactDetail component
+const handleMessageSent = (data) => {
+	const conv = conversations.value.find(c => c.id === data.conversation_id);
+	if (conv) {
+		conv.last_message = {
+			content: data.message.content,
+			created_at: data.message.created_at
+		};
 	}
+};
+
+// Handler for incoming messages (Socket.IO)
+const handleMessageReceived = (e) => {
+	console.log('Page: message.sent event received:', e);
+	
+	const conv = conversations.value.find(c => {
+		if (e.conversation_id) {
+			return c.id === e.conversation_id;
+		}
+		return c.type === 'private' && c.other_user?.uid === e.sender_id;
+	});
+
+	if (conv) {
+		conv.last_message = {
+			content: e.last_message || e.message?.content,
+			created_at: new Date().toISOString()
+		};
+	}
+};
+
+const listenForConversationUpdates = async () => {
+	if (!process.client) return;
 
 	try {
-		// Gửi tin nhắn qua API
-		const response = await api.apiPost('send-message', {
-			receiver_id: selectedConversation.value.other_user.uid,
-			content: newMessage.value,
-		});
-		const msg = response.message;
-
-		const conv = conversations.value.find(c => c.id === selectedConversation.value.id);
-		if (conv) {
-			conv.messages.push({
-				...msg,
-				is_sent: true,
-			});
-			conv.last_message = msg;
+		let socket = getSocket();
+		if (!socket?.connected) {
+			await initSocket();
+			socket = getSocket();
 		}
 
-		newMessage.value = '';
-	} catch (e) {
-		console.error('Send message error:', e);
-	}
-};
+		// Join chat room
+		socket.emit('chat:join');
 
-const listenForMessages = () => {
-	if (!process.client) return;
+		// Listen for incoming messages via Socket.IO
+		socket.on('message.sent', handleMessageReceived);
 
-	const channelName = `chat.${currentUserUid.value}`;
-
-	if (window.Echo) {
-		window.Echo.private(channelName)
-			.listen('.message.sent', (e) => {
-				// Tìm conversation theo conversation_id hoặc sender_id (cho private chat)
-				const updateConversations = conversations.value.find(c => {
-					// Nếu có conversation_id trong event, dùng nó
-					if (e.conversation_id) {
-						return c.id === e.conversation_id;
-					}
-					// Fallback: tìm theo sender_id cho private chat
-					return c.type === 'private' && c.other_user?.uid === e.sender_id;
-				});
-
-				if (updateConversations) {
-					updateConversations.messages.push({
-						...e.message,
-						is_sent: false,
-					});
-
-					// Update last message
-					if (e.last_message) {
-						updateConversations.last_message = e.last_message;
-					}
-				}
-			});
-	}
-};
-
-const listenForPresence = () => {
-	if (!process.client) return;
-
-	if (window.Echo) {
-		window.Echo.join('chat.presence')
-			.here((users) => {
-				updateOnlineStatus(users);
-			})
-			.joining((user) => {
-				console.log('User joined:', user);
-				updateUserOnlineStatus(user.id, true);
-			})
-			.leaving((user) => {
-				console.log('User left:', user);
-				updateUserOnlineStatus(user.id, false);
-			});
-	}
-};
-
-const updateOnlineStatus = (users) => {
-	// Update online status for all users in the channel
-	users.forEach(user => {
-		updateUserOnlineStatus(user.id, true);
-	});
-};
-
-const updateUserOnlineStatus = (userId, is_online) => {
-	// Update the selected conversation's online status (only for private chat)
-	if (selectedConversation.value &&
-		selectedConversation.value.type === 'private' &&
-		selectedConversation.value.other_user?.uid == userId) {
-		selectedConversation.value.is_online = is_online;
-	}
-
-	// Update conversation list online status (only for private chat)
-	const conversation = conversations.value.find(c =>
-		c.type === 'private' && c.other_user?.uid == userId
-	);
-	if (conversation) {
-		conversation.is_online = is_online;
+		console.log('✅ Listening for conversation updates via Socket.IO');
+	} catch (error) {
+		console.error('Failed to setup Socket.IO listeners:', error);
 	}
 };
 
@@ -382,7 +223,6 @@ const getAllContactedUsers = async () => {
 	try {
 		const response = await api.apiGet('contacted-users');
 		conversations.value = (response.data || []).map(conv => {
-			// Xử lý theo type của conversation
 			if (conv.type === 'private') {
 				return {
 					...conv,
@@ -400,10 +240,6 @@ const getAllContactedUsers = async () => {
 			}
 			return conv;
 		});
-
-		if (conversations.value.length > 0) {
-			selectConversation(conversations.value[0]);
-		}
 	} catch (e) {
 		console.error('Get all contacted users error:', e);
 	} finally {
@@ -413,19 +249,13 @@ const getAllContactedUsers = async () => {
 
 onMounted(async () => {
 	if (process.client) {
-		// Initialize mobile state
 		isMobile.value = window.innerWidth <= 1024;
 		showSidebar.value = isMobile.value;
-
-		// Add resize listener
 		window.addEventListener('resize', handleResize);
 	}
 
 	await getAllContactedUsers();
-
-	// Start listening for presence events
-	listenForPresence();
-	listenForMessages();
+	await listenForConversationUpdates();
 
 	notificationStore.setHiddenNotificationPreview(true);
 });
@@ -434,6 +264,14 @@ onUnmounted(() => {
 	if (process.client) {
 		window.removeEventListener('resize', handleResize);
 	}
+	
+	// Cleanup Socket.IO listeners
+	const socket = getSocket();
+	if (socket) {
+		socket.off('message.sent', handleMessageReceived);
+		socket.emit('chat:leave');
+	}
+	
 	notificationStore.setHiddenNotificationPreview(false);
 });
 </script>

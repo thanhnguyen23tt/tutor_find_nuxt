@@ -165,7 +165,7 @@
                 <div class="card-header">Thông tin gia sư</div>
                 <div class="card-content tutor-content-horizontal">
                     <div class="tutor-avatar">
-                        <img :src="tutorInfo.avatar || '/images/default-avatar.png'" />
+                        <img :src="showImage(tutorInfo.avatar)" />
                     </div>
                     <div class="tutor-info-block">
                     <div class="tutor-name">{{ tutorInfo.full_name }}</div>
@@ -248,13 +248,6 @@
             <div class="info-card support-card">
                 <div class="card-content support-content">
                     <div class="support-row">
-                        <span class="support-icon">
-                            <svg class="icon-lg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="2" y="2" width="20" height="20" rx="5" />
-                                <path d="M8 10h.01" />
-                                <path d="M16 10h.01" />
-                                <path d="M12 16v.01" /></svg>
-                        </span>
                         <span class="support-title">Cần hỗ trợ?</span>
                     </div>
                     <div class="support-desc">Đội ngũ hỗ trợ của chúng tôi luôn sẵn sàng giúp đỡ bạn với mọi câu hỏi.</div>
@@ -269,7 +262,7 @@
     <div class="tutor-card">
         <div class="tutor-content-horizontal">
             <div class="tutor-avatar">
-                <img :src="tutorInfo.avatar || tutorInfo.user_avatar || '/images/default-avatar.png'" />
+                <img :src="showImage(tutorInfo.avatar)" />
             </div>
             <div class="tutor-info-block">
             <div class="tutor-name">{{ tutorInfo.full_name || tutorInfo.user_full_name }}</div>
@@ -295,17 +288,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import moment from 'moment'
-
 // ============================
 // Core setup
 // ============================
-const { handleTimeSlot, formatCurrency, formatDuration, formatDate } = useHelper()
+const { handleTimeSlot, formatCurrency, formatDuration, formatDate, showImage } = useHelper()
 const { error: notifyError } = useNotification()
 const { order_benefits: orderBenefits } = useConfig()
 const configStore = useConfigStore()
-const userStore = useUserStore()
 
 const props = defineProps({
     tutorInfo: {

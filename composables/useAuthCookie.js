@@ -29,6 +29,7 @@ export const useAuthCookie = () => {
 
 	const removeToken = () => {
 		cookieService.removeCookie(TOKEN_KEY);
+		cookieService.removeCookie(REFRESH_TOKEN_KEY);
 	};
 
 	const hasToken = () => {

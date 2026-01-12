@@ -8,12 +8,20 @@ export default defineEventHandler(async (event) => {
 			body: body
 		})
 
-		if (response?.token) {
-			setCookie(event, 'token', response.token, {
-				maxAge: 60 * 60 * 24 * 7, // 1 week
+		if (response?.access_token?.token) {
+			const expiresIn = response.access_token.expires_in || 60 * 60 * 24 * 7; 
+
+			setCookie(event, 'token', response.access_token.token, {
+				maxAge: expiresIn,
 				path: '/',
-				// httpOnly: false // Allow client-side access for useApi
 			})
+
+			if (response.refresh_token?.token) {
+				setCookie(event, 'refresh_token', response.refresh_token.token, {
+					maxAge: response.refresh_token.expires_in || 60 * 60 * 24 * 30, // 30 days
+					path: '/',
+				})
+			}
 		}
 
 		return response

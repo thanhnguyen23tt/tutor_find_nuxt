@@ -5,7 +5,11 @@ const props = defineProps({
 	user: {
 		type: Object,
 		required: true
-	}
+	},
+    suggestedTutors: {
+        type: Array,
+        default: () => []
+    }
 });
 
 const configStore = useConfigStore();
@@ -55,13 +59,23 @@ const currentLevels = computed(() => {
 	return subject?.user_subject_levels || [];
 });
 
+const currentSubjectName = computed(() => {
+    const subject = subjectTabs.value.find(s => s.value === currentSubject.value);
+    return subject ? subject.label : '';
+});
+
+const getLevelInitials = (levelName) => {
+    if (!levelName) return '';
+    // Take first word or first 2 chars
+    return levelName.substring(0, 2).toUpperCase();
+};
+
 const formatPrice = (price) => {
 	return Number(price || 0).toLocaleString('vi-VN');
 };
 
 // ===== SCHEDULE SECTION =====
 const weekDayOptions = computed(() => configStore.configuration.day_of_weeks || []);
-const timeSlotOptions = computed(() => configStore.configuration.time_slots || []);
 
 const selectedMobileDayId = ref(null);
 
@@ -72,45 +86,33 @@ watch(() => weekDayOptions.value, (days) => {
 	}
 }, { immediate: true });
 
-// Create schedule map for O(1) lookup
-const scheduleMap = computed(() => {
-	const map = new Map();
+// Format time for display (HH:mm:ss -> HH:mm)
+const formatTimeDisplay = (timeStr) => {
+	if (!timeStr) return '';
+	return timeStr.substring(0, 5); // "07:00:00" -> "07:00"
+};
 
-	if (!hasSchedule.value) return map;
-
-	props.user.user_weekly_time_slots.forEach(slot => {
-		const key = `${slot.day_of_week_code}_${slot.time_slot_id}`;
-		map.set(key, {
-			isAvailable: slot.is_available === null || slot.is_available === true,
-			bookingId: slot.booking_id
-		});
-	});
-
-	return map;
-});
-
-// Get slots for a specific day with availability info
-const getDaySlots = (dayId) => {
+// Get ranges for a specific day
+const getDayRanges = (dayId) => {
 	if (!hasSchedule.value) return [];
+	
+	const ranges = props.user.user_weekly_time_slots.filter(
+		slot => slot.day_of_week_code == dayId
+	);
 
-	const slots = [];
-
-	timeSlotOptions.value.forEach(timeSlot => {
-		if (!timeSlot) return;
-
-		const key = `${dayId}_${timeSlot.id}`;
-		const scheduleInfo = scheduleMap.value.get(key);
-
-		if (scheduleInfo) {
-			slots.push({
-				id: timeSlot.id,
-				name: timeSlot.name,
-				isAvailable: scheduleInfo.isAvailable
-			});
-		}
-	});
-
-	return slots;
+    const slots = [];
+    ranges.forEach(range => {
+        if (range.time_slots && Array.isArray(range.time_slots)) {
+            range.time_slots.forEach(time => {
+                slots.push({
+                    id: `${range.id}-${time}`,
+                    time: time.slice(0, 5)
+                });
+            });
+        }
+    });
+    
+    return slots.sort((a, b) => a.time.localeCompare(b.time));
 };
 
 // Mobile schedule helpers
@@ -119,8 +121,8 @@ const selectedDayName = computed(() => {
 	return day?.name || 'Chọn ngày';
 });
 
-const selectedDaySlots = computed(() => {
-	return getDaySlots(selectedMobileDayId.value);
+const selectedDayRanges = computed(() => {
+	return getDayRanges(selectedMobileDayId.value);
 });
 
 // Schedule expansion
@@ -132,11 +134,11 @@ const toggleSchedule = () => {
 
 // Mobile Schedule expansion
 const isMobileScheduleExpanded = ref(false);
-const displayedMobileSlots = computed(() => {
+const displayedMobileRanges = computed(() => {
     if (isMobileScheduleExpanded.value) {
-        return selectedDaySlots.value;
+        return selectedDayRanges.value;
     }
-    return selectedDaySlots.value.slice(0, 8);
+    return selectedDayRanges.value.slice(0, 4);
 });
 
 // Reset mobile expansion when day changes
@@ -165,6 +167,16 @@ const prevPrice = () => {
 watch(currentSubject, () => {
 	currentPriceIndex.value = 0;
 });
+
+const getEmbedUrl = (url) => {
+	if (!url) return '';
+	const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+	const match = url.match(regex);
+	if (match && match[1]) {
+		return `https://www.youtube.com/embed/${match[1]}`;
+	}
+	return '';
+};
 </script>
 
 <template>
@@ -248,96 +260,24 @@ watch(currentSubject, () => {
 			<!-- Subject tabs -->
 		<base-status-tabs v-if="subjectTabs.length > 1" v-model="currentSubject" :tabs="subjectTabs" />
 
-		<!-- Price cards - Show carousel if tabs exist, otherwise show grid -->
-		<template v-if="currentLevels.length > 0">
-			<!-- Single card with carousel (when tabs exist) -->
-			<div class="price-carousel-container">
-				<div class="price-card-modern" :class="{ 'highlight': currentLevels[currentPriceIndex].highlight }">
-					<div class="price-card-header">
-						<div class="level-icon-wrapper">
-							<img class="icon-lg" :src="currentLevels[currentPriceIndex].education_level_image" 
-								:alt="currentLevels[currentPriceIndex].education_level" loading="lazy">
+			<!-- Price cards - List View -->
+			<div class="price-list" v-if="currentLevels.length > 0">
+				<div class="price-row" v-for="level in currentLevels" :key="level.id">
+					<div class="price-row-left">
+						<div class="level-avatar">
+							{{ getLevelInitials(level.education_level) }}
 						</div>
-						<div class="level-info">
-							<h4 class="level-title">{{ currentLevels[currentPriceIndex].education_level }}</h4>
-							<p class="level-description" v-if="currentLevels[currentPriceIndex].education_level_description">
-								{{ currentLevels[currentPriceIndex].education_level_description }}
-							</p>
+						<div class="level-info-row">
+							<span class="level-name">{{ level.education_level }}</span>
+							<span class="subject-name">{{ currentSubjectName }}</span>
 						</div>
 					</div>
-					<div class="price-section">
-						<div class="price-amount">
-							{{ formatPrice(currentLevels[currentPriceIndex].price) }} <span class="price-unit">VNĐ/giờ</span>
-						</div>
+					<div class="price-row-right">
+						<span class="price-value">{{ formatPrice(level.price) }} đ</span>
 					</div>
-					<div class="price-card-action">
-						<button class="btn-lg w-100" :class="currentLevels[currentPriceIndex].highlight ? 'btn-primary' : 'btn-secondary'">
-							<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-								stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M9 12l2 2 4-4"></path>
-								<path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
-								<path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
-							</svg>
-							<span class="btn-text">Chọn {{ currentLevels[currentPriceIndex].education_level }}</span>
-						</button>
-					</div>
-				</div>
-
-				<!-- Carousel controls -->
-				<div class="carousel-controls" v-if="currentLevels.length > 1">
-					<button class="carousel-btn prev-btn" @click="prevPrice">
-						<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-						</svg>
-					</button>
-					<div class="carousel-dots">
-						<span v-for="(level, index) in currentLevels" :key="index" 
-							class="dot" :class="{ active: index === currentPriceIndex }"
-							@click="currentPriceIndex = index"></span>
-					</div>
-					<button class="carousel-btn next-btn" @click="nextPrice">
-						<svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-						</svg>
-					</button>
 				</div>
 			</div>
 
-			<!-- Grid view (when no tabs) -->
-			<div class="price-cards">
-				<div class="price-card-modern" :class="{ 'highlight': level.highlight }" v-for="level in currentLevels"
-					:key="level.id">
-					<div class="price-card-header">
-						<div class="level-icon-wrapper">
-							<img class="icon-lg" :src="level.education_level_image" :alt="level.education_level"
-								loading="lazy">
-						</div>
-						<div class="level-info">
-							<h4 class="level-title">{{ level.education_level }}</h4>
-							<p class="level-description" v-if="level.education_level_description">
-								{{ level.education_level_description }}
-							</p>
-						</div>
-					</div>
-					<div class="price-section">
-						<div class="price-amount">
-							{{ formatPrice(level.price) }} <span class="price-unit">VNĐ/giờ</span>
-						</div>
-					</div>
-					<div class="price-card-action">
-						<button class="btn-lg w-100" :class="level.highlight ? 'btn-primary' : 'btn-secondary'">
-							<svg class="icon-md" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-								stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M9 12l2 2 4-4"></path>
-								<path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"></path>
-								<path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"></path>
-							</svg>
-							<span class="btn-text">Chọn {{ level.education_level }}</span>
-						</button>
-					</div>
-				</div>
-			</div>
-		</template>
 
 		<p class="price-note">
 			Tất cả các buổi học đều bao gồm tài liệu học tập cá nhân hóa, bài tập thực hành và theo dõi tiến độ.
@@ -380,13 +320,10 @@ watch(currentSubject, () => {
 							<span>{{ day.name }}</span>
 						</div>
 						<div class="time-list">
-							<template v-if="getDaySlots(day.id).length > 0">
-								<div v-for="slot in getDaySlots(day.id)" :key="`desktop-slot-${day.id}-${slot.id}`"
-									class="time-item" :class="{
-										'time-item-available': slot.isAvailable,
-										'time-item-busy': !slot.isAvailable
-									}">
-									<span class="time-text">{{ slot.name }}</span>
+							<template v-if="getDayRanges(day.id).length > 0">
+								<div v-for="slot in getDayRanges(day.id)" :key="`desktop-range-${day.id}-${slot.id}`"
+									class="time-item">
+									<span class="time-text">{{ slot.time }}</span>
 								</div>
 							</template>
 							<div v-else class="time-empty">
@@ -422,11 +359,11 @@ watch(currentSubject, () => {
 				<div class="mobile-day-tabs">
 					<button v-for="day in weekDayOptions" :key="`mobile-tab-${day.id}`" class="day-tab" :class="{
 						active: day.id === selectedMobileDayId,
-						'has-slots': getDaySlots(day.id).length > 0
+						'has-slots': getDayRanges(day.id).length > 0
 					}" @click="selectedMobileDayId = day.id">
 						<span class="day-name">{{ day.name }}</span>
-						<span class="day-count" v-if="getDaySlots(day.id).length > 0">
-							{{ getDaySlots(day.id).length }}
+						<span class="day-count" v-if="getDayRanges(day.id).length > 0">
+							{{ getDayRanges(day.id).length }}
 						</span>
 					</button>
 				</div>
@@ -435,23 +372,20 @@ watch(currentSubject, () => {
 					<div class="time-section-header">
 						<h4>{{ selectedDayName }}</h4>
 						<span class="time-count">
-							{{ selectedDaySlots.length }} khung giờ khả dụng
+							{{ selectedDayRanges.length }} khung giờ khả dụng
 						</span>
 					</div>
 
-					<div class="mobile-time-list" v-if="selectedDaySlots.length > 0">
-						<button v-for="slot in displayedMobileSlots" :key="`mobile-slot-${selectedMobileDayId}-${slot.id}`"
-							class="mobile-time-chip" :class="{
-								'chip-available': slot.isAvailable,
-								'chip-busy': !slot.isAvailable
-							}">
-							<span class="time-text">{{ slot.name }}</span>
+					<div class="mobile-time-list" v-if="selectedDayRanges.length > 0">
+						<button v-for="slot in displayedMobileRanges" :key="`mobile-range-${selectedMobileDayId}-${slot.id}`"
+							class="mobile-time-chip">
+							<span class="time-text">{{ slot.time }}</span>
 						</button>
 
-						<div class="mobile-schedule_actions">
+						<div class="mobile-schedule_actions" v-if="selectedDayRanges.length > 4">
 							<button class="btn-toggle-schedule" @click="toggleSchedule">
-								<span>{{ isScheduleExpanded ? 'Thu gọn' : 'Xem thêm' }}</span>
-								<svg class="icon-sm" :class="{ 'rotate-180': isScheduleExpanded }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<span>{{ isMobileScheduleExpanded ? 'Thu gọn' : 'Xem thêm' }}</span>
+								<svg class="icon-sm" :class="{ 'rotate-180': isMobileScheduleExpanded }" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 									<polyline points="6 9 12 15 18 9"></polyline>
 								</svg>
 							</button>
@@ -479,6 +413,37 @@ watch(currentSubject, () => {
 				</div>
 			</div>
 		</div>
+
+		<!-- Video Intro Section -->
+        <div class="content-card video-card" v-if="user.referral_link">
+            <div class="card-header">
+                <div class="section-title-container">
+                    <h3 class="section-title">Video Giới Thiệu</h3>
+                    <span class="section-title-desc">Video giới thiệu về bản thân và phương pháp giảng dạy</span>
+                </div>
+            </div>
+            <div class="video-preview-container">
+                <iframe :src="getEmbedUrl(user.referral_link)" width="100%" height="400" frameborder="0" allowfullscreen style="border-radius: 12px;"></iframe>
+            </div>
+        </div>
+
+        <!-- Suggested Tutors Section -->
+        <div class="suggested-card" v-if="suggestedTutors.length > 0">
+            <div class="suggested-header">
+                <div class="section-title-container">
+                    <h3 class="section-title">Gia sư tương tự</h3>
+                    <span class="section-title-desc">Các gia sư có thể bạn quan tâm</span>
+                </div>
+            </div>
+            <div class="suggested-tutors-grid">
+                <TutorCard 
+                    v-for="tutor in suggestedTutors" 
+                    :key="tutor.uid" 
+                    :tutor="tutor"
+                    :disableBooking="tutor.uid === user.uid"
+                />
+            </div>
+        </div>
 	</div>
 </template>
 
@@ -621,10 +586,6 @@ watch(currentSubject, () => {
 	color: #1e293b;
 	padding-bottom: 0.75rem;
 	border-bottom: 2px solid #e2e8f0;
-}
-
-.schedule-desktop .day-header svg {
-	color: #3b82f6;
 }
 
 .schedule-desktop .time-list {
@@ -1020,352 +981,149 @@ watch(currentSubject, () => {
 	}
 }
 
-
-/* pricingtab */
-.subject-tabs {
-	display: flex;
-	gap: 1rem;
-	margin-bottom: 2rem;
-	padding: 0.25rem;
-	background: #f4f4f5;
-	border-radius: 0.5rem;
+/* Video Intro Styles */
+.video-card {
+    margin-bottom: 2rem;
 }
 
-.subject-tab {
-	padding: 0.5rem 1rem;
-	border: none;
-	background: transparent;
-	color: #71717a;
-	font-weight: 500;
-	cursor: pointer;
-	border-radius: 0.375rem;
+.video-preview-container {
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #000;
+    aspect-ratio: 16/9;
 }
 
-.subject-tab.active {
-	background: white;
-	color: #18181b;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.video-preview-container iframe {
+    width: 100%;
+    height: 100%;
 }
 
-.price-cards {
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	/* 3 cột cố định */
-	gap: 1.5rem;
-	margin: 2rem 0;
+/* Suggested Tutors Styles */
+.suggested-header {
+    margin-bottom: 1.5rem;
 }
 
-
-/* Price card styles are now in UserDetail.css */
-
-.price-card-header {
-	display: flex;
-	align-items: center;
-	gap: 1rem;
+.suggested-tutors-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 1.5rem;
+    padding-bottom: 1.5rem;
+    /* Hide scrollbar */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    /* Add padding to ends so first/last items aren't cut off by screen edge */
+    padding-right: 1rem; 
+    margin-right: -1rem; /* compensate for container padding if needed, or adjust based on layout */
 }
 
-.level-icon-wrapper {
-	width: 50px;
-	height: 50px;
-	border-radius: 12px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-	border: 2px solid #e2e8f0;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.suggested-tutors-grid::-webkit-scrollbar {
+    display: none;
 }
 
-.level-info {
-	flex: 1;
+.suggested-tutors-grid > * {
+    /* Desktop: Show ~2.5 items or 3 items depending on width. 
+       Let's use a fixed width or flex-basis that looks good with the full card.
+       Since TutorCard is quite wide, maybe 300px-350px? 
+       Or percentage based ?
+    */
+    flex: 0 0 350px; 
+    min-width: 0;
+    scroll-snap-align: start;
 }
 
-.level-title {
-	font-size: 1.125rem;
-	font-weight: 700;
-	color: #1e293b;
-	margin: 0 0 0.25rem 0;
+@media (max-width: 768px) {
+    .suggested-tutors-grid {
+        gap: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .suggested-tutors-grid > * {
+        flex: 0 0 85%; /* Peek effect on mobile */
+        scroll-snap-align: center;
+    }
+}
+/* Pricing Section List Style */
+.price-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
 }
 
-.level-description {
-	color: #64748b;
-	font-size: 0.875rem;
-	margin: 0;
-	line-height: 1.4;
+.price-row {
+    background: #f9fafb;
+    border: 1px solid #f3f4f6;
+    border-radius: 16px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
 }
 
-.price-section {
-	text-align: center;
-	padding: 1rem 0;
-	background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-	border-radius: 12px;
-	border: 1px solid #e2e8f0;
+.price-row:hover {
+    background: white;
+    border-color: #e5e7eb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.price-amount {
-	font-size: var(--font-size-large);
-	font-weight: 800;
-	color: var(--color-primary);
-	line-height: 1;
+.price-row-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
-.price-unit {
-	font-size: 0.875rem;
-	font-weight: 500;
-	color: #64748b;
+.level-avatar {
+    width: 48px;
+    height: 48px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: #374151;
+    font-size: 1rem;
+    flex-shrink: 0;
 }
 
-.price-card-action {
-	margin-top: auto;
+.level-info-row {
+    display: flex;
+    flex-direction: column;
 }
 
-.price-note {
-	color: #71717a;
-	font-size: var(--font-size-small);
-	margin-top: 1rem;
+.level-name {
+    font-weight: 600;
+    color: #111827;
+    font-size: 1rem;
 }
 
-.package-cards {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-	gap: 1.5rem;
+.subject-name {
+    color: #6b7280;
+    font-size: 0.875rem;
 }
 
-.package-card {
-	padding: 1.5rem;
-	border: 1px solid #e4e4e7;
-	border-radius: 0.75rem;
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-	overflow: hidden;
+.price-row-right {
+    text-align: right;
 }
 
-.package-card.highlight {
-	border-color: #18181b;
+.price-value {
+    font-weight: 600;
+    color: #4b5563;
+    font-size: 1rem;
 }
 
-.package-card button {
-	margin-top: auto;
-}
-
-.package-header h5 {
-	font-weight: 600;
-	color: #18181b;
-	margin-bottom: 0.2rem;
-}
-
-.package-header p {
-	color: #71717a;
-	font-size: var(--font-size-small);
-	margin: 0;
-}
-
-.package-price p:first-child {
-	font-size: var(--font-size-large);
-	font-weight: 700;
-	color: #18181b;
-	margin: 0;
-}
-
-.package-price span {
-	font-size: var(--font-size-small);
-	font-weight: 400;
-	color: #71717a;
-}
-
-.package-savings {
-	font-size: var(--font-size-small);
-	margin: 0;
-	border-radius: 1rem;
-	display: inline-block;
-	color: #71717a;
-}
-
-.package-features {
-	list-style: none;
-	padding: 0;
-	margin: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 0.75rem;
-}
-
-.package-features li {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-}
-
-.package-features .features-check {
-	background-color: #18181b1a;
-	width: 1.5rem;
-	height: 1.5rem;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	border-radius: 100%;
-}
-
-.package-features li svg {
-	width: 1rem;
-	height: 1rem;
-	flex-shrink: 0;
-}
-
-.group-description {
-	color: #71717a;
-	margin-bottom: 1.5rem;
-}
-
-.group-table {
-	border: 1px solid #e4e4e7;
-	border-radius: 0.75rem;
-	overflow: hidden;
-}
-
-.group-header {
-	display: grid;
-	grid-template-columns: 2fr 2fr 2fr 1fr;
-	padding: 1rem;
-	background: #f4f4f5;
-	font-weight: 600;
-	color: #18181b;
-}
-
-.group-row {
-	display: grid;
-	grid-template-columns: 2fr 2fr 2fr 1fr;
-	padding: 1rem;
-	align-items: center;
-	border-top: 1px solid #e4e4e7;
-}
-
-.savings-badge {
-	width: max-content;
-	color: #059669;
-	font-size: var(--font-size-small);
-	padding: 0.3rem 0.5rem;
-	background: #ecfdf5;
-	border-radius: 1rem;
-	display: inline-block;
-}
-
-.group-note {
-	color: #71717a;
-	font-size: var(--font-size-small);
-	margin-top: 1rem;
-}
-
-.custom-package {
-	background: #f4f4f5;
-	border: none;
-}
-
-.custom-package-content {
-	display: flex;
-	align-items: center;
-	gap: 1.5rem;
-}
-
-.custom-package-content svg {
-	flex-shrink: 0;
-	color: #18181b;
-}
-
-.custom-package-text {
-	flex: 1;
-}
-
-.custom-package-text h4 {
-	font-weight: 600;
-	color: #18181b;
-	margin: 0 0 0.5rem 0;
-}
-
-.custom-package-text p {
-	color: #71717a;
-	margin: 0;
-}
-
-.btn-select {
-	width: 100%;
-	padding: 0.75rem;
-	border: 1px solid #e4e4e7;
-	border-radius: 0.5rem;
-	background: white;
-	color: #18181b;
-	font-weight: 500;
-	cursor: pointer;
-	transition: all 0.2s;
-	margin-top: auto;
-}
-
-.btn-select:hover {
-	background: #f4f4f5;
-}
-
-.btn-dark {
-	background: #18181b;
-	color: white;
-	border: none;
-}
-
-.btn-dark:hover {
-	background: #27272a;
-}
-
-.btn-book {
-	padding: 0.5rem 1rem;
-	border: 1px solid #e4e4e7;
-	border-radius: 0.375rem;
-	background: white;
-	color: #18181b;
-	font-weight: 500;
-	cursor: pointer;
-}
-
-.btn-custom {
-	padding: 0.75rem 1.5rem;
-	border: none;
-	border-radius: 0.5rem;
-	background: #18181b;
-	color: white;
-	font-weight: 500;
-	cursor: pointer;
-	white-space: nowrap;
-}
-
-.highlight {
-	position: relative;
-}
-
-.highlight::after {
-	content: 'Phổ biến';
-	position: absolute;
-	top: 0.7rem;
-	right: -2.8rem;
-	background: #18181b;
-	color: white;
-	font-size: 0.75rem;
-	padding: 0.25rem 3rem;
-	border-radius: 0.25rem;
-	transform: rotate(39deg);
-}
-
-@media screen and (max-width: 1024px) {
-	.price-cards {
-		grid-template-columns: repeat(2, 1fr);
-	}
-}
-
-@media screen and (max-width: 768px) {
-	.price-cards {
-		grid-template-columns: repeat(1, 1fr);
-	}
-
-	.schedule-actions {
-		display: none;
-	}
+@media (max-width: 640px) {
+    .price-row {
+        padding: 1rem;
+    }
+    
+    .level-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 0.9rem;
+    }
 }
 </style>

@@ -2,6 +2,8 @@ import moment from 'moment'
 import 'moment/locale/vi';
 
 export const useHelper = () => {
+	const config = useRuntimeConfig();
+
 	const formatCurrency = (amount) => {
 		return new Intl.NumberFormat("vi-VN", {
 			style: "currency",
@@ -17,12 +19,21 @@ export const useHelper = () => {
 		});
 	};
 
-	const formatTime = (time) => {
-		return new Date(time).toLocaleTimeString("vi-VN", {
+	// const formatTime = (time) => {
+	// 	return new Date(time).toLocaleTimeString("vi-VN", {
+	// 		hour: "2-digit",
+	// 		minute: "2-digit",
+	// 	});
+	// };
+
+	const formatTime = (date) => {
+		return new Date(date).toLocaleTimeString("vi-VN", {
 			hour: "2-digit",
 			minute: "2-digit",
+			hour12: false,
 		});
 	};
+
 
 	const formatDateTime = (dateTime) => {
 		return new Date(dateTime).toLocaleString("vi-VN", {
@@ -64,36 +75,9 @@ export const useHelper = () => {
 		return duration.humanize();
 	};
 
-	const getPriceRange = (subjects) => {
-		let prices = [];
-
-		subjects.forEach(subject => {
-			if (subject.user_subject_levels) {
-				subject.user_subject_levels.forEach(level => {
-					if (typeof level.price === 'number') {
-						prices.push(level.price);
-					}
-				});
-			}
-		});
-
-		if (prices.length === 0) return '';
-
-		// Sắp xếp giá tăng dần
-		prices.sort((a, b) => a - b);
-
-		const mid = Math.floor(prices.length / 2);
-
-		let median;
-		if (prices.length % 2 === 0) {
-			// Nếu số lượng chẵn, lấy trung bình 2 giá giữa
-			median = (prices[mid - 1] + prices[mid]) / 2;
-		} else {
-			// Nếu lẻ, lấy giá giữa
-			median = prices[mid];
-		}
-
-		return formatCurrency(median);
+	const showImage = (image) => {
+		if (!image) return '';
+		return config.public.apiUrl + image;
 	};
 
 	const getFirstCharacterOfLastName = (name) => {
@@ -128,35 +112,6 @@ export const useHelper = () => {
 			return `${diffInMonths} tháng trước`;
 		} else {
 			return `${diffInYears} năm trước`;
-		}
-	};
-
-	// Classroom time management helpers
-	const canStartClassroom = (classroom) => {
-		if (!classroom.time_info.can_start) return false; // Fallback nếu không có time_info
-		return true;
-	};
-
-	const getTimeStatusText = (timeInfo) => {
-		if (!timeInfo) return '';
-
-		if (timeInfo.is_before_start) {
-			const minutes = timeInfo.time_until_start_minutes;
-
-			if (minutes > 1440) {
-				const days = Math.floor(minutes / 1440);
-				return `Còn ${days} ngày để bắt đầu`;
-			} else if (minutes > 60) {
-				const hours = Math.floor(minutes / 60);
-				const remainingMinutes = minutes % 60;
-				return `Còn ${hours}h ${remainingMinutes} phút để bắt đầu`;
-			} else {
-				return `Còn ${minutes} phút để bắt đầu`;
-			}
-		} else if (timeInfo.is_after_end) {
-			return 'Lớp học đã kết thúc';
-		} else {
-			return 'Có thể bắt đầu/tham gia lớp học';
 		}
 	};
 
@@ -314,11 +269,8 @@ export const useHelper = () => {
 		formatDuration,
 		formatDurationToMinutes,
 		diffDateTimeText,
-		getPriceRange,
 		getFirstCharacterOfLastName,
 		formatRelativeTime,
-		canStartClassroom,
-		getTimeStatusText,
 		getTimeStatusClass,
 		getTimeStatusMessage,
 		getParticipantsClass,
@@ -330,6 +282,7 @@ export const useHelper = () => {
 		handleTimeSlot,
 		normalizeIcon,
 		createSlug,
+		showImage,
 	};
 };
 

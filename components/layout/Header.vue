@@ -118,11 +118,11 @@ const markNotificationAsRead = async (id) => {
 };
 
 const openLoginModal = () => {
-	navigateTo('/auth/login');
+	redirectTo('/auth/login');
 };
 
 const openRegisterModal = () => {
-	navigateTo('/auth/register');
+	redirectTo('/auth/register');
 };
 
 const closeMenus = () => {
@@ -177,7 +177,7 @@ const toggleNotifications = async () => {
 
 const handleLogout = () => {
 	userStore.clearAuth();
-	navigateTo('/auth/login');
+	redirectTo('/auth/login');
 };
 
 const markAllAsRead = async () => {
@@ -225,7 +225,7 @@ const maxVisibleItems = 4; // Including "More" button
 
 const mobileNavItems = computed(() => {
 	const items = [];
-	
+
 	// 1. Trang chủ
 	items.push({
 		id: 'home',
@@ -234,7 +234,7 @@ const mobileNavItems = computed(() => {
 		icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
 		iconViewBox: '0 0 24 24'
 	});
-	
+
 	// 2. Tìm kiếm
 	items.push({
 		id: 'search',
@@ -243,7 +243,7 @@ const mobileNavItems = computed(() => {
 		icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
 		iconViewBox: '0 0 24 24'
 	});
-	
+
 	// 3. Tin nhắn
 	if (isAuthenticatedCheck.value) {
 		const messageItem = userMenuItems.find(item => item.id === 5); // Message item
@@ -275,7 +275,7 @@ const mobileNavItems = computed(() => {
 			iconViewBox: '0 0 24 24',
 		});
 	}
-	
+
 	return items;
 });
 
@@ -290,13 +290,13 @@ const moreMenuItems = computed(() => {
 	if (mobileNavItems.value.length <= maxVisibleItems) {
 		return [];
 	}
-	
+
 	return mobileNavItems.value.slice(maxVisibleItems - 1);
 });
 
 const profileMenuItems = computed(() => {
 	const items = [];
-	
+
 	// 1. Xem hồ sơ
 	items.push({
 		id: 'view_profile_custom',
@@ -316,7 +316,7 @@ const profileMenuItems = computed(() => {
 		2: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
 		3: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253'
 	};
-	
+
 	items.push(...navigationLinks.map(link => ({
 		...link,
 		icon: navIcons[link.id] || 'M4 6h16M4 12h16M4 18h16',
@@ -334,7 +334,7 @@ const hasMoreItems = computed(() => moreMenuItems.value.length > 0);
 
 const toggleMoreMenu = () => {
 	showMoreMenu.value = !showMoreMenu.value;
-	
+
 	// Add haptic feedback for mobile
 	if (process.client && navigator.vibrate) {
 		navigator.vibrate(50);
@@ -355,7 +355,7 @@ const handleMoreItemClick = (item) => {
 const toggleProfileMenu = () => {
 	showProfileMenu.value = !showProfileMenu.value;
 	showMoreMenu.value = false;
-	
+
 	if (process.client && navigator.vibrate) {
 		navigator.vibrate(50);
 	}
@@ -367,7 +367,7 @@ const closeProfileMenu = () => {
 
 const handleMobileNavClick = (item) => {
 	if (item.path) {
-		navigateTo(item.path);
+		redirectTo(item.path);
 	} else if (item.action === 'toggleProfileMenu') {
 		toggleProfileMenu();
 	} else if (item.action) {
@@ -385,6 +385,10 @@ const handleProfileItemClick = (item) => {
 	}
 	closeProfileMenu();
 };
+
+const redirectTo = (url) => {
+	return navigateTo(url);
+};
 </script>
 
 <template>
@@ -397,7 +401,7 @@ const handleProfileItemClick = (item) => {
 				<!-- Navigation Menu -->
 				<nav class="nav-menu">
 					<a v-for="link in navigationLinks" :key="link.id" :href="link.path" class="nav-link"
-						@click.prevent="navigateTo(link.path)">
+						@click.prevent="redirectTo(link.path)">
 						{{ link.name }}
 					</a>
 				</nav>
@@ -506,23 +510,13 @@ const handleProfileItemClick = (item) => {
 									:class="['notification-item', { 'unread': !notification.is_read }]"
 									@click="markNotificationAsRead(notification.id)">
 									<div class="notification-icon">
-										<svg
-											v-if="!notification.icon"
-											class="icon-lg"
-											:viewBox="getNotificationIcon(notification).viewBox"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										>
+										<svg v-if="!notification.icon" class="icon-lg"
+											:viewBox="getNotificationIcon(notification).viewBox" fill="none"
+											stroke="currentColor" stroke-width="2" stroke-linecap="round"
+											stroke-linejoin="round">
 											<path :d="getNotificationIcon(notification).path" />
 										</svg>
-										<img
-											v-else
-											:src="notification.icon"
-											class="icon-lg"
-										/>
+										<img v-else :src="notification.icon" class="icon-lg" />
 									</div>
 									<div class="notification-content">
 										<div class="notification-title">{{ notification.name }}</div>
@@ -542,7 +536,7 @@ const handleProfileItemClick = (item) => {
 							</div>
 						</div>
 
-						<div class="user-info" @click="navigateTo('/profile')">
+						<div class="user-info" @click="redirectTo('/profile')">
 							<img v-if="userData?.avatar" :src="userData.avatar" alt="User avatar" class="user-avatar">
 							<div v-else class="user-avatar">
 								{{ getFirstCharacterOfLastName(userData.full_name) }}
@@ -556,36 +550,16 @@ const handleProfileItemClick = (item) => {
 
 	<!-- Mobile Bottom Navigation -->
 	<nav class="mobile-bottom-nav">
-		<button 
-			v-for="item in visibleNavItems" 
-			:key="item.id" 
-			class="mobile-nav-item"
+		<button v-for="item in visibleNavItems" :key="item.id" class="mobile-nav-item"
 			:class="{ 'active': (item.path === '/' ? $route.path === '/' : (item.path && $route.path.startsWith(item.path))) || (item.id === 'profile' && showProfileMenu) }"
-			@click="handleMobileNavClick(item)"
-		>
+			@click="handleMobileNavClick(item)">
 			<div class="mobile-nav-icon-wrapper">
-				<svg 
-					v-if="Array.isArray(item.icon)"
-					class="mobile-nav-icon" 
-					:viewBox="item.iconViewBox" 
-					fill="none" 
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
+				<svg v-if="Array.isArray(item.icon)" class="mobile-nav-icon" :viewBox="item.iconViewBox" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path v-for="(path, index) in item.icon" :key="index" :d="path" />
 				</svg>
-				<svg 
-					v-else
-					class="mobile-nav-icon" 
-					:viewBox="item.iconViewBox" 
-					fill="none" 
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
+				<svg v-else class="mobile-nav-icon" :viewBox="item.iconViewBox" fill="none" stroke="currentColor"
+					stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<path :d="item.icon" />
 				</svg>
 				<span v-if="item.badge && item.badge > 0" class="mobile-nav-badge">{{ item.badge }}</span>
@@ -593,22 +567,11 @@ const handleProfileItemClick = (item) => {
 			<span class="mobile-nav-label">{{ item.name }}</span>
 		</button>
 
-		<button 
-			v-if="hasMoreItems"
-			class="mobile-nav-item mobile-nav-more"
-			:class="{ 'active': showMoreMenu }"
-			@click="toggleMoreMenu"
-		>
+		<button v-if="hasMoreItems" class="mobile-nav-item mobile-nav-more" :class="{ 'active': showMoreMenu }"
+			@click="toggleMoreMenu">
 			<div class="mobile-nav-icon-wrapper">
-				<svg 
-					class="mobile-nav-icon" 
-					viewBox="0 0 24 24" 
-					fill="none" 
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
+				<svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+					stroke-linecap="round" stroke-linejoin="round">
 					<circle cx="12" cy="12" r="1" />
 					<circle cx="12" cy="5" r="1" />
 					<circle cx="12" cy="19" r="1" />
@@ -636,66 +599,27 @@ const handleProfileItemClick = (item) => {
 			</div>
 			<div class="more-menu-content">
 				<template v-for="item in moreMenuItems" :key="item.id">
-					<NuxtLink 
-						v-if="!item.action" 
-						:to="item.path" 
-						class="more-menu-item"
-						@click="closeMoreMenu"
-					>
-						<svg 
-							v-if="Array.isArray(item.icon)"
-							class="more-menu-icon" 
-							:viewBox="item.iconViewBox || '0 0 24 24'" 
-							fill="none" 
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
+					<NuxtLink v-if="!item.action" :to="item.path" class="more-menu-item" @click="closeMoreMenu">
+						<svg v-if="Array.isArray(item.icon)" class="more-menu-icon"
+							:viewBox="item.iconViewBox || '0 0 24 24'" fill="none" stroke="currentColor"
+							stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path v-for="(path, index) in item.icon" :key="index" :d="path" />
 						</svg>
-						<svg 
-							v-else
-							class="more-menu-icon" 
-							:viewBox="item.iconViewBox || '0 0 24 24'" 
-							fill="none" 
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
+						<svg v-else class="more-menu-icon" :viewBox="item.iconViewBox || '0 0 24 24'" fill="none"
+							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path :d="item.icon" />
 						</svg>
 						<span class="more-menu-label">{{ item.name }}</span>
 					</NuxtLink>
 
-					<button 
-						v-else
-						class="more-menu-item"
-						@click="handleMoreItemClick(item)"
-					>
-						<svg 
-							v-if="Array.isArray(item.icon)"
-							class="more-menu-icon" 
-							:viewBox="item.iconViewBox || '0 0 24 24'" 
-							fill="none" 
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
+					<button v-else class="more-menu-item" @click="handleMoreItemClick(item)">
+						<svg v-if="Array.isArray(item.icon)" class="more-menu-icon"
+							:viewBox="item.iconViewBox || '0 0 24 24'" fill="none" stroke="currentColor"
+							stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path v-for="(path, index) in item.icon" :key="index" :d="path" />
 						</svg>
-						<svg 
-							v-else
-							class="more-menu-icon" 
-							:viewBox="item.iconViewBox || '0 0 24 24'" 
-							fill="none" 
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-			stroke-linejoin="round"
-						>
+						<svg v-else class="more-menu-icon" :viewBox="item.iconViewBox || '0 0 24 24'" fill="none"
+							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path :d="item.icon" />
 						</svg>
 						<span class="more-menu-label">{{ item.name }}</span>
@@ -723,73 +647,36 @@ const handleProfileItemClick = (item) => {
 			</div>
 			<div class="more-menu-content">
 				<template v-for="item in profileMenuItems" :key="item.id">
-					<NuxtLink 
-						v-if="!item.action" 
-						:to="item.path" 
-						class="more-menu-item"
-						@click="closeProfileMenu"
-					>
-						<svg 
-							v-if="Array.isArray(item.icon)"
-							class="more-menu-icon" 
-							:viewBox="item.iconViewBox || '0 0 24 24'" 
-							fill="none" 
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
+					<NuxtLink v-if="!item.action" :to="item.path" class="more-menu-item" @click="closeProfileMenu">
+						<svg v-if="Array.isArray(item.icon)" class="more-menu-icon"
+							:viewBox="item.iconViewBox || '0 0 24 24'" fill="none" stroke="currentColor"
+							stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path v-for="(path, index) in item.icon" :key="index" :d="path" />
 						</svg>
-						<svg 
-							v-else
-							class="more-menu-icon" 
-							:viewBox="item.iconViewBox || '0 0 24 24'" 
-							fill="none" 
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
+						<svg v-else class="more-menu-icon" :viewBox="item.iconViewBox || '0 0 24 24'" fill="none"
+							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path :d="item.icon" />
 						</svg>
 						<span class="more-menu-label">{{ item.name || item.label || item.tooltip }}</span>
-						<span v-if="item.badgeKey && unreadData[item.badgeKey] > 0" class="mobile-nav-badge" style="position: static; margin-left: auto;">
+						<span v-if="item.badgeKey && unreadData[item.badgeKey] > 0" class="mobile-nav-badge"
+							style="position: static; margin-left: auto;">
 							{{ unreadData[item.badgeKey] }}
 						</span>
 					</NuxtLink>
 
-					<button 
-						v-else
-						class="more-menu-item"
-						@click="handleProfileItemClick(item)"
-					>
-						<svg 
-							v-if="Array.isArray(item.icon)"
-							class="more-menu-icon" 
-							:viewBox="item.iconViewBox || '0 0 24 24'" 
-							fill="none" 
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
+					<button v-else class="more-menu-item" @click="handleProfileItemClick(item)">
+						<svg v-if="Array.isArray(item.icon)" class="more-menu-icon"
+							:viewBox="item.iconViewBox || '0 0 24 24'" fill="none" stroke="currentColor"
+							stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path v-for="(path, index) in item.icon" :key="index" :d="path" />
 						</svg>
-						<svg 
-							v-else
-							class="more-menu-icon" 
-							:viewBox="item.iconViewBox || '0 0 24 24'" 
-							fill="none" 
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
+						<svg v-else class="more-menu-icon" :viewBox="item.iconViewBox || '0 0 24 24'" fill="none"
+							stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path :d="item.icon" />
 						</svg>
 						<span class="more-menu-label">{{ item.name || item.label || item.tooltip }}</span>
-						<span v-if="item.badgeKey && unreadData[item.badgeKey] > 0" class="mobile-nav-badge" style="position: static; margin-left: auto;">
+						<span v-if="item.badgeKey && unreadData[item.badgeKey] > 0" class="mobile-nav-badge"
+							style="position: static; margin-left: auto;">
 							{{ unreadData[item.badgeKey] }}
 						</span>
 					</button>
@@ -973,6 +860,7 @@ const handleProfileItemClick = (item) => {
 	align-items: center;
 	gap: 0.5rem;
 }
+
 .menu-action-buttons {
 	display: none;
 }
@@ -1922,7 +1810,7 @@ const handleProfileItemClick = (item) => {
 }
 
 .view-all {
-	color:black;
+	color: black;
 	text-decoration: none;
 	font-size: var(--font-size-mini);
 	font-weight: 600;

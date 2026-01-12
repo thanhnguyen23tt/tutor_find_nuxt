@@ -10,20 +10,21 @@ export const useConfig = () => {
 			"Đảm bảo hoàn tiền nếu hủy lịch học, hoặc không hài lòng",
 			"Hỗ trợ 24/7 từ đội ngũ TutorFind"
 		],
-		genderOptions: [
+		gender_options: [
 			{ id: 1, name: 'Nam' },
 			{ id: 2, name: 'Nữ' }
 		],
+		booking_complaint_status: {
+			pending: 'pending',
+			resolved: 'resolved',
+			rejected: 'rejected',
+			under_review: 'under_review'
+		},
 		experiences: [
 			{ id: '', name: 'Tất cả' },
 			{ id: 'new', name: 'Mới (0-2 năm)' },
 			{ id: 'experienced', name: 'Kinh nghiệm (3-5 năm)' },
 			{ id: 'expert', name: 'Chuyên gia (5+ năm)' }
-		],
-		list_status_complaint: [
-			{ id: 1, name: 'Chưa xử lý' },
-			{ id: 2, name: 'Đang xử lý' },
-			{ id: 3, name: 'Đã xử lý' }
 		],
 		status_booking: {
 			waiting_payment: 'waiting_payment',

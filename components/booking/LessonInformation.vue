@@ -9,17 +9,15 @@ import {
     nextTick,
     reactive
 } from 'vue'
+import { convertRangeToTimeSlots } from '~/config/header'
 
 // ============================
 // Core setup & constants
 // ============================
-const { handleTimeSlot, getDayOfWeek, dataIsNull, formatCurrency, formatDuration, formatDate } = useHelper()
+const { handleTimeSlot, getDayOfWeek, dataIsNull, formatCurrency, formatDuration, formatDate, showImage } = useHelper()
 const { order_benefits: orderBenefits } = useConfig()
 const configStore = useConfigStore()
-const userStore = useUserStore()
-
-const STORAGE_KEY = 'bookingData'
-const REQUIRED_FIELDS = ['subjectId', 'levelId', 'date', 'timeSlotId', 'tutorSessionId']
+const REQUIRED_FIELDS = ['subjectId', 'levelId', 'date', 'startTime', 'tutorSessionId']
 // ============================
 // Props & Emits
 // ============================
@@ -56,7 +54,8 @@ const bookingData = reactive({
     total_price: 0,
     note: '',
     tutorSession: null,
-    tutorSessionId: ''
+    tutorSessionId: '',
+    weekly_time_slot_id: ''
 })
 
 // Edit form state
@@ -64,7 +63,8 @@ const editForm = reactive({
     subjectId: '',
     levelId: '',
     date: '',
-    timeSlotId: '',
+    date: '',
+    startTime: '',
     tutorSessionId: ''
 })
 
@@ -104,7 +104,7 @@ const allLevelOptions = computed(() => {
     props.tutorInfo?.user_subjects?.forEach(subject => {
         subject.user_subject_levels?.forEach(level => {
             levels.push({
-                id: level.education_level_id,
+                id: level.id,
                 name: level.education_level,
                 subject_id: subject.subject_id
             })
@@ -117,13 +117,13 @@ const editLevelOptions = computed(() =>
     allLevelOptions.value.filter(level => level.subject_id === editForm.subjectId)
 )
 
-const tutorSessionOptions = computed(() => configuration.value.tutor_sessions || [])
+const tutorSessionOptions = computed(() => configuration.value?.tutor_sessions || [])
+
+console.log(tutorSessionOptions.value)
 
 
 // Time-related computeds
-const timeOptions = computed(() =>
-    handleTimeSlot(configuration.value.time_slots || [], editForm.date)
-)
+// Removed timeOptions dependency
 
 const availableEditTimeSlots = computed(() => {
     if (!editForm.date || !props.tutorInfo?.user_weekly_time_slots) return []
@@ -131,24 +131,52 @@ const availableEditTimeSlots = computed(() => {
     const dayOfWeek = getDayOfWeek(editForm.date)
     if (dayOfWeek === null) return []
 
-    return props.tutorInfo.user_weekly_time_slots.filter(
-        slot => slot.day_of_week_code === dayOfWeek && slot.is_available === null // null = trống
+    const dayRanges = props.tutorInfo.user_weekly_time_slots.filter(
+        slot => slot.day_of_week_code === dayOfWeek
     )
+
+    const slots = []
+    dayRanges.forEach(range => {
+        if (range.time_slots && Array.isArray(range.time_slots)) {
+             range.time_slots.forEach(time => {
+                 slots.push({
+                     time: time.slice(0, 5),
+                     name: time.slice(0, 5),
+                     source_id: range.id
+                 })
+             })
+        }
+    })
+
+    return slots.sort((a, b) => a.time.localeCompare(b.time))
 })
 
 const validSelectableTimes = computed(() => {
     if (!editForm.date || availableEditTimeSlots.value.length === 0) {
-        return timeOptions.value.map(time => ({
-            ...time,
-            disabled: true
-        }))
+        return []
     }
 
-    const availableIds = new Set(availableEditTimeSlots.value.map(slot => slot.time_slot_id))
-    return timeOptions.value.map(timePoint => ({
-        ...timePoint,
-        disabled: timePoint.disabled || !availableIds.has(timePoint.id)
-    }))
+    const now = new Date()
+    const selectedDate = new Date(editForm.date)
+    const isToday = selectedDate.toDateString() === now.toDateString()
+    
+    return availableEditTimeSlots.value.map(slot => {
+        let disabled = false
+        if (isToday) {
+             const [h, m] = slot.time.split(':').map(Number)
+             const slotDate = new Date(now)
+             slotDate.setHours(h, m || 0, 0, 0)
+             
+             // Add a buffer if needed, or strict comparison
+             if (slotDate < now) {
+                 disabled = true
+             }
+        }
+        return {
+            ...slot,
+            disabled
+        }
+    })
 })
 
 // Price & session computeds
@@ -158,7 +186,7 @@ const selectedSubject = computed(() =>
 
 const selectedLevel = computed(() =>
     selectedSubject.value?.user_subject_levels?.find(
-        level => level.education_level_id === bookingData.level.id
+        level => level.id === bookingData.level.id
     )
 )
 
@@ -231,16 +259,16 @@ const loadBookingData = () => {
 const onEditSubjectChange = (newSubjectId) => {
     editForm.subjectId = newSubjectId
     editForm.levelId = ''
-    editForm.timeSlotId = ''
+    editForm.startTime = ''
 }
 
 const onEditLevelChange = (newLevelId) => {
     editForm.levelId = newLevelId
-    editForm.timeSlotId = ''
+    editForm.startTime = ''
 }
 
-const onEditTimeSlotChange = (newTimeId) => {
-    editForm.timeSlotId = newTimeId
+const onEditTimeSlotChange = (newTime) => {
+    editForm.startTime = newTime
 }
 
 const onSelectTutorSession = (sessionId) => {
@@ -255,7 +283,7 @@ const loadDataEditForm = async () => {
     editForm.subjectId = bookingData.subject.id
     editForm.levelId = bookingData.level.id
     editForm.date = bookingData.date
-    editForm.timeSlotId = bookingData.time?.start || ''
+    editForm.startTime = bookingData.time?.start || ''
     editForm.tutorSessionId = bookingData.tutorSession?.id || ''
 
     onSelectTutorSession(editForm.tutorSessionId)
@@ -279,9 +307,13 @@ const handleEditSave = () => {
     // Find selected options
     const selectedSubjectData = subjectOptions.value.find(s => s.id === editForm.subjectId)
     const selectedLevelData = allLevelOptions.value.find(l => l.id === editForm.levelId)
-    const startTimeObj = timeOptions.value.find(t => t.id === editForm.timeSlotId)
+    // Use validSelectableTimes to find the object, or basic fallback
+    const startTimeObj = validSelectableTimes.value.find(t => t.time === editForm.startTime) || {
+        name: editForm.startTime,
+        time: editForm.startTime
+    }
     const session = tutorSessionOptions.value.find(s => s.id === activeTutorSessionId.value)
-    const endTimeText = startTimeObj && session ? addHoursToTime(startTimeObj.name || startTimeObj.time, session.duration_hours || 0) : ''
+    const endTimeText = editForm.startTime && session ? addHoursToTime(editForm.startTime, session.duration_hours || 0) : ''
 
     // Update booking data
     Object.assign(bookingData, {
@@ -295,7 +327,7 @@ const handleEditSave = () => {
         },
         date: editForm.date,
         time: {
-            start: editForm.timeSlotId,
+            start: editForm.startTime,
             end: endTimeText,
             display: (startTimeObj && session) ?
                 `${startTimeObj.name || startTimeObj.time} - ${endTimeText}` :
@@ -303,6 +335,7 @@ const handleEditSave = () => {
         },
         tutorSession: session || null,
         tutorSessionId: session?.id || '',
+        weekly_time_slot_id: startTimeObj?.source_id || '',
         hourly_price: hourlyPrice.value,
         total_price: totalPrice.value
     })
@@ -333,7 +366,7 @@ const handleBack = () => emit('back')
 
 watch(() => editForm.date, (newDate) => {
     if (!newDate && !uiState.isInitializing) {
-        editForm.timeSlotId = ''
+        editForm.startTime = ''
         editForm.tutorSessionId = ''
     }
 })
@@ -549,7 +582,7 @@ defineExpose({
                 <div class="card-header">Thông tin gia sư</div>
                 <div class="card-content tutor-content-horizontal">
                     <div class="tutor-avatar">
-                        <img :src="tutorInfo.avatar || '/images/default-avatar.png'" />
+                        <img :src="showImage(tutorInfo.avatar)" />
                     </div>
                     <div class="tutor-info-block">
                         <div class="tutor-name">{{ tutorInfo.full_name }}</div>
@@ -600,13 +633,6 @@ defineExpose({
             <div class="info-card support-card">
                 <div class="card-content support-content">
                     <div class="support-row">
-                        <span class="support-icon">
-                            <svg class="icon-lg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="2" y="2" width="20" height="20" rx="5" />
-                                <path d="M8 10h.01" />
-                                <path d="M16 10h.01" />
-                                <path d="M12 16v.01" /></svg>
-                        </span>
                         <span class="support-title">Cần hỗ trợ?</span>
                     </div>
                     <div class="support-desc">Đội ngũ hỗ trợ của chúng tôi luôn sẵn sàng giúp đỡ bạn với mọi câu hỏi.</div>
@@ -626,7 +652,7 @@ defineExpose({
      @focusout="handleMobileUserInfoLeave">
     <div class="user-detail-content" :class="{ 'show': mobileUserInfoState.showUserInfo }">
         <div class="avatar-wrapper_mobile">
-            <img :src="tutorInfo.avatar || '/images/default-avatar.png'" :alt="tutorInfo.full_name" />
+            <img :src="showImage(tutorInfo.avatar)" :alt="tutorInfo.full_name" />
         </div>
         <h1 class="user-name_mobile">
             <span>{{ tutorInfo.full_name || tutorInfo.user_full_name }}</span>
@@ -668,14 +694,22 @@ defineExpose({
 
             <div class="form-group col-span-2 time-select">
                 <label class="label text-small">Khung giờ</label>
-                <div class="time-select-grid">
+                <div class="time-select-grid" v-if="validSelectableTimes.length > 0">
                     <button v-for="t in validSelectableTimes" :key="'time-' + t.id" type="button" class="time-chip"
-                    :class="{ selected: editForm.timeSlotId === t.id, disabled: t.disabled, inactive: !editForm.date || availableEditTimeSlots.length === 0 }"
-                    @click="(!t.disabled && editForm.date && availableEditTimeSlots.length > 0) && onEditTimeSlotChange(t.id)">
+                    :class="{ selected: editForm.startTime === t.time, disabled: t.disabled, inactive: !editForm.date || availableEditTimeSlots.length === 0 }"
+                    @click="(!t.disabled && editForm.date && availableEditTimeSlots.length > 0) && onEditTimeSlotChange(t.time)">
                         {{ t.name || t.time }}
                     </button>
                 </div>
-                <div v-if="validateField('timeSlotId')" class="error-text">Vui lòng chọn khung giờ</div>
+				<div v-else class="empty-time-state">
+					<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="10"></circle>
+						<line x1="15" y1="9" x2="9" y2="15"></line>
+						<line x1="9" y1="9" x2="15" y2="15"></line>
+					</svg>
+					<span>Không có lịch trống</span>
+				</div>
+                <div v-if="validateField('startTime')" class="error-text">Vui lòng chọn khung giờ</div>
             </div>
 
             <div class="separation col-span-2"></div>
@@ -721,4 +755,21 @@ defineExpose({
 <style scoped>
 @import url("~/assets/css/BookingCommon.css");
 @import url("~/assets/css/lessonInformation.css");
+.empty-time-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 24px;
+	background-color: #f9fafb;
+	border-radius: 8px;
+	border: 1px dashed #e5e7eb;
+	color: #9ca3af;
+	font-size: 0.875rem;
+    width: 100%;
+}
+.empty-time-state svg {
+    color: #d1d5db;
+}
 </style>

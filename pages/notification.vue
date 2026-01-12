@@ -1,10 +1,12 @@
 <script setup>
-import {
-    ref,
-    onMounted,
-    computed,
-    watch,
-} from 'vue';
+definePageMeta({
+	middleware: [
+		'auth', 
+		() => {
+		useLayoutStore().setHiddenFooter(true)
+		}
+	]
+})
 import { notification_type_icons } from '~/config';
 
 const { api } = useApi();
@@ -19,10 +21,6 @@ const notifications = ref({
 });
 const activeTab = ref('all');
 const tabs = computed(() => [
-    {
-        value: 'all',
-        label: 'Tất cả'
-    },
     {
         value: 'unread',
         label: 'Chưa đọc',
@@ -111,7 +109,10 @@ const getNotificationIcon = (notification) => {
 </script>
 
 <template>
-<div class="notification-page">
+	
+<base-loading v-if="isLoading" />
+
+<div class="notification-page" v-else>
     <div class="container">
         <div class="nav-tabs">
             <base-status-tabs v-model="activeTab" :tabs="tabs" />
@@ -394,21 +395,6 @@ const getNotificationIcon = (notification) => {
     box-shadow: 0 2px 8px rgba(148, 163, 184, 0.3);
 }
 
-/* Enhanced button styling */
-.mark-all_read {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light)) !important;
-    border: none !important;
-    color: white !important;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-}
-
-.mark-all_read:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-}
-
 /* Animation for notification cards */
 @keyframes slideInUp {
     from {
@@ -467,7 +453,7 @@ const getNotificationIcon = (notification) => {
     }
 
     .mark-all_read {
-        width: 100%;
+        width: 100% !important;
     }
 
     .notification-card {

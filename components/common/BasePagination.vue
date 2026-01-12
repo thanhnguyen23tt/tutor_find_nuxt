@@ -153,7 +153,7 @@ const showEndEllipsis = computed(() => {
 }
 
 .nav-btn i {
-    font-size: 0.8rem;
+    font-size: var(--font-size-small);
 }
 
 /* Page Numbers */
@@ -167,8 +167,8 @@ const showEndEllipsis = computed(() => {
 }
 
 .page-btn {
-    width: 36px;
-    height: 36px;
+    width: 2rem;
+    height: 2rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -202,7 +202,7 @@ const showEndEllipsis = computed(() => {
 /* Info Text */
 .pagination-info {
     color: var(--gray-500);
-    font-size: 0.9rem;
+    font-size: var(--font-size-small);
 }
 
 .pagination-info span {
@@ -233,9 +233,9 @@ const showEndEllipsis = computed(() => {
     }
 
     .page-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 0.9rem;
+        width: 2rem;
+        height: 2rem;
+        font-size: var(--font-size-small);
         border-radius: 8px;
     }
 }

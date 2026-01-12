@@ -2,7 +2,7 @@
     <base-modal v-if="isOpen" :isOpen="isOpen" @close="closeModal" size="small" title="Gửi tin nhắn" description="Gửi tin nhắn nếu bạn muốn liên hệ với người dùng">
         <div class="send-message">
             <div class="user-info">
-                <img v-if="user?.avatar" :src="user?.avatar" class="avatar">
+                <img v-if="user?.avatar" :src="showImage(user?.avatar)" class="avatar">
 				<div v-else class="avatar">{{ getFirstCharacterOfLastName(user?.full_name) }}</div>
                 <div class="user-details">
                     <h4 class="name">Liên hệ {{ user?.full_name || 'User' }}</h4>
@@ -22,11 +22,11 @@
                     </svg>
                     <span>Hủy</span>
                 </button>
-                <button class="btn-md btn-primary" @click="sendMessage" :disabled="!message.trim()">
+                <button class="btn-md btn-primary" @click="sendMessage" :disabled="!message.trim() || isSending" :class="{ 'btn-loading': isSending }">
                     <svg class="icon-md" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
                     </svg>
-                    <span>Gửi tin nhắn</span>
+                    <span>{{ isSending ? 'Đang gửi...' : 'Gửi tin nhắn' }}</span>
                 </button>
             </div>
         </div>
@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+const { showImage } = useHelper();
 
 const props = defineProps({
     user: {
@@ -47,8 +47,6 @@ const props = defineProps({
     }
 })
 
-console.log(props.user);
-
 const emit = defineEmits(['messageSent', 'close']);
 
 const { api } = useApi();
@@ -56,6 +54,7 @@ const { success, error: notifyError } = useNotification();
 const { getFirstCharacterOfLastName } = useHelper();
 
 const message = ref('');
+const isSending = ref(false);
 
 watch(
     () => props.user,
@@ -73,6 +72,7 @@ const closeModal = () => {
 const sendMessage = async () => {
     if (!message.value.trim()) return;
 
+    isSending.value = true;
     try {
         const response = await api.apiPost('send-message', {
             receiver_id: props.user.uid,
@@ -89,6 +89,8 @@ const sendMessage = async () => {
     } catch (error) {
         console.error('Error sending message:', error);
         notifyError('Có lỗi xảy ra khi gửi tin nhắn!');
+    } finally {
+        isSending.value = false;
     }
 }
 </script>

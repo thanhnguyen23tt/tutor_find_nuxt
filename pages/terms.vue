@@ -345,7 +345,7 @@ onUnmounted(() => {
 
 .loading-container p {
     color: #6b7280;
-    font-size: 1rem;
+    font-size: var(--font-size-base);
 }
 
 .content-section {
@@ -580,7 +580,7 @@ onUnmounted(() => {
 }
 
 :deep(.step-content h4) {
-    font-size: 16px;
+    font-size: var(--font-size-base);
     font-weight: 600;
     color: #1e293b;
 }

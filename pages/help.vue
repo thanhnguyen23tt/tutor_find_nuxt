@@ -153,6 +153,14 @@
 </template>
 
 <script setup>
+definePageMeta({
+	middleware: [
+		() => {
+		useLayoutStore().setHiddenFooter(true)
+		}
+	]
+})
+
 import { ref, computed, onMounted, watch } from 'vue';
 
 const { help_action } = useConfig()
@@ -350,7 +358,7 @@ watch(userType, () => {
     flex: 1;
     border: none;
     outline: none;
-    font-size: 1rem;
+    font-size: var(--font-size-base);
     color: #1f2937;
 }
 
@@ -1283,7 +1291,7 @@ watch(userType, () => {
     }
 
     .detail-content {
-        font-size: 1rem;
+        font-size: var(--font-size-base);
     }
 
     .detail-content :deep(h2) {

@@ -34,10 +34,10 @@
                             <polyline points="12 6 12 12 16 14" />
                         </svg>
                         <div>
-                            <span>{{ booking.start_time_text }} - {{ booking.end_time_text }} ({{ formatDuration(booking.duration) }})</span>
+                            <span>{{ formatTime(booking.start_time) }} - {{ formatTime(booking.end_time) }} ({{ formatDuration(booking.duration) }})</span>
                         </div>
                     </div>
-                    <button class="status-btn" :class="booking.statusClass">{{ booking.statusText }}</button>
+                    <button class="status-btn">{{ booking.statusText }}</button>
                 </div>
             </div>
 
@@ -58,13 +58,13 @@
                     <span>Loại buổi học: {{ booking.tutor_session?.name }}</span>
                 </div>
 
-                <div v-if="booking.payment?.payment_method" class="booking-card-center_content">
+                <div v-if="booking.payment" class="booking-card-center_content">
                     <svg class="icon-md" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect x="3" y="6" width="18" height="13" rx="2" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></rect>
                         <path d="M3 10H20.5" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
                         <path d="M7 15H9" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
                     </svg>
-                    <span>{{ booking.payment?.payment_method?.name }} - {{ booking.payment?.payment_method?.description }}</span>
+                    <span>Thanh toán bằng: {{ booking.payment?.payment_method_name }}</span>
                 </div>
 
                 <div v-if="isTimeVisible(booking.status)" class="booking-card-center_content time-text">
@@ -72,7 +72,7 @@
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
                     </svg>
-                    <span>{{ booking.time_text }}</span>
+                    <span>{{ booking.time_info_text }}</span>
                 </div>
 
                 <!-- Display reason for rejected/cancelled -->
@@ -92,14 +92,14 @@
                             <circle cx="12" cy="12" r="10" />
                             <polyline points="12 6 12 12 16 14" />
                         </svg>
-                        <span>Cũ: {{ booking.date }} ({{ booking.time_slot?.name }} - {{ booking.end_time_text }})</span>
+                        <span>Cũ: {{ booking.date }} ({{ formatTime(booking.start_time) }} - {{ formatTime(booking.end_time) }})</span>
                     </div>
                     <div class="booking-card-center_content">
                         <svg class="icon-md" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10" />
                             <polyline points="12 6 12 12 16 14" />
                         </svg>
-                        <span>Mới: {{ booking.user_booking_reschedule?.new_date }} ({{ booking.user_booking_reschedule?.new_time_slot?.name }} - {{ booking.user_booking_reschedule?.end_time_new }})</span>
+                        <span>Mới: {{ booking.user_booking_reschedule?.new_date }} ({{ booking.user_booking_reschedule?.new_time_slot?.name }} - {{ formatTime(booking.user_booking_reschedule?.end_time_new) }})</span>
                     </div>
                     <div class="booking-card-center_content">
                         <svg class="icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -196,7 +196,7 @@ import {
     defineEmits
 } from 'vue'
 
-const { formatDuration, formatCurrency, getFirstCharacterOfLastName } = useHelper()
+const { formatDuration, formatCurrency, getFirstCharacterOfLastName, formatTime } = useHelper()
 
 const props = defineProps({
     bookings: Array,

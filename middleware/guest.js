@@ -3,7 +3,8 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 	const { verifyToken } = useAuth();
 
 	// Check if user has token
-	const token = process.client ? sessionStorage.getItem('token') : null;
+	const { getToken } = useAuthCookie();
+	const token = getToken();
 
 	if (token) {
 		// Verify token and get user data
